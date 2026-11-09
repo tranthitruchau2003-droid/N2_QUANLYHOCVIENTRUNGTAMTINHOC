@@ -6,42 +6,42 @@
 </asp:Content>
 
 <asp:Content ID="Content3" ContentPlaceHolderID="MainContent" runat="server">
-    <!-- 6 THẺ THỐNG KÊ -->
+   <!-- 6 THẺ THỐNG KÊ -->
     <div class="row g-3 mb-4">
         <div class="col-md-4 col-lg-2">
             <div class="stat-card blue">
-                <div class="small opacity-75">Tổng Học viên</div>
-                <h3 class="fw-bold mb-0"><asp:Literal ID="litTongHV" runat="server" /></h3>
+                <div class="fs-6 fw-bold mb-1">Tổng Học viên</div>
+                <h2 class="fw-bold mb-0"><asp:Literal ID="litTongHV" runat="server" /></h2>
             </div>
         </div>
         <div class="col-md-4 col-lg-2">
             <div class="stat-card teal">
-                <div class="small opacity-75">Khóa học</div>
-                <h3 class="fw-bold mb-0"><asp:Literal ID="litTongKH" runat="server" /></h3>
+                <div class="fs-6 fw-bold mb-1">Khóa học</div>
+                <h2 class="fw-bold mb-0"><asp:Literal ID="litTongKH" runat="server" /></h2>
             </div>
         </div>
         <div class="col-md-4 col-lg-2">
             <div class="stat-card purple">
-                <div class="small opacity-75">Lớp học</div>
-                <h3 class="fw-bold mb-0"><asp:Literal ID="litTongLop" runat="server" /></h3>
+                <div class="fs-6 fw-bold mb-1">Lớp học</div>
+                <h2 class="fw-bold mb-0"><asp:Literal ID="litTongLop" runat="server" /></h2>
             </div>
         </div>
         <div class="col-md-4 col-lg-2">
-            <div class="stat-card blue">
-                <div class="small opacity-75">Giảng viên</div>
-                <h3 class="fw-bold mb-0"><asp:Literal ID="litTongGV" runat="server" /></h3>
+            <div class="stat-card green">
+                <div class="fs-6 fw-bold mb-1">Giảng viên</div>
+                <h2 class="fw-bold mb-0"><asp:Literal ID="litTongGV" runat="server" /></h2>
             </div>
         </div>
         <div class="col-md-4 col-lg-2">
             <div class="stat-card orange">
-                <div class="small opacity-75">Tổng Doanh thu</div>
-                <h5 class="fw-bold mb-0"><asp:Literal ID="litDoanhThu" runat="server" /></h5>
+                <div class="fs-6 fw-bold mb-1">Tổng Doanh thu</div>
+                <h4 class="fw-bold mb-0"><asp:Literal ID="litDoanhThu" runat="server" /></h4>
             </div>
         </div>
         <div class="col-md-4 col-lg-2">
-            <div class="stat-card orange" style="background:linear-gradient(135deg,#dc3545,#b02a37)">
-                <div class="small opacity-75">Học phí Còn nợ</div>
-                <h5 class="fw-bold mb-0"><asp:Literal ID="litCongNo" runat="server" /></h5>
+            <div class="stat-card red">
+                <div class="fs-6 fw-bold mb-1">Học phí Còn nợ</div>
+                <h4 class="fw-bold mb-0"><asp:Literal ID="litCongNo" runat="server" /></h4>
             </div>
         </div>
     </div>
@@ -125,12 +125,38 @@
         const khLabels = rawTenKH ? rawTenKH.split('|') : [];
         const khValues = rawSL ? rawSL.split('|').map(Number) : [];
 
-        new Chart(document.getElementById('chartKhoaHoc'), {
-            type: 'doughnut',
-            data: {
-                labels: khLabels,
-                datasets: [{ data: khValues, backgroundColor: ['#1677D2', '#FF8A26', '#00B4DB', '#6A11CB', '#28a745'] }]
+// Bảng 15 màu riêng biệt cho từng khóa học
+const bangMauKhoaHoc = [
+    '#1677D2', '#FF8A26', '#28A745', '#6A11CB', '#00B4DB',
+    '#DC3545', '#FFC107', '#20C997', '#E83E8C', '#6610F2',
+    '#FD7E14', '#17A2B8', '#6F42C1', '#343A40', '#A52A2A'
+];
+
+new Chart(document.getElementById('chartKhoaHoc'), {
+    type: 'doughnut',
+    data: {
+        labels: khLabels,
+        datasets: [{
+            data: khValues,
+            backgroundColor: bangMauKhoaHoc.slice(0, khLabels.length),
+            borderWidth: 2,
+            borderColor: '#ffffff'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                align: 'start',
+                labels: {
+                    boxWidth: 14,
+                    padding: 12,
+                    font: { size: 12 }
+                }
             }
-        });
+        }
+    }
+});
     </script>
 </asp:Content>

@@ -69,15 +69,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         protected global::System.Web.UI.WebControls.Literal litNguoiDung;
 
         /// <summary>
-        /// btnDangXuat control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton btnDangXuat;
-
-        /// <summary>
         /// MainContent control.
         /// </summary>
         /// <remarks>
@@ -85,5 +76,14 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.ContentPlaceHolder MainContent;
+
+        /// <summary>
+        /// btnDangXuat control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton btnDangXuat;
     }
 }
