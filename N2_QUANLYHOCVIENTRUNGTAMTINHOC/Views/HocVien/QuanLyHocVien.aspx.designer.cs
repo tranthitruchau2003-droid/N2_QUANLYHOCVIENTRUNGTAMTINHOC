@@ -157,5 +157,23 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.GridView gvHocVien;
+
+        /// <summary>
+        /// btnXoaChinhThuc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton btnXoaChinhThuc;
+
+        /// <summary>
+        /// hfMaHocVienXoa control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfMaHocVienXoa;
     }
 }
