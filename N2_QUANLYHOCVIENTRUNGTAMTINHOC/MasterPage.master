@@ -1,0 +1,75 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="MasterPage.master.cs" Inherits="N2_QUANLYHOCVIENTRUNGTAMTINHOC.MasterPage" %>
+<!DOCTYPE html>
+<html lang="vi">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><asp:ContentPlaceHolder ID="TitleContent" runat="server" /> - Quản Lý Đào Tạo Tin Học</title>
+    <link href="/Content/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="/Content/css/theme.css" rel="stylesheet" />
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="app-wrapper">
+            <!-- SIDEBAR TRÁI -->
+            <aside id="sidebar" class="sidebar">
+                <div class="sidebar-brand">
+                    <i class="bi bi-mortarboard-fill fs-4 text-warning"></i>
+                    <span>TT TIN HỌC N2</span>
+                </div>
+                <ul class="sidebar-nav">
+                    <li><a href="/Dashboard.aspx"><i class="bi bi-speedometer2"></i> Tổng quan (Dashboard)</a></li>
+                    <li><a href="/Views/HocVien/QuanLyHocVien.aspx"><i class="bi bi-people-fill"></i> Quản lý Học viên</a></li>
+                    <li><a href="/Views/KhoaHoc/QuanLyKhoaHoc.aspx"><i class="bi bi-journal-bookmark-fill"></i> Quản lý Khóa học</a></li>
+                    <li><a href="/Views/GiangVien/QuanLyGiangVien.aspx"><i class="bi bi-person-badge-fill"></i> Quản lý Giảng viên</a></li>
+                    <li><a href="/Views/LopHoc/QuanLyLopHoc.aspx"><i class="bi bi-easel2-fill"></i> Lớp học & Lịch học</a></li>
+                    <li><a href="/Views/DangKy/QuanLyDangKy.aspx"><i class="bi bi-card-checklist"></i> Đăng ký Khóa học</a></li>
+                    <li><a href="/Views/PhieuThu/QuanLyPhieuThu.aspx"><i class="bi bi-receipt-cutoff"></i> Quản lý Phiếu thu</a></li>
+                  <li><a href="/Views/KyThi/QuanLyKyThi.aspx"><i class="bi bi-calendar2-check-fill"></i> Kỳ thi & Điểm thi</a></li>
+                    <li><a href="/Views/ChungChi/QuanLyChungChi.aspx"><i class="bi bi-award-fill"></i> Cấp Chứng chỉ</a></li>
+                    <li><a href="/Views/BaoCao/BaoCaoThongKe.aspx"><i class="bi bi-bar-chart-line-fill"></i> Báo cáo & Thống kê</a></li>
+                    <li id="liCaiDat" runat="server"><a href="/Views/CaiDat/CaiDatHeThong.aspx"><i class="bi bi-gear-wide-connected"></i> Cài đặt & Sao lưu DB</a></li>
+                    <li id="li1" runat="server"><a href="/Views/CaiDat/CaiDatHeThong.aspx"><i class="bi bi-gear-wide-connected"></i> Cài đặt hệ thống </a></li>
+                </ul>
+            </aside>
+
+            <!-- PANEL CHÍNH -->
+            <div class="main-panel">
+                <header class="top-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('sidebar').classList.toggle('collapsed')">
+                            <i class="bi bi-list fs-5"></i>
+                        </button>
+                        <h6 class="mb-0 fw-bold text-primary d-none d-md-block">
+                            <asp:Literal ID="litTenTrungTam" runat="server" />
+                        </h6>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-primary-subtle text-primary px-3 py-2">
+                            <i class="bi bi-person-circle me-1"></i>
+                            <asp:Literal ID="litNguoiDung" runat="server" />
+                        </span>
+                        <a href="/Views/CaiDat/CaiDatHeThong.aspx#doimatkhau" class="btn btn-sm btn-outline-secondary" title="Đổi mật khẩu">
+                            <i class="bi bi-key"></i>
+                        </a>
+                        <asp:LinkButton ID="btnDangXuat" runat="server" CssClass="btn btn-sm btn-orange" OnClick="btnDangXuat_Click">
+                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                        </asp:LinkButton>
+                    </div>
+                </header>
+
+                <main class="content-area">
+                    <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+                </main>
+
+                <footer class="app-footer">
+                    &copy; <%= DateTime.Now.Year %> Hệ thống Quản lý Học viên Trung tâm Tin học (N2_QUANLYHOCVIENTRUNGTAMTINHOC).
+                </footer>
+            </div>
+        </div>
+    </form>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

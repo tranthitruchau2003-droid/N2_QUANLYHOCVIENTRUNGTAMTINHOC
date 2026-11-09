@@ -1,0 +1,182 @@
+﻿:root {
+    --primary: #1677D2;
+    --primary-dark: #0755A6;
+    --primary-light: #EAF4FF;
+    --orange: #FF8A26;
+    --orange-dark: #E87512;
+    --background: #F4F7FB;
+    --white: #FFFFFF;
+    --text: #263445;
+}
+
+body {
+    background-color: var(--background);
+    color: var(--text);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+}
+
+/* Sidebar */
+.app-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 265px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: var(--white);
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+    box-shadow: 3px 0 15px rgba(7, 85, 166, 0.18);
+    z-index: 1000;
+}
+
+    .sidebar.collapsed {
+        margin-left: -265px;
+    }
+
+.sidebar-brand {
+    padding: 1.15rem 1.25rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 0.75rem 0;
+    margin: 0;
+}
+
+    .sidebar-nav li a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0.72rem 1.35rem;
+        color: rgba(255, 255, 255, 0.88);
+        text-decoration: none;
+        font-size: 0.94rem;
+        font-weight: 500;
+        border-left: 4px solid transparent;
+        transition: all 0.2s;
+    }
+
+        .sidebar-nav li a:hover,
+        .sidebar-nav li a.active {
+            background: rgba(255, 255, 255, 0.14);
+            color: var(--white);
+            border-left-color: var(--orange);
+        }
+
+/* Main Content & Header */
+.main-panel {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.top-header {
+    background: var(--white);
+    height: 64px;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.content-area {
+    padding: 1.5rem;
+    flex-grow: 1;
+}
+
+/* Custom Buttons & Cards */
+.btn-orange {
+    background-color: var(--orange);
+    color: var(--white);
+    border: none;
+    font-weight: 600;
+}
+
+    .btn-orange:hover {
+        background-color: var(--orange-dark);
+        color: var(--white);
+    }
+
+.btn-primary-gradient {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: var(--white);
+    border: none;
+    font-weight: 600;
+}
+
+    .btn-primary-gradient:hover {
+        opacity: 0.94;
+        color: var(--white);
+    }
+
+.card-custom {
+    background: var(--white);
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 3px 14px rgba(38, 52, 69, 0.06);
+    margin-bottom: 1.5rem;
+}
+
+    .card-custom .card-header {
+        background: var(--white);
+        border-bottom: 2px solid var(--primary-light);
+        padding: 1rem 1.25rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+.stat-card {
+    border-radius: 12px;
+    padding: 1.25rem;
+    color: var(--white);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(22, 119, 210, 0.18);
+}
+
+    .stat-card.blue {
+        background: linear-gradient(135deg, #1677D2, #0755A6);
+    }
+
+    .stat-card.orange {
+        background: linear-gradient(135deg, #FF8A26, #E87512);
+    }
+
+    .stat-card.teal {
+        background: linear-gradient(135deg, #00B4DB, #0083B0);
+    }
+
+    .stat-card.purple {
+        background: linear-gradient(135deg, #6A11CB, #2575FC);
+    }
+
+.table-custom thead th {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+    font-weight: 600;
+    border-bottom: 2px solid #cfe2ff;
+}
+
+.app-footer {
+    background: var(--white);
+    padding: 0.85rem 1.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #6c757d;
+    border-top: 1px solid #e9ecef;
+}
