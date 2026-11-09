@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text;
 using System.Web.UI.WebControls;
 using N2_QUANLYHOCVIENTRUNGTAMTINHOC.DAL;
 
@@ -10,7 +11,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (!IsPostBack) TaiDanhSach();
+            if (!IsPostBack)
+            {
+                TaiDanhSach();
+                TaiGoiYTimKiem();
+            }
         }
 
         private void TaiDanhSach(string tuKhoa = "")
@@ -21,9 +26,28 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
             gvHocVien.DataBind();
         }
 
-        private void HienThongBao(string msg)
+        private void TaiGoiYTimKiem()
+        {
+            DataTable dt = kncsdl.DocDuLieu("SELECT mahocvien, hoten, dienthoai FROM HOCVIEN");
+            StringBuilder sb = new StringBuilder();
+            foreach (DataRow r in dt.Rows)
+            {
+                sb.AppendFormat("<option value=\"{0}\">{1} - {2}</option>", r["mahocvien"], r["hoten"], r["dienthoai"]);
+                sb.AppendFormat("<option value=\"{0}\">{1} ({2})</option>", r["hoten"], r["mahocvien"], r["dienthoai"]);
+                if (!string.IsNullOrEmpty(r["dienthoai"].ToString()))
+                {
+                    sb.AppendFormat("<option value=\"{0}\">{1} - {2}</option>", r["dienthoai"], r["mahocvien"], r["hoten"]);
+                }
+            }
+            litGoiY.Text = sb.ToString();
+        }
+
+        private void HienThongBao(string msg, bool laLoi = false)
         {
             pnlThongBao.Visible = true;
+            pnlThongBao.CssClass = laLoi
+                ? "alert alert-danger text-danger fw-semibold alert-dismissible fade show"
+                : "alert alert-success text-success fw-semibold alert-dismissible fade show";
             litThongBao.Text = msg;
         }
 
@@ -31,7 +55,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
         {
             if (string.IsNullOrWhiteSpace(txtMaHV.Text) || string.IsNullOrWhiteSpace(txtHoTen.Text))
             {
-                HienThongBao("Vui lòng nhập đầy đủ Mã học viên và Họ tên!");
+                HienThongBao("Vui lòng nhập đầy đủ Mã học viên và Họ tên!", true);
                 return;
             }
 
@@ -52,8 +76,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                 kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Thêm học viên", "Mã HV: " + txtMaHV.Text.Trim());
                 HienThongBao("Thêm học viên mới thành công!");
                 TaiDanhSach();
+                TaiGoiYTimKiem();
             }
-            catch (Exception ex) { HienThongBao("Lỗi khi thêm: " + ex.Message); }
+            catch (Exception ex) { HienThongBao("Lỗi khi thêm: " + ex.Message, true); }
         }
 
         protected void btnCapNhat_Click(object sender, EventArgs e)
@@ -75,8 +100,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                 kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Sửa học viên", "Mã HV: " + txtMaHV.Text.Trim());
                 HienThongBao("Cập nhật thông tin học viên thành công!");
                 TaiDanhSach();
+                TaiGoiYTimKiem();
             }
-            catch (Exception ex) { HienThongBao("Lỗi cập nhật: " + ex.Message); }
+            catch (Exception ex) { HienThongBao("Lỗi cập nhật: " + ex.Message, true); }
         }
 
         protected void gvHocVien_RowCommand(object sender, GridViewCommandEventArgs e)
@@ -100,18 +126,18 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
             }
             else if (e.CommandName == "Xoa")
             {
-                // Kiểm tra ràng buộc khóa ngoại trước khi xóa
                 int countDK = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", ma) }));
                 int countTG = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM THAM_GIA WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", ma) }));
                 if (countDK > 0 || countTG > 0)
                 {
-                    HienThongBao("Không thể xóa học viên này vì đã có dữ liệu Đăng ký khóa học hoặc Tham gia kỳ thi!");
+                    HienThongBao("Không thể xóa học viên này vì đã có dữ liệu Đăng ký khóa học hoặc Tham gia kỳ thi!", true);
                     return;
                 }
                 kncsdl.ThucThiLenh("DELETE FROM HOCVIEN WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", ma) });
                 kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Xóa học viên", "Mã HV: " + ma);
                 HienThongBao("Đã xóa học viên thành công.");
                 TaiDanhSach();
+                TaiGoiYTimKiem();
             }
         }
 
@@ -121,7 +147,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
             txtMaHV.ReadOnly = false;
         }
 
-        protected void btnTim_Click(object sender, EventArgs e) => TaiDanhSach(txtTimKiem.Text.Trim());
+        protected void btnTim_Click(object sender, EventArgs e)
+        {
+            gvHocVien.PageIndex = 0;
+            TaiDanhSach(txtTimKiem.Text.Trim());
+        }
 
         protected void gvHocVien_PageIndexChanging(object sender, GridViewPageEventArgs e)
         {

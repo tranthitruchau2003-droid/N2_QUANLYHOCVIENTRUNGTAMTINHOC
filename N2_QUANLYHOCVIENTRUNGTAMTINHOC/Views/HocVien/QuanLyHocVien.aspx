@@ -1,8 +1,47 @@
 ﻿<%@ Page Title="Quản lý Học viên" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeBehind="QuanLyHocVien.aspx.cs" Inherits="N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien.QuanLyHocVien" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server">Quản lý Học viên</asp:Content>
-<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
-    <asp:Panel ID="pnlThongBao" runat="server" Visible="false" CssClass="alert alert-info alert-dismissible fade show">
+<asp:Content ID="Content2" ContentPlaceHolderID="HeadContent" runat="server">
+    <style>
+        /* CSS làm đẹp thanh phân trang GridView thành nút < 1 2 3 > */
+        .pagination-ys {
+            padding: 10px 15px;
+        }
+        .pagination-ys table > tbody > tr > td {
+            display: inline-block;
+            margin: 0 3px;
+        }
+        .pagination-ys table > tbody > tr > td > a,
+        .pagination-ys table > tbody > tr > td > span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            height: 34px;
+            padding: 0 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            color: #1677D2;
+            background-color: #ffffff;
+            transition: all 0.2s;
+        }
+        .pagination-ys table > tbody > tr > td > span {
+            background-color: #1677D2;
+            color: #ffffff;
+            border-color: #1677D2;
+        }
+        .pagination-ys table > tbody > tr > td > a:hover {
+            background-color: #EAF4FF;
+            border-color: #1677D2;
+        }
+    </style>
+</asp:Content>
+
+<asp:Content ID="Content3" ContentPlaceHolderID="MainContent" runat="server">
+    <asp:Panel ID="pnlThongBao" runat="server" Visible="false" ClientIDMode="Static" CssClass="alert alert-danger text-danger fw-semibold alert-dismissible fade show">
         <asp:Literal ID="litThongBao" runat="server" />
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </asp:Panel>
@@ -61,13 +100,18 @@
                 <div class="card-header">
                     <span><i class="bi bi-table me-2"></i>Danh sách Học viên</span>
                     <div class="d-flex gap-2">
-                        <asp:TextBox ID="txtTimKiem" runat="server" CssClass="form-control form-control-sm" placeholder="Mã, tên hoặc SĐT..." />
+                        <asp:TextBox ID="txtTimKiem" runat="server" CssClass="form-control form-control-sm" list="dsGoiYHocVien" placeholder="Mã, tên hoặc SĐT..." autocomplete="off" />
+                        <datalist id="dsGoiYHocVien">
+                            </datalist>
+                            <asp:Literal ID="litGoiY" runat="server" />
                         <asp:Button ID="btnTim" runat="server" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTim_Click" />
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <asp:GridView ID="gvHocVien" runat="server" CssClass="table table-hover table-custom mb-0" AutoGenerateColumns="false"
                         AllowPaging="true" PageSize="8" OnPageIndexChanging="gvHocVien_PageIndexChanging" OnRowCommand="gvHocVien_RowCommand">
+                        <PagerSettings Mode="NumericFirstLast" FirstPageText="&laquo;" LastPageText="&raquo;" PreviousPageText="&lsaquo;" NextPageText="&rsaquo;" PageButtonCount="5" />
+                        <PagerStyle CssClass="pagination-ys" HorizontalAlign="Center" />
                         <Columns>
                             <asp:BoundField DataField="mahocvien" HeaderText="Mã HV" />
                             <asp:BoundField DataField="hoten" HeaderText="Họ tên" />
@@ -87,4 +131,20 @@
             </div>
         </div>
     </div>
+
+    <script>
+   
+    window.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+            var tb = document.getElementById('pnlThongBao');
+            if (tb) {
+                tb.style.transition = 'opacity 0.5s ease';
+                tb.style.opacity = '0';
+                setTimeout(function () {
+                    if (tb) tb.style.display = 'none';
+                }, 500);
+            }
+        }, 5000);
+    });
+    </script>
 </asp:Content>

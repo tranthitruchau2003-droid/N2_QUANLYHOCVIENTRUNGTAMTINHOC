@@ -17,7 +17,7 @@
             <aside id="sidebar" class="sidebar">
                 <div class="sidebar-brand">
                     <i class="bi bi-mortarboard-fill fs-4 text-warning"></i>
-                    <span>TT TIN HỌC N2</span>
+                    <span>TRUNG TÂM TIN HỌC</span>
                 </div>
                 <ul class="sidebar-nav">
                     <li><a href="/Dashboard.aspx"><i class="bi bi-speedometer2"></i> Tổng quan (Dashboard)</a></li>
@@ -65,7 +65,7 @@
                 </main>
 
                 <footer class="app-footer">
-                    &copy; <%= DateTime.Now.Year %> Hệ thống Quản lý Học viên Trung tâm Tin học (N2_QUANLYHOCVIENTRUNGTAMTINHOC).
+                    &copy; <%= DateTime.Now.Year %> Hệ thống Quản lý Học viên Trung tâm Tin học.
                 </footer>
             </div>
         </div>

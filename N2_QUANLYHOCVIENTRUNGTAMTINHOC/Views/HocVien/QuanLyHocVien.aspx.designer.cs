@@ -132,6 +132,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
         protected global::System.Web.UI.WebControls.TextBox txtTimKiem;
 
         /// <summary>
+        /// litGoiY control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litGoiY;
+
+        /// <summary>
         /// btnTim control.
         /// </summary>
         /// <remarks>
