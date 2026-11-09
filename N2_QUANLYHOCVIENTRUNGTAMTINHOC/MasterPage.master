@@ -31,7 +31,7 @@
                     <li><a href="/Views/ChungChi/QuanLyChungChi.aspx"><i class="bi bi-award-fill"></i> Cấp Chứng chỉ</a></li>
                     <li><a href="/Views/BaoCao/BaoCaoThongKe.aspx"><i class="bi bi-bar-chart-line-fill"></i> Báo cáo & Thống kê</a></li>
                     <li id="liCaiDat" runat="server"><a href="/Views/CaiDat/CaiDatHeThong.aspx"><i class="bi bi-gear-wide-connected"></i> Cài đặt & Sao lưu DB</a></li>
-                    <li id="li1" runat="server"><a href="/Views/CaiDat/CaiDatHeThong.aspx"><i class="bi bi-gear-wide-connected"></i> Cài đặt hệ thống </a></li>
+                    
                 </ul>
             </aside>
 
