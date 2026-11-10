@@ -93,6 +93,7 @@
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
     <Content Include="Views\HocVien\QuanLyHocVien.aspx" />
+    <Content Include="Views\KhoaHoc\QuanLyKhoaHoc.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -125,6 +126,13 @@
     </Compile>
     <Compile Include="Views\HocVien\QuanLyHocVien.aspx.designer.cs">
       <DependentUpon>QuanLyHocVien.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\KhoaHoc\QuanLyKhoaHoc.aspx.cs">
+      <DependentUpon>QuanLyKhoaHoc.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\KhoaHoc\QuanLyKhoaHoc.aspx.designer.cs">
+      <DependentUpon>QuanLyKhoaHoc.aspx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -159,6 +167,7 @@
       <DependentUpon>Web.config</DependentUpon>
     </None>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
