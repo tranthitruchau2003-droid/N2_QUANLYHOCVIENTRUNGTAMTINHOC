@@ -10,8 +10,8 @@
     </asp:Panel>
 
     <div class="row g-4">
-        <!-- BẢNG KỲ THI -->
-        <div class="col-lg-5">
+        <!-- BẢNG 1: TỔ CHỨC KỲ THI (ẨN KHI LÀ HỌC VIÊN) -->
+        <div class="col-lg-5" id="divFormKyThi" runat="server">
             <div class="card card-custom">
                 <div class="card-header"><span>1. Tổ chức Kỳ thi</span></div>
                 <div class="card-body">
@@ -38,7 +38,6 @@
                         <asp:Button ID="btnLamMoiKT" runat="server" Text="Làm mới" CssClass="btn btn-secondary" OnClick="btnLamMoiKT_Click" />
                     </div>
 
-                    <!-- TÌM KIẾM KỲ THI -->
                     <div class="d-flex gap-2 mb-2">
                         <div class="position-relative flex-grow-1">
                             <asp:TextBox ID="txtTimKT" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm"
@@ -73,71 +72,78 @@
             </div>
         </div>
 
-        <!-- BẢNG THAM GIA & TÍNH ĐIỂM TRUNG BÌNH -->
-        <div class="col-lg-7">
+        <!-- BẢNG 2: KẾT QUẢ ĐIỂM THI -->
+        <div class="col-lg-7" id="divFormNhapDiem" runat="server">
             <div class="card card-custom">
-                <div class="card-header"><span>2. Nhập Điểm thi Học viên & Tính Điểm Trung Bình</span></div>
+                <div class="card-header">
+                    <span><i class="bi bi-journal-check me-2"></i><asp:Literal ID="litTieuDeDiem" runat="server" Text="2. Nhập Điểm thi Học viên & Tính Điểm Trung Bình" /></span>
+                </div>
                 <div class="card-body">
-                    <div class="row g-2 mb-3">
-                        <div class="col-3">
-                            <label class="small fw-bold">Mã TG (*)</label>
-                            <asp:TextBox ID="txtMaTG" runat="server" CssClass="form-control" placeholder="TG02" />
-                        </div>
-                        <div class="col-5">
-                            <label class="small fw-bold">Học viên</label>
-                            <asp:DropDownList ID="ddlHocVien" runat="server" CssClass="form-select" />
-                        </div>
-                        <div class="col-4">
-                            <label class="small fw-bold">Kỳ thi</label>
-                            <asp:DropDownList ID="ddlKyThi" runat="server" CssClass="form-select" />
-                        </div>
-                        <div class="col-4">
-                            <label class="small fw-bold">Điểm chuyên cần (10%)</label>
-                            <asp:TextBox ID="txtDiemCC" runat="server" CssClass="form-control" placeholder="10" Text="10" />
-                        </div>
-                        <div class="col-4">
-                            <label class="small fw-bold">Điểm quá trình (30%)</label>
-                            <asp:TextBox ID="txtDiemQT" runat="server" CssClass="form-control" placeholder="8.0" />
-                        </div>
-                        <div class="col-4">
-                            <label class="small fw-bold">Điểm thi (60%) (*)</label>
-                            <asp:TextBox ID="txtDiem" runat="server" CssClass="form-control" placeholder="8.5" />
-                        </div>
-                    </div>
-
-                    <div class="d-flex gap-2 mb-3">
-                        <asp:Button ID="btnThemTG" runat="server" Text="Thêm mới & Tính ĐTB" CssClass="btn btn-orange flex-grow-1" OnClick="btnThemTG_Click" />
-                        <asp:Button ID="btnCapNhatTG" runat="server" Text="Cập nhật Điểm" CssClass="btn btn-primary-gradient flex-grow-1" OnClick="btnCapNhatTG_Click" />
-                        <asp:Button ID="btnLamMoiTG" runat="server" Text="Làm mới" CssClass="btn btn-secondary" OnClick="btnLamMoiTG_Click" />
-                    </div>
-
-                    <!-- TÌM KIẾM & BỘ LỌC THAM GIA -->
-                    <div class="d-flex gap-2 mb-2">
-                        <div class="position-relative flex-grow-1">
-                            <asp:TextBox ID="txtTimTG" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm"
-                                placeholder="Tìm mã TG, tên học viên, mã KT..." autocomplete="off" onfocus="this.select();" />
-                            <div id="goiYTG" class="list-group shadow position-absolute w-100"
-                                style="top: 100%; left: 0; z-index: 1050; max-height: 150px; overflow-y: auto; display: none;">
-                                <asp:Literal ID="litGoiYTG" runat="server" />
+                    <!-- KHUNG NHẬP ĐIỂM & TÌM KIẾM (ẨN KHI LÀ HỌC VIÊN) -->
+                    <asp:Panel ID="pnlKhuVucNhapDiem" runat="server">
+                        <div class="row g-2 mb-3">
+                            <div class="col-3">
+                                <label class="small fw-bold">Mã TG (*)</label>
+                                <asp:TextBox ID="txtMaTG" runat="server" CssClass="form-control" placeholder="TG02" />
+                            </div>
+                            <div class="col-5">
+                                <label class="small fw-bold">Học viên</label>
+                                <asp:DropDownList ID="ddlHocVien" runat="server" CssClass="form-select" />
+                            </div>
+                            <div class="col-4">
+                                <label class="small fw-bold">Kỳ thi</label>
+                                <asp:DropDownList ID="ddlKyThi" runat="server" CssClass="form-select" />
+                            </div>
+                            <div class="col-4">
+                                <label class="small fw-bold">Điểm chuyên cần (10%)</label>
+                                <asp:TextBox ID="txtDiemCC" runat="server" CssClass="form-control" placeholder="10" Text="10" />
+                            </div>
+                            <div class="col-4">
+                                <label class="small fw-bold">Điểm quá trình (30%)</label>
+                                <asp:TextBox ID="txtDiemQT" runat="server" CssClass="form-control" placeholder="8.0" />
+                            </div>
+                            <div class="col-4">
+                                <label class="small fw-bold">Điểm thi (60%) (*)</label>
+                                <asp:TextBox ID="txtDiem" runat="server" CssClass="form-control" placeholder="8.5" />
                             </div>
                         </div>
-                        <asp:DropDownList ID="ddlLocKetQua" runat="server" CssClass="form-select form-select-sm" style="max-width: 150px;"
-                            AutoPostBack="true" OnSelectedIndexChanged="btnTimTG_Click">
-                            <asp:ListItem Text="-- Tất cả KQ --" Value="" />
-                            <asp:ListItem Text="Đạt" Value="Đạt" />
-                            <asp:ListItem Text="Không đạt" Value="Không đạt" />
-                        </asp:DropDownList>
-                        <asp:Button ID="btnTimTG" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTimTG_Click" />
-                    </div>
+
+                        <div class="d-flex gap-2 mb-3">
+                            <asp:Button ID="btnThemTG" runat="server" Text="Thêm mới & Tính ĐTB" CssClass="btn btn-orange flex-grow-1" OnClick="btnThemTG_Click" />
+                            <asp:Button ID="btnCapNhatTG" runat="server" Text="Cập nhật Điểm" CssClass="btn btn-primary-gradient flex-grow-1" OnClick="btnCapNhatTG_Click" />
+                            <asp:Button ID="btnLamMoiTG" runat="server" Text="Làm mới" CssClass="btn btn-secondary" OnClick="btnLamMoiTG_Click" />
+                        </div>
+
+                        <div class="d-flex gap-2 mb-2">
+                            <div class="position-relative flex-grow-1">
+                                <asp:TextBox ID="txtTimTG" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm"
+                                    placeholder="Tìm mã TG, tên học viên, mã KT..." autocomplete="off" onfocus="this.select();" />
+                                <div id="goiYTG" class="list-group shadow position-absolute w-100"
+                                    style="top: 100%; left: 0; z-index: 1050; max-height: 150px; overflow-y: auto; display: none;">
+                                    <asp:Literal ID="litGoiYTG" runat="server" />
+                                </div>
+                            </div>
+                            <asp:DropDownList ID="ddlLocKetQua" runat="server" CssClass="form-select form-select-sm" style="max-width: 150px;"
+                                AutoPostBack="true" OnSelectedIndexChanged="btnTimTG_Click">
+                                <asp:ListItem Text="-- Tất cả KQ --" Value="" />
+                                <asp:ListItem Text="Đạt" Value="Đạt" />
+                                <asp:ListItem Text="Không đạt" Value="Không đạt" />
+                            </asp:DropDownList>
+                            <asp:Button ID="btnTimTG" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTimTG_Click" />
+                        </div>
+                    </asp:Panel>
 
                     <asp:GridView ID="gvThamGia" runat="server" CssClass="table table-sm table-bordered table-hover table-custom mb-0"
-                        AutoGenerateColumns="false" DataKeyNames="matg" OnRowCommand="gvThamGia_RowCommand">
+                        AutoGenerateColumns="false" DataKeyNames="matg" OnRowCommand="gvThamGia_RowCommand"
+                        EmptyDataText="Bạn chưa đăng ký môn học nào.">
                         <Columns>
                             <asp:BoundField DataField="matg" HeaderText="Mã TG" />
                             <asp:BoundField DataField="hoten" HeaderText="Học viên" />
+                            <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học / Môn học" ItemStyle-CssClass="fw-semibold" />
                             <asp:BoundField DataField="makythi" HeaderText="Kỳ thi" />
-                            <asp:BoundField DataField="diem" HeaderText="ĐTB" ItemStyle-CssClass="fw-bold text-primary" />
-                            <asp:BoundField DataField="ketqua" HeaderText="Kết quả" />
+                            <asp:BoundField DataField="ngaythi" HeaderText="Ngày thi" DataFormatString="{0:dd/MM/yyyy}" />
+                            <asp:BoundField DataField="diem" HeaderText="Điểm số" ItemStyle-CssClass="fw-bold text-primary text-center" />
+                            <asp:BoundField DataField="ketqua" HeaderText="Kết quả" ItemStyle-CssClass="fw-semibold text-center" />
                             <asp:TemplateField HeaderText="Thao tác">
                                 <ItemTemplate>
                                     <div class="d-flex gap-1 justify-content-center">

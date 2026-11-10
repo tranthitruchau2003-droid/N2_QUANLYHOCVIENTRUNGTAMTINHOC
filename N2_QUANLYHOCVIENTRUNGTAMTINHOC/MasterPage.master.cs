@@ -50,12 +50,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             }
             else if (isHV)
             {
-                // Học viên: Xem Dashboard, Khóa học, Lớp & Lịch học, Đăng ký, Kỳ thi & Điểm, Chứng chỉ
+                // Học viên CHỈ XEM ĐÚNG 4 MỤC: Lớp học & Lịch học, Đăng ký Khóa học, Kỳ thi & Điểm thi, Cấp Chứng chỉ
+                liDashboard.Visible = false;
                 liHocVien.Visible = false;
+                liKhoaHoc.Visible = false;
                 liGiangVien.Visible = false;
                 liPhieuThu.Visible = false;
                 liBaoCao.Visible = false;
                 liCaiDat.Visible = false;
+
+                liLopHoc.Visible = true;
+                liDangKy.Visible = true;
+                liKyThi.Visible = true;
+                liChungChi.Visible = true;
             }
             else
             {

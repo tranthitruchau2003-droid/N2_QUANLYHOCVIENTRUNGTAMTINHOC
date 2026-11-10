@@ -33,6 +33,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
         protected global::System.Web.UI.WebControls.Literal litTB;
 
         /// <summary>
+        /// divFormCapCC control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divFormCapCC;
+
+        /// <summary>
         /// txtMaCC control.
         /// </summary>
         /// <remarks>
@@ -103,6 +112,33 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnLamMoiCC;
+
+        /// <summary>
+        /// divDanhSachCC control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divDanhSachCC;
+
+        /// <summary>
+        /// litTieuDeCC control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litTieuDeCC;
+
+        /// <summary>
+        /// pnlTimKiemCC control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlTimKiemCC;
 
         /// <summary>
         /// txtTimCC control.

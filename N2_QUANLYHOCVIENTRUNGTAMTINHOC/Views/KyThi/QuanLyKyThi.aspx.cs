@@ -20,6 +20,18 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                 ddlHocVien.DataSource = kncsdl.DocDuLieu("SELECT mahocvien, hoten FROM HOCVIEN");
                 ddlHocVien.DataTextField = "hoten"; ddlHocVien.DataValueField = "mahocvien"; ddlHocVien.DataBind();
 
+                if (Session["Quyen"] != null && Session["Quyen"].ToString() == "HocVien")
+                {
+                    // Ẩn hoàn toàn khung Tổ chức kỳ thi (bên trái) và khung Nhập điểm (bên phải)
+                    divFormKyThi.Visible = false;
+                    pnlKhuVucNhapDiem.Visible = false;
+                    divFormNhapDiem.Attributes["class"] = "col-12";
+                    litTieuDeDiem.Text = "Bảng Điểm & Lịch Thi Các Môn Đã Đăng Ký Của Tôi";
+                    gvThamGia.Columns[0].Visible = false; // Ẩn cột Mã TG
+                    gvThamGia.Columns[1].Visible = false; // Ẩn cột Họ tên
+                    gvThamGia.Columns[gvThamGia.Columns.Count - 1].Visible = false; // Ẩn cột Thao tác
+                }
+
                 TaiDuLieu();
             }
         }
@@ -49,18 +61,46 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 
         private void TaiDanhSachThamGia(string tuKhoa = "", string ketQua = "")
         {
-            string sql = @"SELECT tg.*, hv.hoten 
-                           FROM THAM_GIA tg 
-                           JOIN HOCVIEN hv ON tg.mahocvien = hv.mahocvien
-                           WHERE (@kw = '' OR tg.matg LIKE @kw OR hv.hoten LIKE @kw OR tg.makythi LIKE @kw)
-                             AND (@kq = '' OR tg.ketqua = @kq)
-                           ORDER BY tg.matg DESC";
-            SqlParameter[] p = {
-                new SqlParameter("@kw", string.IsNullOrEmpty(tuKhoa) ? "" : "%" + tuKhoa + "%"),
-                new SqlParameter("@kq", ketQua ?? "")
-            };
-            gvThamGia.DataSource = kncsdl.DocDuLieu(sql, p);
-            gvThamGia.DataBind();
+            bool isHV = Session["Quyen"] != null && Session["Quyen"].ToString() == "HocVien";
+            string user = Session["TenDangNhap"]?.ToString() ?? "";
+
+            if (isHV)
+            {
+                // Học viên: Hiển thị tất cả các môn đã đăng ký. Môn nào đã chấm điểm thì hiện điểm, chưa chấm thì để trống ""
+                string sqlHV = @"SELECT ISNULL(tg.matg, '') AS matg,
+                                        hv.hoten,
+                                        kh.tenkhoahoc,
+                                        ISNULL(kt.makythi, N'Chưa xếp lịch thi') AS makythi,
+                                        kt.ngaythi,
+                                        CASE WHEN tg.diem IS NULL THEN '' ELSE CAST(tg.diem AS NVARCHAR(20)) END AS diem,
+                                        ISNULL(tg.ketqua, '') AS ketqua
+                                 FROM DANGKY dk
+                                 JOIN HOCVIEN hv ON dk.mahocvien = hv.mahocvien
+                                 JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
+                                 LEFT JOIN KYTHI kt ON kh.makhoahoc = kt.makhoahoc
+                                 LEFT JOIN THAM_GIA tg ON tg.mahocvien = dk.mahocvien AND tg.makythi = kt.makythi
+                                 WHERE dk.mahocvien = @user
+                                 ORDER BY dk.ngaydangky DESC";
+                gvThamGia.DataSource = kncsdl.DocDuLieu(sqlHV, new[] { new SqlParameter("@user", user) });
+                gvThamGia.DataBind();
+            }
+            else
+            {
+                string sql = @"SELECT tg.matg, hv.hoten, kh.tenkhoahoc, tg.makythi, kt.ngaythi, tg.diem, tg.ketqua
+                               FROM THAM_GIA tg 
+                               JOIN HOCVIEN hv ON tg.mahocvien = hv.mahocvien
+                               JOIN KYTHI kt ON tg.makythi = kt.makythi
+                               JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc
+                               WHERE (@kw = '' OR tg.matg LIKE @kw OR hv.hoten LIKE @kw OR tg.makythi LIKE @kw OR kh.tenkhoahoc LIKE @kw)
+                                 AND (@kq = '' OR tg.ketqua = @kq)
+                               ORDER BY tg.matg DESC";
+                SqlParameter[] p = {
+                    new SqlParameter("@kw", string.IsNullOrEmpty(tuKhoa) ? "" : "%" + tuKhoa + "%"),
+                    new SqlParameter("@kq", ketQua ?? "")
+                };
+                gvThamGia.DataSource = kncsdl.DocDuLieu(sql, p);
+                gvThamGia.DataBind();
+            }
         }
 
         private void TaiGoiYTimKiem()

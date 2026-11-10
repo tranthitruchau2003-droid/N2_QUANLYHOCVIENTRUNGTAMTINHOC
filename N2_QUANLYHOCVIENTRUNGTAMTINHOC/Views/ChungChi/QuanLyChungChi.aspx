@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Cấp Chứng chỉ" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeBehind="QuanLyChungChi.aspx.cs" Inherits="N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi.QuanLyChungChi" %>
 
-<asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server">Cấp Chứng chỉ</asp:Content>
+<asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server">Chứng chỉ Đào tạo</asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
     <asp:Panel ID="pnlTB" runat="server" Visible="false" ClientIDMode="Static"
         CssClass="alert alert-info fw-semibold alert-dismissible fade show shadow"
@@ -10,8 +10,8 @@
     </asp:Panel>
 
     <div class="row g-4">
-        <!-- FORM CẤP CHỨNG CHỈ -->
-        <div class="col-lg-4">
+        <!-- FORM CẤP CHỨNG CHỈ (ẨN HOÀN TOÀN KHI LÀ HỌC VIÊN) -->
+        <div class="col-lg-4" id="divFormCapCC" runat="server">
             <div class="card card-custom">
                 <div class="card-header"><span><i class="bi bi-award-fill me-2"></i>Cấp Chứng chỉ Đào tạo</span></div>
                 <div class="card-body">
@@ -51,12 +51,12 @@
             </div>
         </div>
 
-        <!-- DANH SÁCH CHỨNG CHỈ ĐÃ CẤP -->
-        <div class="col-lg-8">
+        <!-- DANH SÁCH CHỨNG CHỈ -->
+        <div class="col-lg-8" id="divDanhSachCC" runat="server">
             <div class="card card-custom">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <span class="text-nowrap"><i class="bi bi-list-check me-2"></i>Danh sách Chứng chỉ đã cấp</span>
-                    <div class="d-flex gap-2">
+                    <span class="text-nowrap"><i class="bi bi-award me-2"></i><asp:Literal ID="litTieuDeCC" runat="server" Text="Danh sách Chứng chỉ đã cấp" /></span>
+                    <asp:Panel ID="pnlTimKiemCC" runat="server" CssClass="d-flex gap-2">
                         <div class="position-relative" style="width: 220px;">
                             <asp:TextBox ID="txtTimCC" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm"
                                 placeholder="Số hiệu, tên HV, khóa học..." autocomplete="off" onfocus="this.select();" />
@@ -74,11 +74,12 @@
                             <asp:ListItem Text="Trung bình" Value="Trung bình" />
                         </asp:DropDownList>
                         <asp:Button ID="btnTimCC" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTimCC_Click" />
-                    </div>
+                    </asp:Panel>
                 </div>
                 <div class="card-body p-0">
                     <asp:GridView ID="gvChungChi" runat="server" CssClass="table table-sm table-hover table-custom mb-0"
-                        AutoGenerateColumns="false" DataKeyNames="machungchi" OnRowCommand="gvChungChi_RowCommand">
+                        AutoGenerateColumns="false" DataKeyNames="machungchi" OnRowCommand="gvChungChi_RowCommand"
+                        EmptyDataText="Bạn chưa có chứng chỉ nào được cấp.">
                         <Columns>
                             <asp:BoundField DataField="sohieuchungchi" HeaderText="Số hiệu" />
                             <asp:BoundField DataField="hoten" HeaderText="Họ tên Học viên" />
@@ -86,16 +87,18 @@
                             <asp:BoundField DataField="diem" HeaderText="Điểm" />
                             <asp:BoundField DataField="xeploai" HeaderText="Xếp loại" />
                             <asp:BoundField DataField="ngaycap" HeaderText="Ngày cấp" DataFormatString="{0:dd/MM/yyyy}" />
-                            <asp:TemplateField HeaderText="Thao tác">
+                            <asp:TemplateField HeaderText="Tải / In">
                                 <ItemTemplate>
                                     <div class="d-flex gap-1 justify-content-center">
-                                        <button type="button" class="btn btn-sm btn-outline-success" title="In chứng chỉ"
+                                        <button type="button" class="btn btn-sm btn-outline-success" title="Tải / In chứng chỉ"
                                             onclick="inChungChi('<%# Eval("sohieuchungchi") %>', '<%# Eval("hoten") %>', '<%# Eval("tenkhoahoc") %>', '<%# Eval("nienkhoa") %>', '<%# Eval("xeploai") %>', '<%# Eval("ngaycap", "{0:dd/MM/yyyy}") %>'); return false;">
                                             <i class="bi bi-printer"></i>
                                         </button>
                                         <asp:LinkButton ID="btnChonCC" runat="server" CommandName="ChonCC" CommandArgument='<%# Eval("machungchi") %>'
+                                            Visible='<%# Session["Quyen"] != null && Session["Quyen"].ToString() != "HocVien" %>'
                                             CssClass="btn btn-sm btn-outline-primary" title="Sửa"><i class="bi bi-pencil"></i></asp:LinkButton>
                                         <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa"
+                                            style='<%# Session["Quyen"] != null && Session["Quyen"].ToString() == "HocVien" ? "display:none;" : "" %>'
                                             onclick="hienThiModalXoaCC('<%# Eval("machungchi") %>'); return false;"><i class="bi bi-trash"></i></button>
                                     </div>
                                 </ItemTemplate>
@@ -112,10 +115,8 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title fw-bold">
-                        <i class="bi bi-exclamation-triangle me-2"></i>Xác nhận Xóa Chứng chỉ
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Xác nhận Xóa Chứng chỉ</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-4 text-center">
                     <i class="bi bi-trash display-4 text-danger mb-3 d-block"></i>
@@ -135,6 +136,7 @@
     <asp:HiddenField ID="hfMaCCXoa" runat="server" ClientIDMode="Static" />
 
     <script>
+        // @ts-nocheck
         function hienThiModalXoaCC(maCC) {
             document.getElementById('hfMaCCXoa').value = maCC;
             document.getElementById('maCCCanXoa').innerText = maCC;
@@ -181,70 +183,5 @@
             w.document.write(html);
             w.document.close();
         }
-
-        window.addEventListener('DOMContentLoaded', function () {
-            var focusId = sessionStorage.getItem('focusSearchCC');
-            if (focusId) {
-                var el = document.getElementById(focusId);
-                if (el) el.focus();
-                sessionStorage.removeItem('focusSearchCC');
-            }
-
-            setTimeout(function () {
-                var tb = document.getElementById('pnlTB');
-                if (tb && tb.style.display !== 'none') {
-                    tb.style.transition = 'opacity 0.5s ease';
-                    tb.style.opacity = '0';
-                    setTimeout(function () {
-                        if (tb) tb.style.display = 'none';
-                    }, 500);
-                }
-            }, 5000);
-
-            var input = document.getElementById('txtTimCC');
-            var list = document.getElementById('goiYCC');
-            var btn = document.getElementById('btnTimCC');
-            if (input && list && btn) {
-                var items = list.querySelectorAll('.goi-y-item');
-                function locGoiY() {
-                    var kw = input.value.trim().toLowerCase();
-                    var co = false;
-                    items.forEach(function (item) {
-                        if (kw !== '' && item.innerText.toLowerCase().indexOf(kw) !== -1) {
-                            item.style.display = 'block';
-                            co = true;
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    });
-                    list.style.display = co ? 'block' : 'none';
-                }
-                input.addEventListener('input', function () {
-                    if (this.value.trim() === '') {
-                        list.style.display = 'none';
-                        sessionStorage.setItem('focusSearchCC', 'txtTimCC');
-                        btn.click();
-                    } else {
-                        locGoiY();
-                    }
-                });
-                input.addEventListener('focus', function () {
-                    if (this.value.trim() !== '') locGoiY();
-                });
-                items.forEach(function (item) {
-                    item.addEventListener('mousedown', function (e) {
-                        e.preventDefault();
-                        input.value = this.getAttribute('data-value');
-                        list.style.display = 'none';
-                        btn.click();
-                    });
-                });
-                document.addEventListener('click', function (e) {
-                    if (!input.contains(e.target) && !list.contains(e.target)) {
-                        list.style.display = 'none';
-                    }
-                });
-            }
-        });
     </script>
 </asp:Content>

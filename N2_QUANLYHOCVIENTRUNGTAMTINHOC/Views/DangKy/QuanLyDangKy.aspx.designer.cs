@@ -87,6 +87,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         protected global::System.Web.UI.WebControls.DropDownList ddlLopHoc;
 
         /// <summary>
+        /// pnlSoTienDongNgay control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlSoTienDongNgay;
+
+        /// <summary>
         /// txtSoTienDong control.
         /// </summary>
         /// <remarks>
@@ -184,5 +193,95 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.GridView gvDangKy;
+
+        /// <summary>
+        /// btnHuyDKChinhThuc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton btnHuyDKChinhThuc;
+
+        /// <summary>
+        /// hfMaDKHuy control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfMaDKHuy;
+
+        /// <summary>
+        /// imgQRCode control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Image imgQRCode;
+
+        /// <summary>
+        /// lnkMoAnhQR control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HyperLink lnkMoAnhQR;
+
+        /// <summary>
+        /// litSoTienQR control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litSoTienQR;
+
+        /// <summary>
+        /// litNoiDungQR control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litNoiDungQR;
+
+        /// <summary>
+        /// fuMinhChungCK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fuMinhChungCK;
+
+        /// <summary>
+        /// hfMaDKThanhToan control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfMaDKThanhToan;
+
+        /// <summary>
+        /// hfSoTienThanhToan control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfSoTienThanhToan;
+
+        /// <summary>
+        /// btnXacNhanCK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnXacNhanCK;
     }
 }

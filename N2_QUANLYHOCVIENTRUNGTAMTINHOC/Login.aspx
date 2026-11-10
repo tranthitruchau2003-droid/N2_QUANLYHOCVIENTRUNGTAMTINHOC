@@ -92,35 +92,7 @@
             </div>
         </div>
 
-        <!-- POPUP TRA CỨU CHỨNG CHỈ (CÔNG KHAI) -->
-        <div class="modal fade" id="modalTraCuu" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-header bg-success text-white">
-                        <h5 class="modal-title fw-bold"><i class="bi bi-award me-2"></i>Xác thực Chứng chỉ</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="input-group mb-4">
-                            <asp:TextBox ID="txtMaTraCuu" runat="server" CssClass="form-control" placeholder="Nhập Số hiệu chứng chỉ... (VD: TTTH-2026-0001)" />
-                            <asp:Button ID="btnTraCuuCC" runat="server" Text="Tra cứu" CssClass="btn btn-success" OnClick="btnTraCuuCC_Click" />
-                        </div>
-                        <asp:Panel ID="pnlKetQuaCC" runat="server" Visible="false" CssClass="alert alert-success py-2">
-                            <h6 class="fw-bold mb-2 text-success border-bottom pb-1"><i class="bi bi-check-circle-fill me-1"></i>CHỨNG CHỈ HỢP LỆ</h6>
-                            <ul class="list-unstyled mb-0 small">
-                                <li><strong>Họ tên HV:</strong> <asp:Literal ID="litCCHoTen" runat="server" /></li>
-                                <li><strong>Khóa học:</strong> <asp:Literal ID="litCCKhoaHoc" runat="server" /></li>
-                                <li><strong>Xếp loại:</strong> <asp:Literal ID="litCCXepLoai" runat="server" /></li>
-                                <li><strong>Ngày cấp:</strong> <asp:Literal ID="litCCNgayCap" runat="server" /></li>
-                            </ul>
-                        </asp:Panel>
-                        <asp:Panel ID="pnlLoiCC" runat="server" Visible="false" CssClass="alert alert-danger py-2 small fw-bold mb-0">
-                            <i class="bi bi-x-circle-fill me-1"></i> Không tìm thấy chứng chỉ hoặc số hiệu không hợp lệ!
-                        </asp:Panel>
-                    </div>
-                </div>
-            </div>
-        </div>
+       
     </form>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>

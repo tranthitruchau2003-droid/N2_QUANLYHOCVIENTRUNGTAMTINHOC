@@ -11,6 +11,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            if (Session["Quyen"] != null && Session["Quyen"].ToString() == "HocVien")
+            {
+                // Ẩn hoàn toàn khung bên trái và khung tìm kiếm khi là Học viên
+                divFormCapCC.Visible = false;
+                pnlTimKiemCC.Visible = false;
+                divDanhSachCC.Attributes["class"] = "col-12";
+                litTieuDeCC.Text = "Chứng chỉ cá nhân của tôi";
+            }
+
             if (!IsPostBack)
             {
                 txtNgayCap.Text = DateTime.Now.ToString("yyyy-MM-dd");
@@ -37,6 +46,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
 
         private void TaiDanhSach(string tuKhoa = "", string xepLoai = "")
         {
+            bool isHV = Session["Quyen"] != null && Session["Quyen"].ToString() == "HocVien";
+            string user = Session["TenDangNhap"]?.ToString() ?? "";
+
             string sql = @"SELECT cc.*, hv.hoten, tg.diem, kh.tenkhoahoc, kt.nienkhoa
                            FROM CHUNGCHI cc
                            JOIN THAM_GIA tg ON cc.matg = tg.matg
@@ -45,16 +57,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
                            JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc
                            WHERE (@kw = '' OR cc.sohieuchungchi LIKE @kw OR hv.hoten LIKE @kw OR kh.tenkhoahoc LIKE @kw OR cc.machungchi LIKE @kw)
                              AND (@xl = '' OR cc.xeploai = @xl)
+                             AND (@isHV = 0 OR tg.mahocvien = @user)
                            ORDER BY cc.ngaycap DESC, cc.machungchi DESC";
             SqlParameter[] p = {
                 new SqlParameter("@kw", string.IsNullOrEmpty(tuKhoa) ? "" : "%" + tuKhoa + "%"),
-                new SqlParameter("@xl", xepLoai ?? "")
+                new SqlParameter("@xl", xepLoai ?? ""),
+                new SqlParameter("@isHV", isHV ? 1 : 0),
+                new SqlParameter("@user", user)
             };
             DataTable dt = kncsdl.DocDuLieu(sql, p);
             gvChungChi.DataSource = dt;
             gvChungChi.DataBind();
 
-            TaiGoiYTimKiem();
+            if (!isHV) TaiGoiYTimKiem();
         }
 
         private void TaiGoiYTimKiem()
