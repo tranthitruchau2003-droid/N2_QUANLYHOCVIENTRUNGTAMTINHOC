@@ -15,6 +15,33 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
     {
 
         /// <summary>
+        /// txtTimNo control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtTimNo;
+
+        /// <summary>
+        /// litGoiYNo control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litGoiYNo;
+
+        /// <summary>
+        /// btnTimNo control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnTimNo;
+
+        /// <summary>
         /// gvCongNo control.
         /// </summary>
         /// <remarks>
@@ -24,12 +51,30 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
         protected global::System.Web.UI.WebControls.GridView gvCongNo;
 
         /// <summary>
-        /// gvTheoKhoa control.
+        /// btnXuatExcel control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.GridView gvTheoKhoa;
+        protected global::System.Web.UI.WebControls.LinkButton btnXuatExcel;
+
+        /// <summary>
+        /// gvThongKeKH control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView gvThongKeKH;
+
+        /// <summary>
+        /// ddlNam control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlNam;
     }
 }
