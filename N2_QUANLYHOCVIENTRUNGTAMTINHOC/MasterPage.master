@@ -20,18 +20,17 @@
                     <span>TRUNG TÂM TIN HỌC</span>
                 </div>
                 <ul class="sidebar-nav">
-                    <li><a href="/Dashboard.aspx"><i class="bi bi-speedometer2"></i> Tổng quan (Dashboard)</a></li>
-                    <li><a href="/Views/HocVien/QuanLyHocVien.aspx"><i class="bi bi-people-fill"></i> Quản lý Học viên</a></li>
-                    <li><a href="/Views/KhoaHoc/QuanLyKhoaHoc.aspx"><i class="bi bi-journal-bookmark-fill"></i> Quản lý Khóa học</a></li>
-                    <li><a href="/Views/GiangVien/QuanLyGiangVien.aspx"><i class="bi bi-person-badge-fill"></i> Quản lý Giảng viên</a></li>
-                    <li><a href="/Views/LopHoc/QuanLyLopHoc.aspx"><i class="bi bi-easel2-fill"></i> Lớp học & Lịch học</a></li>
-                    <li><a href="/Views/DangKy/QuanLyDangKy.aspx"><i class="bi bi-card-checklist"></i> Đăng ký Khóa học</a></li>
-                    <li><a href="/Views/PhieuThu/QuanLyPhieuThu.aspx"><i class="bi bi-receipt-cutoff"></i> Quản lý Phiếu thu</a></li>
-                  <li><a href="/Views/KyThi/QuanLyKyThi.aspx"><i class="bi bi-calendar2-check-fill"></i> Kỳ thi & Điểm thi</a></li>
-                    <li><a href="/Views/ChungChi/QuanLyChungChi.aspx"><i class="bi bi-award-fill"></i> Cấp Chứng chỉ</a></li>
-                    <li><a href="/Views/BaoCao/BaoCaoThongKe.aspx"><i class="bi bi-bar-chart-line-fill"></i> Báo cáo & Thống kê</a></li>
+                    <li id="liDashboard" runat="server"><a href="/Dashboard.aspx"><i class="bi bi-speedometer2"></i> Tổng quan (Dashboard)</a></li>
+                    <li id="liHocVien" runat="server"><a href="/Views/HocVien/QuanLyHocVien.aspx"><i class="bi bi-people-fill"></i> Quản lý Học viên</a></li>
+                    <li id="liKhoaHoc" runat="server"><a href="/Views/KhoaHoc/QuanLyKhoaHoc.aspx"><i class="bi bi-journal-bookmark-fill"></i> Quản lý Khóa học</a></li>
+                    <li id="liGiangVien" runat="server"><a href="/Views/GiangVien/QuanLyGiangVien.aspx"><i class="bi bi-person-badge-fill"></i> Quản lý Giảng viên</a></li>
+                    <li id="liLopHoc" runat="server"><a href="/Views/LopHoc/QuanLyLopHoc.aspx"><i class="bi bi-easel2-fill"></i> Lớp học & Lịch học</a></li>
+                    <li id="liDangKy" runat="server"><a href="/Views/DangKy/QuanLyDangKy.aspx"><i class="bi bi-card-checklist"></i> Đăng ký Khóa học</a></li>
+                    <li id="liPhieuThu" runat="server"><a href="/Views/PhieuThu/QuanLyPhieuThu.aspx"><i class="bi bi-receipt-cutoff"></i> Quản lý Phiếu thu</a></li>
+                    <li id="liKyThi" runat="server"><a href="/Views/KyThi/QuanLyKyThi.aspx"><i class="bi bi-calendar2-check-fill"></i> Kỳ thi & Điểm thi</a></li>
+                    <li id="liChungChi" runat="server"><a href="/Views/ChungChi/QuanLyChungChi.aspx"><i class="bi bi-award-fill"></i> Cấp Chứng chỉ</a></li>
+                    <li id="liBaoCao" runat="server"><a href="/Views/BaoCao/BaoCaoThongKe.aspx"><i class="bi bi-bar-chart-line-fill"></i> Báo cáo & Thống kê</a></li>
                     <li id="liCaiDat" runat="server"><a href="/Views/CaiDat/CaiDatHeThong.aspx"><i class="bi bi-gear-wide-connected"></i> Cài đặt & Sao lưu DB</a></li>
-                    
                 </ul>
             </aside>
 
@@ -51,9 +50,9 @@
                             <i class="bi bi-person-circle me-1"></i>
                             <asp:Literal ID="litNguoiDung" runat="server" />
                         </span>
-                        <a href="/Views/CaiDat/CaiDatHeThong.aspx#doimatkhau" class="btn btn-sm btn-outline-secondary" title="Đổi mật khẩu">
-                            <i class="bi bi-key"></i>
-                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalDoiMatKhau" title="Đổi mật khẩu">
+                            <i class="bi bi-key"></i> Đổi MK
+                        </button>
                         <button type="button" class="btn btn-sm btn-orange" data-bs-toggle="modal" data-bs-target="#modalDangXuat">
                             <i class="bi bi-box-arrow-right"></i> Đăng xuất
                         </button>
@@ -93,24 +92,58 @@
         </div>
     </div>
 </div>
+
+        <!-- POPUP ĐỔI MẬT KHẨU CHO HỌC VIÊN / GIẢNG VIÊN / ADMIN -->
+<div class="modal fade" id="modalDoiMatKhau" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-key-fill me-2"></i>Đổi Mật khẩu Tài khoản</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="small fw-bold">Mật khẩu hiện tại (*)</label>
+                    <asp:TextBox ID="txtMKCu" runat="server" TextMode="Password" CssClass="form-control" />
+                </div>
+                <div class="mb-2">
+                    <label class="small fw-bold">Mật khẩu mới (*)</label>
+                    <asp:TextBox ID="txtMKMoi" runat="server" TextMode="Password" CssClass="form-control" />
+                </div>
+                <div class="mb-2">
+                    <label class="small fw-bold">Xác nhận mật khẩu mới (*)</label>
+                    <asp:TextBox ID="txtMKXacNhan" runat="server" TextMode="Password" CssClass="form-control" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <asp:Button ID="btnLuuMatKhau" runat="server" Text="Cập nhật Mật khẩu" CssClass="btn btn-primary-gradient" OnClick="btnLuuMatKhau_Click" />
+            </div>
+        </div>
+    </div>
+</div>
+
     </form>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // @ts-nocheck
         document.addEventListener("DOMContentLoaded", function () {
             var sidebar = document.getElementById('sidebar');
             var isCollapsed = localStorage.getItem('sidebar_collapsed');
 
-            if (isCollapsed === 'true') {
+            if (sidebar && isCollapsed === 'true') {
                 sidebar.classList.add('collapsed');
             }
         });
 
         function toggleSidebar() {
             var sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('collapsed');
-            var isNowCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('sidebar_collapsed', isNowCollapsed);
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+                var isNowCollapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('sidebar_collapsed', String(isNowCollapsed));
+            }
         }
-      </script>
+    </script>
 </body>
 </html>
