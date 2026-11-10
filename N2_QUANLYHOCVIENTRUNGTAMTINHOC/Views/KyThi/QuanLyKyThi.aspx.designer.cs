@@ -78,6 +78,51 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         protected global::System.Web.UI.WebControls.Button btnTaoKyThi;
 
         /// <summary>
+        /// btnCapNhatKT control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnCapNhatKT;
+
+        /// <summary>
+        /// btnLamMoiKT control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnLamMoiKT;
+
+        /// <summary>
+        /// txtTimKT control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtTimKT;
+
+        /// <summary>
+        /// litGoiYKT control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litGoiYKT;
+
+        /// <summary>
+        /// btnTimKT control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnTimKT;
+
+        /// <summary>
         /// gvKyThi control.
         /// </summary>
         /// <remarks>
@@ -123,13 +168,67 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         protected global::System.Web.UI.WebControls.TextBox txtDiem;
 
         /// <summary>
-        /// btnLuuDiem control.
+        /// btnThemTG control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnLuuDiem;
+        protected global::System.Web.UI.WebControls.Button btnThemTG;
+
+        /// <summary>
+        /// btnCapNhatTG control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnCapNhatTG;
+
+        /// <summary>
+        /// btnLamMoiTG control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnLamMoiTG;
+
+        /// <summary>
+        /// txtTimTG control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtTimTG;
+
+        /// <summary>
+        /// litGoiYTG control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litGoiYTG;
+
+        /// <summary>
+        /// ddlLocKetQua control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLocKetQua;
+
+        /// <summary>
+        /// btnTimTG control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnTimTG;
 
         /// <summary>
         /// gvThamGia control.
@@ -139,5 +238,41 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.GridView gvThamGia;
+
+        /// <summary>
+        /// btnXoaKTChinhThuc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton btnXoaKTChinhThuc;
+
+        /// <summary>
+        /// btnXoaTGChinhThuc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton btnXoaTGChinhThuc;
+
+        /// <summary>
+        /// hfMaTGXoa control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfMaTGXoa;
+
+        /// <summary>
+        /// hfMaKTXoa control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfMaKTXoa;
     }
 }

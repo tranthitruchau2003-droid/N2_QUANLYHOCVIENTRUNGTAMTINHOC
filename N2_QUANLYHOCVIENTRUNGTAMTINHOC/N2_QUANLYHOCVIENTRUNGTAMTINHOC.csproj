@@ -92,8 +92,16 @@
     <Content Include="Scripts\bootstrap.esm.min.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
+    <Content Include="Views\BaoCao\BaoCaoThongKe.aspx" />
+    <Content Include="Views\CaiDat\CaiDatHeThong.aspx" />
+    <Content Include="Views\ChungChi\QuanLyChungChi.aspx" />
+    <Content Include="Views\DangKy\QuanLyDangKy.aspx" />
+    <Content Include="Views\GiangVien\QuanLyGiangVien.aspx" />
     <Content Include="Views\HocVien\QuanLyHocVien.aspx" />
     <Content Include="Views\KhoaHoc\QuanLyKhoaHoc.aspx" />
+    <Content Include="Views\KyThi\QuanLyKyThi.aspx" />
+    <Content Include="Views\LopHoc\QuanLyLopHoc.aspx" />
+    <Content Include="Views\PhieuThu\QuanLyPhieuThu.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -120,6 +128,41 @@
       <DependentUpon>MasterPage.master</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Views\BaoCao\BaoCaoThongKe.aspx.cs">
+      <DependentUpon>BaoCaoThongKe.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\BaoCao\BaoCaoThongKe.aspx.designer.cs">
+      <DependentUpon>BaoCaoThongKe.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\CaiDat\CaiDatHeThong.aspx.cs">
+      <DependentUpon>CaiDatHeThong.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\CaiDat\CaiDatHeThong.aspx.designer.cs">
+      <DependentUpon>CaiDatHeThong.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ChungChi\QuanLyChungChi.aspx.cs">
+      <DependentUpon>QuanLyChungChi.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\ChungChi\QuanLyChungChi.aspx.designer.cs">
+      <DependentUpon>QuanLyChungChi.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\DangKy\QuanLyDangKy.aspx.cs">
+      <DependentUpon>QuanLyDangKy.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\DangKy\QuanLyDangKy.aspx.designer.cs">
+      <DependentUpon>QuanLyDangKy.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\GiangVien\QuanLyGiangVien.aspx.cs">
+      <DependentUpon>QuanLyGiangVien.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\GiangVien\QuanLyGiangVien.aspx.designer.cs">
+      <DependentUpon>QuanLyGiangVien.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\HocVien\QuanLyHocVien.aspx.cs">
       <DependentUpon>QuanLyHocVien.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -133,6 +176,27 @@
     </Compile>
     <Compile Include="Views\KhoaHoc\QuanLyKhoaHoc.aspx.designer.cs">
       <DependentUpon>QuanLyKhoaHoc.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\KyThi\QuanLyKyThi.aspx.cs">
+      <DependentUpon>QuanLyKyThi.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\KyThi\QuanLyKyThi.aspx.designer.cs">
+      <DependentUpon>QuanLyKyThi.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\LopHoc\QuanLyLopHoc.aspx.cs">
+      <DependentUpon>QuanLyLopHoc.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\LopHoc\QuanLyLopHoc.aspx.designer.cs">
+      <DependentUpon>QuanLyLopHoc.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PhieuThu\QuanLyPhieuThu.aspx.cs">
+      <DependentUpon>QuanLyPhieuThu.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\PhieuThu\QuanLyPhieuThu.aspx.designer.cs">
+      <DependentUpon>QuanLyPhieuThu.aspx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
