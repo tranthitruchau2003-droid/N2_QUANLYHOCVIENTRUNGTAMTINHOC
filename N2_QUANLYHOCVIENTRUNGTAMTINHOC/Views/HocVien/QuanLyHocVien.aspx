@@ -164,6 +164,7 @@
     <asp:HiddenField ID="hfMaHocVienXoa" runat="server" ClientIDMode="Static" />
 
     <script>
+// @ts-nocheck
        function hienThiModalXoa(maHocVien) {
     document.getElementById('hfMaHocVienXoa').value = maHocVien;
     document.getElementById('maHocVienCanXoa').innerText = maHocVien;

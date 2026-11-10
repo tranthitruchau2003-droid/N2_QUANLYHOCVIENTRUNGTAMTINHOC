@@ -15,6 +15,69 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
     {
 
         /// <summary>
+        /// btnXuatDSHocVien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton btnXuatDSHocVien;
+
+        /// <summary>
+        /// ddlLocKhoaHoc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLocKhoaHoc;
+
+        /// <summary>
+        /// ddlLocLopHoc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLocLopHoc;
+
+        /// <summary>
+        /// ddlLocTrangThaiHP control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLocTrangThaiHP;
+
+        /// <summary>
+        /// txtTimHVLoc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtTimHVLoc;
+
+        /// <summary>
+        /// btnLocHV control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnLocHV;
+
+        /// <summary>
+        /// gvDSHocVienLoc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView gvDSHocVienLoc;
+
+        /// <summary>
         /// txtTimNo control.
         /// </summary>
         /// <remarks>
@@ -40,6 +103,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnTimNo;
+
+        /// <summary>
+        /// btnXuatCongNo control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton btnXuatCongNo;
 
         /// <summary>
         /// gvCongNo control.

@@ -33,6 +33,24 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         protected global::System.Web.UI.WebControls.Literal litTB;
 
         /// <summary>
+        /// ddlLocKhoaMo control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLocKhoaMo;
+
+        /// <summary>
+        /// gvLopMo control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView gvLopMo;
+
+        /// <summary>
         /// txtMaDK control.
         /// </summary>
         /// <remarks>
@@ -60,6 +78,24 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         protected global::System.Web.UI.WebControls.DropDownList ddlKhoaHoc;
 
         /// <summary>
+        /// ddlLopHoc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLopHoc;
+
+        /// <summary>
+        /// txtSoTienDong control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtSoTienDong;
+
+        /// <summary>
         /// txtNgayDK control.
         /// </summary>
         /// <remarks>
@@ -76,6 +112,69 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnDangKy;
+
+        /// <summary>
+        /// btnDoiLop control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnDoiLop;
+
+        /// <summary>
+        /// pnlXuLyLopThieu control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlXuLyLopThieu;
+
+        /// <summary>
+        /// ddlLopThieu control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLopThieu;
+
+        /// <summary>
+        /// ddlLopDich control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLopDich;
+
+        /// <summary>
+        /// btnGhepLop control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnGhepLop;
+
+        /// <summary>
+        /// btnMoDacCach control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnMoDacCach;
+
+        /// <summary>
+        /// btnHuyLopThieu control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnHuyLopThieu;
 
         /// <summary>
         /// gvDangKy control.

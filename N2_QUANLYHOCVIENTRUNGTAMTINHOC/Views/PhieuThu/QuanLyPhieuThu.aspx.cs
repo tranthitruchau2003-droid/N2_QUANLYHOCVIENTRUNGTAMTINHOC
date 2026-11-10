@@ -9,6 +9,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack) TaiDuLieu();
+            // Tự động chọn học viên cần thu tiền khi chuyển từ trang Báo cáo Công nợ sang
+            string maDK = Request.QueryString["madk"];
+            if (!string.IsNullOrEmpty(maDK) && ddlDangKy.Items.FindByValue(maDK) != null)
+            {
+                ddlDangKy.SelectedValue = maDK;
+            }
         }
 
         private void TaiDuLieu()

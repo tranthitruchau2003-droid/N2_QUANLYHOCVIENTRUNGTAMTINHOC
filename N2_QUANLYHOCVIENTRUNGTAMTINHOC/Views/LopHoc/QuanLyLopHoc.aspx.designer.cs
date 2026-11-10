@@ -33,6 +33,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
         protected global::System.Web.UI.WebControls.Literal litTB;
 
         /// <summary>
+        /// pnlFormAdmin control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlFormAdmin;
+
+        /// <summary>
         /// txtMaLop control.
         /// </summary>
         /// <remarks>
@@ -69,13 +78,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
         protected global::System.Web.UI.WebControls.DropDownList ddlGiangVien;
 
         /// <summary>
-        /// txtNgayKG control.
+        /// txtKhaiGiang control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtNgayKG;
+        protected global::System.Web.UI.WebControls.TextBox txtKhaiGiang;
 
         /// <summary>
         /// btnThemLop control.
@@ -87,84 +96,93 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
         protected global::System.Web.UI.WebControls.Button btnThemLop;
 
         /// <summary>
-        /// gvLop control.
+        /// btnSuaLop control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.GridView gvLop;
+        protected global::System.Web.UI.WebControls.Button btnSuaLop;
 
         /// <summary>
-        /// txtMaLich control.
+        /// colDanhSachLop control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtMaLich;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl colDanhSachLop;
 
         /// <summary>
-        /// ddlLopLich control.
+        /// txtTimLop control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlLopLich;
+        protected global::System.Web.UI.WebControls.TextBox txtTimLop;
 
         /// <summary>
-        /// txtCaHoc control.
+        /// btnTimLop control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtCaHoc;
+        protected global::System.Web.UI.WebControls.Button btnTimLop;
 
         /// <summary>
-        /// txtPhongHoc control.
+        /// gvLopHoc control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtPhongHoc;
+        protected global::System.Web.UI.WebControls.GridView gvLopHoc;
 
         /// <summary>
-        /// txtThu control.
+        /// litTenLopDiemDanh control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtThu;
+        protected global::System.Web.UI.WebControls.Literal litTenLopDiemDanh;
 
         /// <summary>
-        /// txtGioHoc control.
+        /// txtNgayDiemDanh control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtGioHoc;
+        protected global::System.Web.UI.WebControls.TextBox txtNgayDiemDanh;
 
         /// <summary>
-        /// btnThemLich control.
+        /// hfMaLopDiemDanh control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnThemLich;
+        protected global::System.Web.UI.WebControls.HiddenField hfMaLopDiemDanh;
 
         /// <summary>
-        /// gvLich control.
+        /// gvHocVienLop control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.GridView gvLich;
+        protected global::System.Web.UI.WebControls.GridView gvHocVienLop;
+
+        /// <summary>
+        /// btnLuuDiemDanh control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnLuuDiemDanh;
     }
 }
