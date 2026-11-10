@@ -115,8 +115,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.CaiDat
         protected void btnDoiMK_Click(object sender, EventArgs e)
         {
             string u = Session["TenDangNhap"].ToString();
-            string oldHash = kncsdl.BamMatKhau(txtMKCu.Text.Trim());
-            string newHash = kncsdl.BamMatKhau(txtMKMoi.Text.Trim());
+            string oldHash = txtMKCu.Text.Trim();
+            string newHash = txtMKMoi.Text.Trim();
 
             int kq = kncsdl.ThucThiLenh("UPDATE TAIKHOAN SET matkhau=@m WHERE tendangnhap=@u AND matkhau=@c",
                 new[] { new SqlParameter("@m", newHash), new SqlParameter("@u", u), new SqlParameter("@c", oldHash) });
