@@ -1,63 +1,137 @@
 ﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Login.aspx.cs" Inherits="N2_QUANLYHOCVIENTRUNGTAMTINHOC.Login" %>
+
 <!DOCTYPE html>
 <html lang="vi">
 <head runat="server">
     <meta charset="utf-8" />
-    <title>Đăng nhập Hệ thống - Quản lý Trung tâm Tin học</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập & Tra cứu Chứng chỉ - Trung tâm Tin học</title>
     <link href="/Content/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-    <link href="/Content/css/theme.css" rel="stylesheet" />
     <style>
-        .login-bg {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #1677D2, #0755A6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-card {
-            width: 100%;
-            max-width: 420px;
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.22);
-            padding: 2.2rem;
-        }
+        body { background: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .login-card { width: 100%; max-width: 400px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        .login-header { background: linear-gradient(135deg, #1677D2, #0B5394); color: #fff; padding: 25px 20px; text-align: center; }
+        .btn-orange { background: linear-gradient(135deg, #FF8A26, #E67215); color: #fff; border: none; font-weight: 600; }
+        .btn-orange:hover { background: linear-gradient(135deg, #E67215, #CC620E); color: #fff; }
     </style>
 </head>
-<body class="login-bg">
+<body>
     <form id="form1" runat="server">
         <div class="login-card">
-            <div class="text-center mb-4">
-                <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle mb-2" style="width:60px;height:60px;">
-                    <i class="bi bi-mortarboard-fill fs-2"></i>
-                </div>
-                <h4 class="fw-bold text-primary mb-1">QUẢN LÝ ĐÀO TẠO</h4>
-                <p class="text-muted small mb-0">Hệ thống Quản lý Học viên Trung tâm Tin học</p>
+            <div class="login-header">
+                <i class="bi bi-mortarboard-fill display-4 mb-2 d-block text-warning"></i>
+                <h4 class="fw-bold mb-0">HỆ THỐNG QUẢN LÝ</h4>
+                <small class="text-white-50">Trung tâm Tin học Ngôi Sao Việt</small>
             </div>
-
-            <asp:Panel ID="pnlLoi" runat="server" Visible="false" CssClass="alert alert-danger py-2 small">
-                <asp:Literal ID="litLoi" runat="server" />
-            </asp:Panel>
-
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Tên đăng nhập</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <asp:TextBox ID="txtTenDangNhap" runat="server" CssClass="form-control" placeholder="Nhập tài khoản (admin)" required="required" />
+            <div class="p-4">
+                <asp:Panel ID="pnlLoi" runat="server" Visible="false" CssClass="alert alert-danger py-2 small fw-semibold text-center">
+                    <asp:Literal ID="litLoi" runat="server" />
+                </asp:Panel>
+                
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted">Tên đăng nhập / Mã tài khoản</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-person"></i></span>
+                        <asp:TextBox ID="txtTaiKhoan" runat="server" CssClass="form-control" placeholder="Nhập mã, email hoặc SĐT..." />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted">Mật khẩu</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                        <asp:TextBox ID="txtMatKhau" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập mật khẩu..." />
+                    </div>
+                </div>
+                <asp:Button ID="btnDangNhap" runat="server" Text="ĐĂNG NHẬP" CssClass="btn btn-primary w-100 fw-bold mb-3 py-2" OnClick="btnDangNhap_Click" />
+                
+                <hr class="text-muted" />
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-orange btn-sm" data-bs-toggle="modal" data-bs-target="#modalDangKy">
+                        <i class="bi bi-person-plus-fill me-1"></i> Học viên Tự Đăng ký Tài khoản
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTraCuu">
+                        <i class="bi bi-search me-1"></i> Tra cứu & Xác thực Chứng chỉ
+                    </button>
                 </div>
             </div>
+        </div>
 
-            <div class="mb-4">
-                <label class="form-label fw-semibold">Mật khẩu</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <asp:TextBox ID="txtMatKhau" runat="server" CssClass="form-control" TextMode="Password" placeholder="Nhập mật khẩu" required="required" />
+        <!-- POPUP HỌC VIÊN TỰ ĐĂNG KÝ -->
+        <div class="modal fade" id="modalDangKy" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header text-white" style="background: #FF8A26;">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-person-badge me-2"></i>Đăng ký Tài khoản Học viên</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-2 mb-2">
+                            <div class="col-12"><label class="small fw-bold">Họ và tên (*)</label><asp:TextBox ID="txtDKHoTen" runat="server" CssClass="form-control" /></div>
+                            <div class="col-6"><label class="small fw-bold">Ngày sinh</label><asp:TextBox ID="txtDKNgaySinh" runat="server" TextMode="Date" CssClass="form-control" /></div>
+                            <div class="col-6">
+                                <label class="small fw-bold">Giới tính</label>
+                                <asp:DropDownList ID="ddlDKGioiTinh" runat="server" CssClass="form-select">
+                                    <asp:ListItem Text="Nam" Value="Nam" /><asp:ListItem Text="Nữ" Value="Nữ" />
+                                </asp:DropDownList>
+                            </div>
+                            <div class="col-6"><label class="small fw-bold">Điện thoại (*)</label><asp:TextBox ID="txtDKDienThoai" runat="server" CssClass="form-control" /></div>
+                            <div class="col-6"><label class="small fw-bold">Email</label><asp:TextBox ID="txtDKEmail" runat="server" CssClass="form-control" /></div>
+                            <div class="col-12"><label class="small fw-bold">Địa chỉ</label><asp:TextBox ID="txtDKDiaChi" runat="server" CssClass="form-control" /></div>
+                            <div class="col-12"><label class="small fw-bold">Mật khẩu đăng nhập (*)</label><asp:TextBox ID="txtDKMatKhau" runat="server" TextMode="Password" CssClass="form-control" /></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between bg-light">
+                        <small class="text-danger">(*) Bắt buộc nhập</small>
+                        <div>
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                            <asp:Button ID="btnDangKyTK" runat="server" Text="Đăng ký & Đăng nhập ngay" CssClass="btn btn-orange btn-sm" OnClick="btnDangKyTK_Click" />
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <asp:Button ID="btnDangNhap" runat="server" Text="ĐĂNG NHẬP HỆ THỐNG" CssClass="btn btn-orange w-100 py-2" OnClick="btnDangNhap_Click" />
+        <!-- POPUP TRA CỨU CHỨNG CHỈ (CÔNG KHAI) -->
+        <div class="modal fade" id="modalTraCuu" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-award me-2"></i>Xác thực Chứng chỉ</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="input-group mb-4">
+                            <asp:TextBox ID="txtMaTraCuu" runat="server" CssClass="form-control" placeholder="Nhập Số hiệu chứng chỉ... (VD: TTTH-2026-0001)" />
+                            <asp:Button ID="btnTraCuuCC" runat="server" Text="Tra cứu" CssClass="btn btn-success" OnClick="btnTraCuuCC_Click" />
+                        </div>
+                        <asp:Panel ID="pnlKetQuaCC" runat="server" Visible="false" CssClass="alert alert-success py-2">
+                            <h6 class="fw-bold mb-2 text-success border-bottom pb-1"><i class="bi bi-check-circle-fill me-1"></i>CHỨNG CHỈ HỢP LỆ</h6>
+                            <ul class="list-unstyled mb-0 small">
+                                <li><strong>Họ tên HV:</strong> <asp:Literal ID="litCCHoTen" runat="server" /></li>
+                                <li><strong>Khóa học:</strong> <asp:Literal ID="litCCKhoaHoc" runat="server" /></li>
+                                <li><strong>Xếp loại:</strong> <asp:Literal ID="litCCXepLoai" runat="server" /></li>
+                                <li><strong>Ngày cấp:</strong> <asp:Literal ID="litCCNgayCap" runat="server" /></li>
+                            </ul>
+                        </asp:Panel>
+                        <asp:Panel ID="pnlLoiCC" runat="server" Visible="false" CssClass="alert alert-danger py-2 small fw-bold mb-0">
+                            <i class="bi bi-x-circle-fill me-1"></i> Không tìm thấy chứng chỉ hoặc số hiệu không hợp lệ!
+                        </asp:Panel>
+                    </div>
+                </div>
+            </div>
         </div>
     </form>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // @ts-nocheck
+        function openModal(id) {
+            var el = document.getElementById(id);
+            if (el && window.bootstrap) {
+                var myModal = new window.bootstrap.Modal(el);
+                myModal.show();
+            }
+        }
+    </script>
 </body>
 </html>

@@ -107,56 +107,56 @@
     <asp:HiddenField ID="hfSoLuongHV" runat="server" ClientIDMode="Static" />
 
     <script>
-        const rawThang = document.getElementById('hfThangDoanhThu').value;
-        const rawTien = document.getElementById('hfGiaTriDoanhThu').value;
-        const dtLabels = rawThang ? rawThang.split('|') : [];
-        const dtValues = rawTien ? rawTien.split('|').map(Number) : [];
+    // @ts-nocheck
+    var elThang = document.getElementById('hfThangDoanhThu');
+    var elTien = document.getElementById('hfGiaTriDoanhThu');
+    var rawThang = elThang ? elThang.value : '';
+    var rawTien = elTien ? elTien.value : '';
+    var dtLabels = rawThang ? rawThang.split('|') : [];
+    var dtValues = rawTien ? rawTien.split('|').map(Number) : [];
 
-        new Chart(document.getElementById('chartDoanhThu'), {
-            type: 'bar',
-            data: {
-                labels: dtLabels,
-                datasets: [{ label: 'Doanh thu (VNĐ)', data: dtValues, backgroundColor: '#1677D2', borderRadius: 6 }]
-            }
-        });
+    new window.Chart(document.getElementById('chartDoanhThu'), {
+        type: 'bar',
+        data: {
+            labels: dtLabels,
+            datasets: [{ label: 'Doanh thu (VNĐ)', data: dtValues, backgroundColor: '#1677D2', borderRadius: 6 }]
+        }
+    });
 
-        const rawTenKH = document.getElementById('hfTenKhoaHoc').value;
-        const rawSL = document.getElementById('hfSoLuongHV').value;
-        const khLabels = rawTenKH ? rawTenKH.split('|') : [];
-        const khValues = rawSL ? rawSL.split('|').map(Number) : [];
+    var elTenKH = document.getElementById('hfTenKhoaHoc');
+    var elSL = document.getElementById('hfSoLuongHV');
+    var rawTenKH = elTenKH ? elTenKH.value : '';
+    var rawSL = elSL ? elSL.value : '';
+    var dashKhLabels = rawTenKH ? rawTenKH.split('|') : [];
+    var khValues = rawSL ? rawSL.split('|').map(Number) : [];
 
-// Bảng 15 màu riêng biệt cho từng khóa học
-const bangMauKhoaHoc = [
-    '#1677D2', '#FF8A26', '#28A745', '#6A11CB', '#00B4DB',
-    '#DC3545', '#FFC107', '#20C997', '#E83E8C', '#6610F2',
-    '#FD7E14', '#17A2B8', '#6F42C1', '#343A40', '#A52A2A'
-];
+    var bangMauKhoaHoc = [
+        '#1677D2', '#FF8A26', '#28A745', '#6A11CB', '#00B4DB',
+        '#DC3545', '#FFC107', '#20C997', '#E83E8C', '#6610F2',
+        '#FD7E14', '#17A2B8', '#6F42C1', '#343A40', '#A52A2A'
+    ];
 
-new Chart(document.getElementById('chartKhoaHoc'), {
-    type: 'doughnut',
-    data: {
-        labels: khLabels,
-        datasets: [{
-            data: khValues,
-            backgroundColor: bangMauKhoaHoc.slice(0, khLabels.length),
-            borderWidth: 2,
-            borderColor: '#ffffff'
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'bottom',
-                align: 'start',
-                labels: {
-                    boxWidth: 14,
-                    padding: 12,
-                    font: { size: 12 }
+    new window.Chart(document.getElementById('chartKhoaHoc'), {
+        type: 'doughnut',
+        data: {
+            labels: dashKhLabels,
+            datasets: [{
+                data: khValues,
+                backgroundColor: bangMauKhoaHoc.slice(0, dashKhLabels.length),
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    align: 'start',
+                    labels: { boxWidth: 14, padding: 12, font: { size: 12 } }
                 }
             }
         }
-    }
-});
+    });
     </script>
 </asp:Content>
