@@ -9,90 +9,23 @@
 
 namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 {
-
-
     public partial class QuanLyPhieuThu
     {
-
-        /// <summary>
-        /// pnlTB control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.Panel pnlTB;
-
-        /// <summary>
-        /// litTB control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.Literal litTB;
-
-        /// <summary>
-        /// txtMaPT control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtMaPT;
-
-        /// <summary>
-        /// ddlDangKy control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList ddlDangKy;
-
-        /// <summary>
-        /// txtSoTien control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtSoTien;
-
-        /// <summary>
-        /// ddlPhuongThuc control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList ddlPhuongThuc;
-
-        /// <summary>
-        /// txtNoiDung control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtNoiDung;
-
-        /// <summary>
-        /// btnLapPhieu control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnLapPhieu;
-
-        /// <summary>
-        /// gvPhieuThu control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnSua;
+        protected global::System.Web.UI.WebControls.Button btnLamMoi;
+        protected global::System.Web.UI.WebControls.TextBox txtTim;
+        protected global::System.Web.UI.WebControls.Literal litGoiYPT;
+        protected global::System.Web.UI.WebControls.Button btnTim;
         protected global::System.Web.UI.WebControls.GridView gvPhieuThu;
+        protected global::System.Web.UI.WebControls.LinkButton btnXoaChinhThuc;
+        protected global::System.Web.UI.WebControls.HiddenField hfMaPTXoa;
     }
 }
