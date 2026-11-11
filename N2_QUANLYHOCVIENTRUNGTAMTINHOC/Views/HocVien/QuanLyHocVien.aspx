@@ -3,46 +3,22 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server">Quản lý Học viên</asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="HeadContent" runat="server">
     <style>
-        /* CSS làm đẹp thanh phân trang GridView thành nút < 1 2 3 > */
-        .pagination-ys {
-            padding: 10px 15px;
-        }
-        .pagination-ys table > tbody > tr > td {
-            display: inline-block;
-            margin: 0 3px;
-        }
+        .pagination-ys { padding: 10px 15px; }
+        .pagination-ys table > tbody > tr > td { display: inline-block; margin: 0 3px; }
         .pagination-ys table > tbody > tr > td > a,
         .pagination-ys table > tbody > tr > td > span {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 34px;
-            height: 34px;
-            padding: 0 10px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-decoration: none;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
-            color: #1677D2;
-            background-color: #ffffff;
-            transition: all 0.2s;
+            display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px;
+            padding: 0 10px; font-size: 0.9rem; font-weight: 600; text-decoration: none; border-radius: 6px;
+            border: 1px solid #dee2e6; color: #1677D2; background-color: #ffffff; transition: all 0.2s;
         }
-        .pagination-ys table > tbody > tr > td > span {
-            background-color: #1677D2;
-            color: #ffffff;
-            border-color: #1677D2;
-        }
-        .pagination-ys table > tbody > tr > td > a:hover {
-            background-color: #EAF4FF;
-            border-color: #1677D2;
-        }
+        .pagination-ys table > tbody > tr > td > span { background-color: #1677D2; color: #ffffff; border-color: #1677D2; }
+        .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
     </style>
 </asp:Content>
 
 <asp:Content ID="Content3" ContentPlaceHolderID="MainContent" runat="server">
     <asp:Panel ID="pnlThongBao" runat="server" Visible="false" ClientIDMode="Static"
-        CssClass="alert alert-danger text-danger fw-semibold alert-dismissible fade show shadow"
+        CssClass="alert alert-info fw-semibold alert-dismissible fade show shadow"
         style="position: fixed; top: 76px; right: 24px; z-index: 1060; min-width: 320px; max-width: 480px;">
         <asp:Literal ID="litThongBao" runat="server" />
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -56,11 +32,11 @@
                 <div class="card-body">
                     <div class="mb-2">
                         <label class="form-label small fw-bold">Mã học viên (*)</label>
-                        <asp:TextBox ID="txtMaHV" runat="server" CssClass="form-control" placeholder="VD: HV02" />
+                        <asp:TextBox ID="txtMaHV" runat="server" CssClass="form-control" ReadOnly="true" placeholder="Hệ thống tự động tạo..." />
                     </div>
                     <div class="mb-2">
                         <label class="form-label small fw-bold">Họ và tên (*)</label>
-                        <asp:TextBox ID="txtHoTen" runat="server" CssClass="form-control" />
+                        <asp:TextBox ID="txtHoTen" runat="server" CssClass="form-control" autocomplete="off" />
                     </div>
                     <div class="row mb-2">
                         <div class="col-6">
@@ -77,15 +53,17 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label small fw-bold">Số điện thoại</label>
-                        <asp:TextBox ID="txtDienThoai" runat="server" CssClass="form-control" />
+                        <asp:TextBox ID="txtDienThoai" runat="server" CssClass="form-control" autocomplete="off" />
                     </div>
                     <div class="mb-2">
                         <label class="form-label small fw-bold">Email</label>
-                        <asp:TextBox ID="txtEmail" runat="server" CssClass="form-control" />
+                       
+                        <asp:TextBox ID="txtEmail" runat="server" CssClass="form-control" autocomplete="off"
+                        readonly="true" onfocus="this.removeAttribute('readonly');" placeholder="VD: ten@gmail.com" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Địa chỉ</label>
-                        <asp:TextBox ID="txtDiaChi" runat="server" TextMode="MultiLine" Rows="2" CssClass="form-control" />
+                        <asp:TextBox ID="txtDiaChi" runat="server" TextMode="MultiLine" Rows="2" CssClass="form-control" autocomplete="off" />
                     </div>
                     <div class="d-flex gap-2">
                         <asp:Button ID="btnThem" runat="server" Text="Thêm mới" CssClass="btn btn-orange flex-grow-1" OnClick="btnThem_Click" />
@@ -102,12 +80,15 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span class="text-nowrap"><i class="bi bi-table me-2"></i>Danh sách Học viên</span>
                     <div class="d-flex gap-2 w-100 justify-content-end">
-                        <asp:TextBox ID="txtTimKiem" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm" 
-                            style="max-width: 250px;" list="dsGoiYHocVien" placeholder="Mã, tên hoặc SĐT..." 
-                            autocomplete="off" onfocus="this.select();" />
-                        <datalist id="dsGoiYHocVien">
-                            <asp:Literal ID="litGoiY" runat="server" />
-                        </datalist>
+                        <div class="position-relative flex-grow-1" style="max-width: 250px;">
+                            <asp:TextBox ID="txtTimKiem" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm"
+                                placeholder="Mã, tên hoặc SĐT..." autocomplete="off" onfocus="this.select();" />
+                            <!-- KHUNG GỢI Ý TÙY CHỈNH THAY CHO DATALIST -->
+                            <div id="goiYHV" class="list-group shadow position-absolute w-100"
+                                style="top: 100%; left: 0; z-index: 1050; max-height: 150px; overflow-y: auto; display: none;">
+                                <asp:Literal ID="litGoiY" runat="server" />
+                            </div>
+                        </div>
                         <asp:Button ID="btnTim" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTim_Click" />
                     </div>
                 </div>
@@ -125,8 +106,10 @@
                             <asp:BoundField DataField="diachi" HeaderText="Địa chỉ" />
                             <asp:TemplateField HeaderText="Thao tác">
                                 <ItemTemplate>
-                                    <asp:LinkButton ID="btnChon" runat="server" CommandName="Chon" CommandArgument='<%# Eval("mahocvien") %>' CssClass="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></asp:LinkButton>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="hienThiModalXoa('<%# Eval("mahocvien") %>'); return false;"><i class="bi bi-trash"></i></button>
+                                    <div class="d-flex gap-1">
+                                        <asp:LinkButton ID="btnChon" runat="server" CommandName="Chon" CommandArgument='<%# Eval("mahocvien") %>' CssClass="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></asp:LinkButton>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="hienThiModalXoa('<%# Eval("mahocvien") %>'); return false;"><i class="bi bi-trash"></i></button>
+                                    </div>
                                 </ItemTemplate>
                             </asp:TemplateField>
                         </Columns>
@@ -164,16 +147,73 @@
     <asp:HiddenField ID="hfMaHocVienXoa" runat="server" ClientIDMode="Static" />
 
     <script>
-// @ts-nocheck
-       function hienThiModalXoa(maHocVien) {
-    document.getElementById('hfMaHocVienXoa').value = maHocVien;
-    document.getElementById('maHocVienCanXoa').innerText = maHocVien;
-    var modalXoa = new window.bootstrap.Modal(document.getElementById('modalXoaHocVien'));
-    modalXoa.show();
-       }
+        // @ts-nocheck
+        function hienThiModalXoa(maHocVien) {
+            document.getElementById('hfMaHocVienXoa').value = maHocVien;
+            document.getElementById('maHocVienCanXoa').innerText = maHocVien;
+            var el = document.getElementById('modalXoaHocVien');
+            if (el && window.bootstrap) {
+                new window.bootstrap.Modal(el).show();
+            }
+        }
+
+        // XỬ LÝ KHUNG GỢI Ý TÌM KIẾM
+        function thietLapTimKiem(inputId, listId, btnId) {
+            var input = document.getElementById(inputId);
+            var list = document.getElementById(listId);
+            var btn = document.getElementById(btnId);
+            if (!input || !list || !btn) return;
+
+            var items = list.querySelectorAll('.goi-y-item');
+
+            function locGoiY() {
+                var kw = input.value.trim().toLowerCase();
+                var coKetQua = false;
+                items.forEach(function (item) {
+                    var text = item.innerText.toLowerCase();
+                    if (kw !== '' && text.indexOf(kw) !== -1) {
+                        item.style.display = 'block';
+                        coKetQua = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                list.style.display = coKetQua ? 'block' : 'none';
+            }
+
+            input.addEventListener('input', function () {
+                if (this.value.trim() === '') {
+                    list.style.display = 'none';
+                    btn.click();
+                } else {
+                    locGoiY();
+                }
+            });
+
+            input.addEventListener('focus', function () {
+                if (this.value.trim() !== '') locGoiY();
+            });
+
+            items.forEach(function (item) {
+                item.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    input.value = this.getAttribute('data-value');
+                    list.style.display = 'none';
+                    btn.click();
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!input.contains(e.target) && !list.contains(e.target)) {
+                    list.style.display = 'none';
+                }
+            });
+        }
 
         window.addEventListener('DOMContentLoaded', function () {
-            // 1. Tự động tắt thông báo sau 5 giây
+            thietLapTimKiem('txtTimKiem', 'goiYHV', 'btnTim');
+
+            // Tự động tắt thông báo sau 5 giây
             setTimeout(function () {
                 var tb = document.getElementById('pnlThongBao');
                 if (tb && tb.style.display !== 'none') {
@@ -184,17 +224,6 @@
                     }, 500);
                 }
             }, 5000);
-
-            // 2. TỰ ĐỘNG TẢI LẠI DANH SÁCH KHI XÓA RỖNG Ô TÌM KIẾM
-            var txtTim = document.getElementById('txtTimKiem');
-            var btnTim = document.getElementById('btnTim');
-            if (txtTim && btnTim) {
-                txtTim.addEventListener('input', function () {
-                    if (this.value.trim() === '') {
-                        btnTim.click();
-                    }
-                });
-            }
         });
     </script>
 </asp:Content>
