@@ -1,13 +1,33 @@
 ﻿<%@ Page Title="Cấp Chứng chỉ" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeBehind="QuanLyChungChi.aspx.cs" Inherits="N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi.QuanLyChungChi" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server">Chứng chỉ Đào tạo</asp:Content>
-<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
+<asp:Content ID="Content2" ContentPlaceHolderID="HeadContent" runat="server">
+    <style>
+        .pagination-ys { padding: 10px 15px; }
+        .pagination-ys table > tbody > tr > td { display: inline-block; margin: 0 3px; }
+        .pagination-ys table > tbody > tr > td > a,
+        .pagination-ys table > tbody > tr > td > span {
+            display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px;
+            padding: 0 10px; font-size: 0.9rem; font-weight: 600; text-decoration: none; border-radius: 6px;
+            border: 1px solid #dee2e6; color: #1677D2; background-color: #ffffff; transition: all 0.2s;
+        }
+        .pagination-ys table > tbody > tr > td > span { background-color: #1677D2; color: #ffffff; border-color: #1677D2; }
+        .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
+    </style>
+</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="MainContent" runat="server">
     <asp:Panel ID="pnlTB" runat="server" Visible="false" ClientIDMode="Static"
         CssClass="alert alert-info fw-semibold alert-dismissible fade show shadow"
         style="position: fixed; top: 76px; right: 24px; z-index: 1060; min-width: 320px; max-width: 480px;">
         <asp:Literal ID="litTB" runat="server" />
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </asp:Panel>
+
+    <!-- Thẻ ẩn để hứng tính năng tự điền (autofill) của trình duyệt -->
+    <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; overflow: hidden;">
+        <input type="text" name="fake_username_autofill" tabindex="-1" />
+        <input type="password" name="fake_password_autofill" tabindex="-1" />
+    </div>
 
     <div class="row g-4">
         <!-- FORM CẤP CHỨNG CHỈ (ẨN HOÀN TOÀN KHI LÀ HỌC VIÊN) -->
@@ -17,15 +37,31 @@
                 <div class="card-body">
                     <div class="mb-2">
                         <label class="small fw-bold">Mã chứng chỉ (*)</label>
-                        <asp:TextBox ID="txtMaCC" runat="server" CssClass="form-control" placeholder="VD: CC02" />
+                        <asp:TextBox ID="txtMaCC" runat="server" CssClass="form-control" ReadOnly="true" placeholder="Hệ thống tự động tạo..." />
                     </div>
+
+                    <!-- BỘ LỌC HỌC VIÊN THEO KHÓA HỌC VÀ NĂM -->
+                    <div class="row g-2 mb-2">
+                        <div class="col-7">
+                            <label class="small fw-bold text-primary"><i class="bi bi-funnel me-1"></i>Lọc theo Khóa học</label>
+                            <asp:DropDownList ID="ddlLocKhoaHoc" runat="server" CssClass="form-select form-select-sm"
+                                AutoPostBack="true" OnSelectedIndexChanged="ddlLocForm_SelectedIndexChanged" />
+                        </div>
+                        <div class="col-5">
+                            <label class="small fw-bold text-primary"><i class="bi bi-calendar3 me-1"></i>Năm</label>
+                            <asp:DropDownList ID="ddlLocNam" runat="server" CssClass="form-select form-select-sm"
+                                AutoPostBack="true" OnSelectedIndexChanged="ddlLocForm_SelectedIndexChanged" />
+                        </div>
+                    </div>
+
                     <div class="mb-2">
                         <label class="small fw-bold">Học viên đủ điều kiện (Đạt) (*)</label>
-                        <asp:DropDownList ID="ddlThamGia" runat="server" CssClass="form-select" />
+                        <asp:DropDownList ID="ddlThamGia" runat="server" CssClass="form-select"
+                            AutoPostBack="true" OnSelectedIndexChanged="ddlThamGia_SelectedIndexChanged" />
                     </div>
                     <div class="mb-2">
                         <label class="small fw-bold">Số hiệu chứng chỉ (*)</label>
-                        <asp:TextBox ID="txtSoHieu" runat="server" CssClass="form-control" placeholder="VD: TTTH-2026-0002" />
+                        <asp:TextBox ID="txtSoHieu" runat="server" CssClass="form-control" ReadOnly="true" placeholder="Hệ thống tự động tạo..." />
                     </div>
                     <div class="row mb-3">
                         <div class="col-6">
@@ -58,8 +94,8 @@
                     <span class="text-nowrap"><i class="bi bi-award me-2"></i><asp:Literal ID="litTieuDeCC" runat="server" Text="Danh sách Chứng chỉ đã cấp" /></span>
                     <asp:Panel ID="pnlTimKiemCC" runat="server" CssClass="d-flex gap-2">
                         <div class="position-relative" style="width: 220px;">
-                            <asp:TextBox ID="txtTimCC" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm"
-                                placeholder="Số hiệu, tên HV, khóa học..." autocomplete="off" onfocus="this.select();" />
+                            <asp:TextBox ID="txtTimCC" runat="server" ClientIDMode="Static" TextMode="Search" CssClass="form-control form-control-sm"
+                                placeholder="Số hiệu, tên HV, khóa học..." autocomplete="off" onclick="this.select();" />
                             <div id="goiYCC" class="list-group shadow position-absolute w-100"
                                 style="top: 100%; left: 0; z-index: 1050; max-height: 150px; overflow-y: auto; display: none;">
                                 <asp:Literal ID="litGoiYCC" runat="server" />
@@ -78,8 +114,12 @@
                 </div>
                 <div class="card-body p-0">
                     <asp:GridView ID="gvChungChi" runat="server" CssClass="table table-sm table-hover table-custom mb-0"
-                        AutoGenerateColumns="false" DataKeyNames="machungchi" OnRowCommand="gvChungChi_RowCommand"
+                        AutoGenerateColumns="false" DataKeyNames="machungchi"
+                        AllowPaging="true" PageSize="10" OnPageIndexChanging="gvChungChi_PageIndexChanging"
+                        OnRowCommand="gvChungChi_RowCommand"
                         EmptyDataText="Bạn chưa có chứng chỉ nào được cấp.">
+                        <PagerSettings Mode="NumericFirstLast" FirstPageText="&laquo;" LastPageText="&raquo;" PreviousPageText="&lsaquo;" NextPageText="&rsaquo;" PageButtonCount="5" />
+                        <PagerStyle CssClass="pagination-ys" HorizontalAlign="Center" />
                         <Columns>
                             <asp:BoundField DataField="sohieuchungchi" HeaderText="Số hiệu" />
                             <asp:BoundField DataField="hoten" HeaderText="Họ tên Học viên" />
@@ -143,6 +183,72 @@
             var modalXoa = new window.bootstrap.Modal(document.getElementById('modalXoaCC'));
             modalXoa.show();
         }
+
+        function thietLapGoiYCC() {
+            var input = document.getElementById('txtTimCC');
+            var list = document.getElementById('goiYCC');
+            var btn = document.getElementById('btnTimCC');
+            if (!input || !list || !btn) return;
+
+            var items = list.querySelectorAll('.goi-y-item');
+
+            function locGoiY() {
+                var kw = input.value.trim().toLowerCase();
+                var co = false;
+                items.forEach(function (item) {
+                    if (kw !== '' && item.innerText.toLowerCase().indexOf(kw) !== -1) {
+                        item.style.display = 'block';
+                        co = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                list.style.display = co ? 'block' : 'none';
+            }
+
+            input.addEventListener('input', function () {
+                if (this.value.trim() === '') {
+                    list.style.display = 'none';
+                    btn.click();
+                } else {
+                    locGoiY();
+                }
+            });
+
+            input.addEventListener('focus', function () {
+                if (this.value.trim() !== '') locGoiY();
+            });
+
+            items.forEach(function (item) {
+                item.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    input.value = this.getAttribute('data-value');
+                    list.style.display = 'none';
+                    btn.click();
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!input.contains(e.target) && !list.contains(e.target)) {
+                    list.style.display = 'none';
+                }
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            thietLapGoiYCC();
+
+            setTimeout(function () {
+                var tb = document.getElementById('pnlTB');
+                if (tb && tb.style.display !== 'none') {
+                    tb.style.transition = 'opacity 0.5s ease';
+                    tb.style.opacity = '0';
+                    setTimeout(function () {
+                        if (tb) tb.style.display = 'none';
+                    }, 500);
+                }
+            }, 5000);
+        });
 
         function inChungChi(soHieu, hoTen, khoaHoc, nienKhoa, xepLoai, ngayCap) {
             var w = window.open('', '_blank', 'width=900,height=650');

@@ -51,6 +51,24 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
         protected global::System.Web.UI.WebControls.TextBox txtMaCC;
 
         /// <summary>
+        /// ddlLocKhoaHoc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLocKhoaHoc;
+
+        /// <summary>
+        /// ddlLocNam control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlLocNam;
+
+        /// <summary>
         /// ddlThamGia control.
         /// </summary>
         /// <remarks>
