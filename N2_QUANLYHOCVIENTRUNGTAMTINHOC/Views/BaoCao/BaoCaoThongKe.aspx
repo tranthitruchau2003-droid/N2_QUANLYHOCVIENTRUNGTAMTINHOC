@@ -3,10 +3,28 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server">Báo cáo & Thống kê</asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="HeadContent" runat="server">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .pagination-ys { padding: 10px 15px; }
+        .pagination-ys table > tbody > tr > td { display: inline-block; margin: 0 3px; }
+        .pagination-ys table > tbody > tr > td > a,
+        .pagination-ys table > tbody > tr > td > span {
+            display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px;
+            padding: 0 10px; font-size: 0.9rem; font-weight: 600; text-decoration: none; border-radius: 6px;
+            border: 1px solid #dee2e6; color: #1677D2; background-color: #ffffff; transition: all 0.2s;
+        }
+        .pagination-ys table > tbody > tr > td > span { background-color: #1677D2; color: #ffffff; border-color: #1677D2; }
+        .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
+    </style>
 </asp:Content>
 
 <asp:Content ID="Content3" ContentPlaceHolderID="MainContent" runat="server">
-    <!-- MỤC MỚI: TRA CỨU & XUẤT DANH SÁCH HỌC VIÊN THEO KHÓA, LỚP, HỌC PHÍ -->
+    <!-- Thẻ ẩn để hứng tính năng tự điền (autofill) của trình duyệt -->
+    <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; overflow: hidden;">
+        <input type="text" name="fake_username_autofill" tabindex="-1" />
+        <input type="password" name="fake_password_autofill" tabindex="-1" />
+    </div>
+
+    <!-- 1. TRA CỨU & XUẤT DANH SÁCH HỌC VIÊN THEO KHÓA, LỚP, HỌC PHÍ -->
     <div class="card card-custom mb-4">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span><i class="bi bi-people-fill text-primary me-2"></i>1. Danh sách Học viên theo Khóa học, Lớp học & Tình trạng Học phí</span>
@@ -39,15 +57,19 @@
                 <div class="col-md-3">
                     <label class="small fw-bold">Tìm nhanh học viên</label>
                     <div class="d-flex gap-1">
-                        <asp:TextBox ID="txtTimHVLoc" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm"
-                            placeholder="Mã HV, Họ tên, SĐT..." autocomplete="off" onfocus="this.select();" />
+                        <asp:TextBox ID="txtTimHVLoc" runat="server" ClientIDMode="Static" TextMode="Search" CssClass="form-control form-control-sm"
+                            placeholder="Mã HV, Họ tên, SĐT..." autocomplete="off" onclick="this.select();" />
                         <asp:Button ID="btnLocHV" runat="server" ClientIDMode="Static" Text="Lọc" CssClass="btn btn-sm btn-primary-gradient" OnClick="BoLocHocVien_Changed" />
                     </div>
                 </div>
             </div>
 
             <div class="table-responsive">
-                <asp:GridView ID="gvDSHocVienLoc" runat="server" CssClass="table table-sm table-bordered table-hover table-custom mb-0" AutoGenerateColumns="false">
+                <asp:GridView ID="gvDSHocVienLoc" runat="server" CssClass="table table-sm table-bordered table-hover table-custom mb-0"
+                    AutoGenerateColumns="false" AllowPaging="true" PageSize="10" OnPageIndexChanging="gvDSHocVienLoc_PageIndexChanging"
+                    EmptyDataText="Không tìm thấy học viên nào phù hợp.">
+                    <PagerSettings Mode="NumericFirstLast" FirstPageText="&laquo;" LastPageText="&raquo;" PreviousPageText="&lsaquo;" NextPageText="&rsaquo;" PageButtonCount="5" />
+                    <PagerStyle CssClass="pagination-ys" HorizontalAlign="Center" />
                     <Columns>
                         <asp:BoundField DataField="madangky" HeaderText="Mã ĐK" />
                         <asp:BoundField DataField="mahocvien" HeaderText="Mã HV" />
@@ -62,9 +84,9 @@
                         <asp:BoundField DataField="dienthoai" HeaderText="Điện thoại" />
                         <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
                         <asp:BoundField DataField="tenlop" HeaderText="Lớp học" />
-                        <asp:BoundField DataField="hocphi" HeaderText="Học phí" DataFormatString="{0:N0} đ" />
-                        <asp:BoundField DataField="dadong" HeaderText="Đã đóng" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-success fw-semibold" />
-                        <asp:BoundField DataField="conno" HeaderText="Còn nợ" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-danger fw-bold" />
+                        <asp:BoundField DataField="hocphi" HeaderText="Học phí" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-nowrap" />
+                        <asp:BoundField DataField="dadong" HeaderText="Đã đóng" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-success fw-semibold text-nowrap" />
+                        <asp:BoundField DataField="conno" HeaderText="Còn nợ" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-danger fw-bold text-nowrap" />
                         <asp:BoundField DataField="trangthaihp" HeaderText="Trạng thái" />
                     </Columns>
                 </asp:GridView>
@@ -72,68 +94,36 @@
         </div>
     </div>
 
-    <!-- 2. BÁO CÁO HỌC PHÍ CÒN NỢ (CÔNG NỢ HỌC VIÊN) -->
+    <!-- 2. THỐNG KÊ SỐ LƯỢNG HỌC VIÊN & DOANH THU THEO KHÓA HỌC & NĂM -->
     <div class="card card-custom mb-4">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span class="text-nowrap"><i class="bi bi-exclamation-circle-fill text-danger me-2"></i>2. Báo cáo Học phí Còn nợ (Công nợ Học viên)</span>
-            <div class="d-flex gap-2">
-                <div class="position-relative" style="width: 260px;">
-                    <asp:TextBox ID="txtTimNo" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm"
-                        placeholder="Tìm mã ĐK, tên học viên, SĐT..." autocomplete="off" onfocus="this.select();" />
-                    <div id="goiYNo" class="list-group shadow position-absolute w-100"
-                        style="top: 100%; left: 0; z-index: 1050; max-height: 150px; overflow-y: auto; display: none;">
-                        <asp:Literal ID="litGoiYNo" runat="server" />
-                    </div>
-                </div>
-                <asp:Button ID="btnTimNo" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTimNo_Click" />
-                <asp:LinkButton ID="btnXuatCongNo" runat="server" CssClass="btn btn-sm btn-outline-success fw-semibold" OnClick="btnXuatCongNo_Click">
-                    <i class="bi bi-file-earmark-excel"></i> Xuất Công nợ
+            <span><i class="bi bi-bar-chart-fill text-primary me-2"></i>2. Thống kê Số lượng Học viên & Doanh thu theo Khóa học</span>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <asp:DropDownList ID="ddlNamThongKe" runat="server" CssClass="form-select form-select-sm" style="width: 130px;"
+                    AutoPostBack="true" OnSelectedIndexChanged="BoLocThongKe_Changed" />
+                <asp:DropDownList ID="ddlKhoaThongKe" runat="server" CssClass="form-select form-select-sm" style="width: 220px;"
+                    AutoPostBack="true" OnSelectedIndexChanged="BoLocThongKe_Changed" />
+                <asp:LinkButton ID="btnXuatExcel" runat="server" CssClass="btn btn-sm btn-success fw-semibold text-nowrap" OnClick="btnXuatExcel_Click">
+                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Xuất Excel Thống kê
                 </asp:LinkButton>
             </div>
         </div>
         <div class="card-body p-0">
-            <asp:GridView ID="gvCongNo" runat="server" CssClass="table table-hover table-custom mb-0" AutoGenerateColumns="false">
-                <Columns>
-                    <asp:BoundField DataField="madangky" HeaderText="Mã ĐK" />
-                    <asp:TemplateField HeaderText="Học viên">
-                        <ItemTemplate>
-                            <a href='/Views/PhieuThu/QuanLyPhieuThu.aspx?madk=<%# Eval("madangky") %>'
-                               class="fw-bold text-primary text-decoration-none" title="Nhấn để lập phiếu thu cho học viên này">
-                                <%# Eval("hoten") %> <i class="bi bi-box-arrow-up-right small ms-1"></i>
-                            </a>
-                        </ItemTemplate>
-                    </asp:TemplateField>
-                    <asp:BoundField DataField="dienthoai" HeaderText="Điện thoại" />
-                    <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
-                    <asp:BoundField DataField="hocphi" HeaderText="Tổng học phí" DataFormatString="{0:N0} đ" />
-                    <asp:BoundField DataField="dadong" HeaderText="Đã đóng" DataFormatString="{0:N0} đ" />
-                    <asp:BoundField DataField="conno" HeaderText="Còn nợ" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-danger fw-bold" />
-                </Columns>
-            </asp:GridView>
+            <div class="table-responsive">
+                <asp:GridView ID="gvThongKeKH" runat="server" CssClass="table table-hover table-custom mb-0" AutoGenerateColumns="false"
+                    EmptyDataText="Không có dữ liệu thống kê.">
+                    <Columns>
+                        <asp:BoundField DataField="makhoahoc" HeaderText="Mã KH" />
+                        <asp:BoundField DataField="tenkhoahoc" HeaderText="Tên khóa học" />
+                        <asp:BoundField DataField="soluongdk" HeaderText="Số lượng ĐK" ItemStyle-CssClass="fw-bold text-primary" />
+                        <asp:BoundField DataField="tongthucthu" HeaderText="Tổng thực thu" DataFormatString="{0:N0} đ" ItemStyle-CssClass="fw-bold text-success" />
+                    </Columns>
+                </asp:GridView>
+            </div>
         </div>
     </div>
 
-    <!-- 3. THỐNG KÊ SỐ LƯỢNG HỌC VIÊN & DOANH THU THEO KHÓA HỌC -->
-    <div class="card card-custom mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span><i class="bi bi-bar-chart-fill me-2"></i>3. Thống kê Số lượng Học viên & Doanh thu theo Khóa học</span>
-            <asp:LinkButton ID="btnXuatExcel" runat="server" CssClass="btn btn-sm btn-success fw-semibold" OnClick="btnXuatExcel_Click">
-                <i class="bi bi-file-earmark-excel-fill me-1"></i> Xuất Excel Thống kê Khóa học
-            </asp:LinkButton>
-        </div>
-        <div class="card-body p-0">
-            <asp:GridView ID="gvThongKeKH" runat="server" CssClass="table table-hover table-custom mb-0" AutoGenerateColumns="false">
-                <Columns>
-                    <asp:BoundField DataField="makhoahoc" HeaderText="Mã KH" />
-                    <asp:BoundField DataField="tenkhoahoc" HeaderText="Tên khóa học" />
-                    <asp:BoundField DataField="soluongdk" HeaderText="Số lượng ĐK" ItemStyle-CssClass="fw-bold text-primary" />
-                    <asp:BoundField DataField="tongthucthu" HeaderText="Tổng thực thu" DataFormatString="{0:N0} đ" ItemStyle-CssClass="fw-bold text-success" />
-                </Columns>
-            </asp:GridView>
-        </div>
-    </div>
-
-    <!-- 4. BIỂU ĐỒ TRỰC QUAN -->
+    <!-- 3. BIỂU ĐỒ TRỰC QUAN -->
     <div class="row g-4">
         <div class="col-lg-6">
             <div class="card card-custom h-100">
@@ -160,76 +150,41 @@
     </div>
 
     <script>
-// @ts-nocheck
+        // @ts-nocheck
+        window.addEventListener('beforeunload', function () {
+            sessionStorage.setItem('scrollPos_BaoCao', window.scrollY);
+        });
+
+        window.addEventListener('load', function () {
+            var savedScroll = sessionStorage.getItem('scrollPos_BaoCao');
+            if (savedScroll !== null) {
+                window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', function () {
-            var focusId = sessionStorage.getItem('focusSearchNo');
+            var focusId = sessionStorage.getItem('focusSearchBC');
             if (focusId) {
                 var el = document.getElementById(focusId);
                 if (el) el.focus();
-                sessionStorage.removeItem('focusSearchNo');
+                sessionStorage.removeItem('focusSearchBC');
             }
 
-            var input = document.getElementById('txtTimNo');
-            var list = document.getElementById('goiYNo');
-            var btn = document.getElementById('btnTimNo');
-            if (input && list && btn) {
-                var items = list.querySelectorAll('.goi-y-item');
-                function locGoiY() {
-                    var kw = input.value.trim().toLowerCase();
-                    var co = false;
-                    items.forEach(function (item) {
-                        if (kw !== '' && item.innerText.toLowerCase().indexOf(kw) !== -1) {
-                            item.style.display = 'block';
-                            co = true;
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    });
-                    list.style.display = co ? 'block' : 'none';
-                }
-                input.addEventListener('input', function () {
-                    if (this.value.trim() === '') {
-                        list.style.display = 'none';
-                        sessionStorage.setItem('focusSearchNo', 'txtTimNo');
-                        btn.click();
-                    } else {
-                        locGoiY();
-                    }
-                });
-                input.addEventListener('focus', function () {
-                    if (this.value.trim() !== '') locGoiY();
-                });
-                items.forEach(function (item) {
-                    item.addEventListener('mousedown', function (e) {
-                        e.preventDefault();
-                        input.value = this.getAttribute('data-value');
-                        list.style.display = 'none';
-                        btn.click();
-                    });
-                });
-                document.addEventListener('click', function (e) {
-                    if (!input.contains(e.target) && !list.contains(e.target)) {
-                        list.style.display = 'none';
-                    }
-                });
-            }
-
-            // Tự động lọc khi xóa trắng ô tìm kiếm học viên
             var txtTimHVLoc = document.getElementById('txtTimHVLoc');
             var btnLocHV = document.getElementById('btnLocHV');
             if (txtTimHVLoc && btnLocHV) {
                 txtTimHVLoc.addEventListener('input', function () {
                     if (this.value.trim() === '') {
-                        sessionStorage.setItem('focusSearchNo', 'txtTimHVLoc');
+                        sessionStorage.setItem('focusSearchBC', 'txtTimHVLoc');
                         btnLocHV.click();
                     }
                 });
             }
         });
 
-       var bcKhLabels = JSON.parse('<%= JsonKHLabels %>');
-    var khSoLuong = JSON.parse('<%= JsonKHSoLuong %>');
-var khDoanhThu = JSON.parse('<%= JsonKHDoanhThu %>');
+        var bcKhLabels = JSON.parse('<%= JsonKHLabels %>');
+        var khSoLuong = JSON.parse('<%= JsonKHSoLuong %>');
+        var khDoanhThu = JSON.parse('<%= JsonKHDoanhThu %>');
 
         new Chart(document.getElementById('chartKhoaHoc'), {
             type: 'bar',
@@ -266,7 +221,7 @@ var khDoanhThu = JSON.parse('<%= JsonKHDoanhThu %>');
         });
 
         var tnLabels = JSON.parse('<%= JsonTNLabels %>');
-var tnDoanhThu = JSON.parse('<%= JsonTNDoanhThu %>');
+        var tnDoanhThu = JSON.parse('<%= JsonTNDoanhThu %>');
 
         new Chart(document.getElementById('chartThangNam'), {
             type: 'bar',

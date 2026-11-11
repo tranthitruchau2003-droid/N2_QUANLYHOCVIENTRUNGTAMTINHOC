@@ -78,49 +78,22 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
         protected global::System.Web.UI.WebControls.GridView gvDSHocVienLoc;
 
         /// <summary>
-        /// txtTimNo control.
+        /// ddlNamThongKe control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtTimNo;
+        protected global::System.Web.UI.WebControls.DropDownList ddlNamThongKe;
 
         /// <summary>
-        /// litGoiYNo control.
+        /// ddlKhoaThongKe control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal litGoiYNo;
-
-        /// <summary>
-        /// btnTimNo control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnTimNo;
-
-        /// <summary>
-        /// btnXuatCongNo control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton btnXuatCongNo;
-
-        /// <summary>
-        /// gvCongNo control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.GridView gvCongNo;
+        protected global::System.Web.UI.WebControls.DropDownList ddlKhoaThongKe;
 
         /// <summary>
         /// btnXuatExcel control.

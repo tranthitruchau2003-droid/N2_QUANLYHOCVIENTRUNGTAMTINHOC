@@ -21,6 +21,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
         {
             if (!IsPostBack)
             {
+                txtTimHVLoc.Text = "";
                 TaiBoLocKhoaVaLop();
                 TaiNam();
                 TaiTatCaDuLieu();
@@ -30,7 +31,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
         private void TaiTatCaDuLieu()
         {
             TaiDSHocVienTheoBoLoc();
-            TaiCongNo(txtTimNo.Text.Trim());
             TaiThongKeKhoaHoc();
             TaiBieuDoThangNam();
         }
@@ -38,11 +38,18 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
         private void TaiBoLocKhoaVaLop()
         {
             DataTable dtKH = kncsdl.DocDuLieu("SELECT makhoahoc, tenkhoahoc FROM KHOAHOC ORDER BY tenkhoahoc");
+
             ddlLocKhoaHoc.DataSource = dtKH;
             ddlLocKhoaHoc.DataTextField = "tenkhoahoc";
             ddlLocKhoaHoc.DataValueField = "makhoahoc";
             ddlLocKhoaHoc.DataBind();
             ddlLocKhoaHoc.Items.Insert(0, new ListItem("-- Tất cả Khóa học --", ""));
+
+            ddlKhoaThongKe.DataSource = dtKH;
+            ddlKhoaThongKe.DataTextField = "tenkhoahoc";
+            ddlKhoaThongKe.DataValueField = "makhoahoc";
+            ddlKhoaThongKe.DataBind();
+            ddlKhoaThongKe.Items.Insert(0, new ListItem("-- Tất cả Khóa học --", ""));
 
             TaiDanhSachLopTheoKhoa("");
         }
@@ -103,78 +110,75 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
         protected void ddlLocKhoaHoc_SelectedIndexChanged(object sender, EventArgs e)
         {
             TaiDanhSachLopTheoKhoa(ddlLocKhoaHoc.SelectedValue);
+            gvDSHocVienLoc.PageIndex = 0;
             TaiTatCaDuLieu();
         }
 
         protected void BoLocHocVien_Changed(object sender, EventArgs e)
         {
+            gvDSHocVienLoc.PageIndex = 0;
+            TaiTatCaDuLieu();
+        }
+
+        protected void gvDSHocVienLoc_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gvDSHocVienLoc.PageIndex = e.NewPageIndex;
             TaiTatCaDuLieu();
         }
 
         private void TaiNam()
         {
-            DataTable dt = kncsdl.DocDuLieu("SELECT DISTINCT YEAR(ngaythu) AS Nam FROM PHIEUTHU ORDER BY Nam DESC");
+            DataTable dt = kncsdl.DocDuLieu(@"SELECT DISTINCT YEAR(ngaythu) AS Nam FROM PHIEUTHU
+                                              UNION
+                                              SELECT DISTINCT YEAR(ngaydangky) AS Nam FROM DANGKY
+                                              ORDER BY Nam DESC");
             ddlNam.Items.Clear();
+            ddlNamThongKe.Items.Clear();
+            ddlNamThongKe.Items.Add(new ListItem("-- Tất cả Năm --", "0"));
+
             if (dt.Rows.Count == 0)
             {
-                ddlNam.Items.Add(DateTime.Now.Year.ToString());
+                string namHT = DateTime.Now.Year.ToString();
+                ddlNam.Items.Add(namHT);
+                ddlNamThongKe.Items.Add(new ListItem("Năm " + namHT, namHT));
             }
             else
             {
                 foreach (DataRow r in dt.Rows)
                 {
-                    ddlNam.Items.Add(r["Nam"].ToString());
+                    if (r["Nam"] != DBNull.Value)
+                    {
+                        string nam = r["Nam"].ToString();
+                        ddlNam.Items.Add(nam);
+                        ddlNamThongKe.Items.Add(new ListItem("Năm " + nam, nam));
+                    }
                 }
             }
         }
 
-        private DataTable LayDuLieuCongNo(string tuKhoa = "")
-        {
-            string sql = @"SELECT dk.madangky, hv.hoten, hv.dienthoai, kh.tenkhoahoc, kh.hocphi,
-                                  ISNULL(SUM(pt.sotienthu), 0) AS dadong,
-                                  (kh.hocphi - ISNULL(SUM(pt.sotienthu), 0)) AS conno
-                           FROM DANGKY dk
-                           JOIN HOCVIEN hv ON dk.mahocvien = hv.mahocvien
-                           JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
-                           LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
-                           WHERE (@kw = '' OR dk.madangky LIKE @kw OR hv.hoten LIKE @kw OR hv.dienthoai LIKE @kw)
-                           GROUP BY dk.madangky, hv.hoten, hv.dienthoai, kh.tenkhoahoc, kh.hocphi
-                           HAVING (kh.hocphi - ISNULL(SUM(pt.sotienthu), 0)) > 0
-                           ORDER BY dk.madangky";
-            SqlParameter[] p = { new SqlParameter("@kw", string.IsNullOrEmpty(tuKhoa) ? "" : "%" + tuKhoa + "%") };
-            return kncsdl.DocDuLieu(sql, p);
-        }
-
-        private void TaiCongNo(string tuKhoa = "")
-        {
-            gvCongNo.DataSource = LayDuLieuCongNo(tuKhoa);
-            gvCongNo.DataBind();
-            TaiGoiYCongNo();
-        }
-
-        private void TaiGoiYCongNo()
-        {
-            DataTable dt = LayDuLieuCongNo("");
-            StringBuilder sb = new StringBuilder();
-            foreach (DataRow r in dt.Rows)
-            {
-                sb.AppendFormat("<button type=\"button\" class=\"list-group-item list-group-item-action py-2 px-2 small goi-y-item\" data-value=\"{1}\"><strong>{0}</strong> - {1} ({2})</button>",
-                    r["madangky"], r["hoten"], r["dienthoai"]);
-            }
-            litGoiYNo.Text = sb.ToString();
-        }
-
         private DataTable LayDuLieuThongKeKhoaHoc()
         {
+            int nam = 0;
+            int.TryParse(ddlNamThongKe.SelectedValue, out nam);
+            string maKH = ddlKhoaThongKe.SelectedValue ?? "";
+
             string sql = @"SELECT kh.makhoahoc, kh.tenkhoahoc,
                                   COUNT(DISTINCT dk.madangky) AS soluongdk,
                                   ISNULL(SUM(pt.sotienthu), 0) AS tongthucthu
                            FROM KHOAHOC kh
                            LEFT JOIN DANGKY dk ON kh.makhoahoc = dk.makhoahoc
+                               AND (@nam = 0 OR YEAR(dk.ngaydangky) = @nam)
                            LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
+                               AND (@nam = 0 OR YEAR(pt.ngaythu) = @nam)
+                           WHERE (@makh = '' OR kh.makhoahoc = @makh)
                            GROUP BY kh.makhoahoc, kh.tenkhoahoc
                            ORDER BY kh.makhoahoc";
-            return kncsdl.DocDuLieu(sql);
+
+            SqlParameter[] p = {
+                new SqlParameter("@nam", nam),
+                new SqlParameter("@makh", maKH)
+            };
+            return kncsdl.DocDuLieu(sql, p);
         }
 
         private void TaiThongKeKhoaHoc()
@@ -200,6 +204,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             JsonKHDoanhThu = js.Serialize(doanhThu);
         }
 
+        protected void BoLocThongKe_Changed(object sender, EventArgs e)
+        {
+            TaiTatCaDuLieu();
+        }
+
         private void TaiBieuDoThangNam()
         {
             int nam = int.Parse(ddlNam.SelectedValue);
@@ -223,17 +232,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             JsonTNDoanhThu = js.Serialize(doanhThu);
         }
 
-        protected void btnTimNo_Click(object sender, EventArgs e)
-        {
-            TaiTatCaDuLieu();
-        }
-
         protected void ddlNam_SelectedIndexChanged(object sender, EventArgs e)
         {
             TaiTatCaDuLieu();
         }
 
-        // XUẤT FILE EXCEL DANH SÁCH HỌC VIÊN THEO KHÓA, LỚP, ĐÃ ĐÓNG / CHƯA ĐÓNG HỌC PHÍ
         protected void btnXuatDSHocVien_Click(object sender, EventArgs e)
         {
             DataTable dt = LayDuLieuHocVienLoc();
@@ -243,22 +246,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
                 new[] { "madangky", "mahocvien", "hoten", "dienthoai", "tenkhoahoc", "tenlop", "hocphi", "dadong", "conno", "trangthaihp" });
         }
 
-        // XUẤT FILE EXCEL CÔNG NỢ
-        protected void btnXuatCongNo_Click(object sender, EventArgs e)
-        {
-            DataTable dt = LayDuLieuCongNo(txtTimNo.Text.Trim());
-            XuatFileExcel(dt, "BaoCao_CongNo_HocVien_" + DateTime.Now.ToString("yyyyMMdd"),
-                "BÁO CÁO HỌC VIÊN CÒN NỢ HỌC PHÍ",
-                new[] { "Mã ĐK", "Họ tên Học viên", "Điện thoại", "Khóa học", "Tổng học phí", "Đã đóng", "Còn nợ" },
-                new[] { "madangky", "hoten", "dienthoai", "tenkhoahoc", "hocphi", "dadong", "conno" });
-        }
-
-        // XUẤT FILE EXCEL THỐNG KÊ KHÓA HỌC
         protected void btnXuatExcel_Click(object sender, EventArgs e)
         {
             DataTable dt = LayDuLieuThongKeKhoaHoc();
-            XuatFileExcel(dt, "ThongKe_KhoaHoc_" + DateTime.Now.ToString("yyyyMMdd"),
-                "THỐNG KÊ SỐ LƯỢNG HỌC VIÊN & DOANH THU THEO KHÓA HỌC",
+            string namText = ddlNamThongKe.SelectedValue == "0" ? "TatCaNam" : "Nam" + ddlNamThongKe.SelectedValue;
+            string tieuDe = ddlNamThongKe.SelectedValue == "0"
+                ? "THỐNG KÊ SỐ LƯỢNG HỌC VIÊN & DOANH THU THEO KHÓA HỌC"
+                : $"THỐNG KÊ SỐ LƯỢNG HỌC VIÊN & DOANH THU THEO KHÓA HỌC - NĂM {ddlNamThongKe.SelectedValue}";
+
+            XuatFileExcel(dt, $"ThongKe_KhoaHoc_{namText}_{DateTime.Now:yyyyMMdd}",
+                tieuDe,
                 new[] { "Mã KH", "Tên khóa học", "Số lượng ĐK", "Tổng thực thu (VNĐ)" },
                 new[] { "makhoahoc", "tenkhoahoc", "soluongdk", "tongthucthu" });
         }
