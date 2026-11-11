@@ -60,13 +60,22 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         protected global::System.Web.UI.WebControls.DropDownList ddlKhoaHoc;
 
         /// <summary>
-        /// txtNienKhoa control.
+        /// ddlDotThi control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtNienKhoa;
+        protected global::System.Web.UI.WebControls.DropDownList ddlDotThi;
+
+        /// <summary>
+        /// ddlNamThi control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlNamThi;
 
         /// <summary>
         /// txtNgayThi control.
@@ -159,6 +168,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         protected global::System.Web.UI.WebControls.Literal litTieuDeDiem;
 
         /// <summary>
+        /// btnMoNhapHangLoat control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnMoNhapHangLoat;
+
+        /// <summary>
         /// pnlKhuVucNhapDiem control.
         /// </summary>
         /// <remarks>
@@ -177,15 +195,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         protected global::System.Web.UI.WebControls.TextBox txtMaTG;
 
         /// <summary>
-        /// ddlHocVien control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlHocVien;
-
-        /// <summary>
         /// ddlKyThi control.
         /// </summary>
         /// <remarks>
@@ -195,6 +204,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         protected global::System.Web.UI.WebControls.DropDownList ddlKyThi;
 
         /// <summary>
+        /// ddlHocVien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlHocVien;
+
+        /// <summary>
         /// txtDiemCC control.
         /// </summary>
         /// <remarks>
@@ -202,15 +220,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtDiemCC;
-
-        /// <summary>
-        /// txtDiemQT control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtDiemQT;
 
         /// <summary>
         /// txtDiem control.
@@ -292,6 +301,33 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.GridView gvThamGia;
+
+        /// <summary>
+        /// litTenKyThiHL control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litTenKyThiHL;
+
+        /// <summary>
+        /// gvNhapHangLoat control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView gvNhapHangLoat;
+
+        /// <summary>
+        /// btnLuuHangLoat control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnLuuHangLoat;
 
         /// <summary>
         /// btnXoaKTChinhThuc control.
