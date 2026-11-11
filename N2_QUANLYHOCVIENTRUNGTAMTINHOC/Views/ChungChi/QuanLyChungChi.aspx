@@ -43,12 +43,12 @@
                     <!-- BỘ LỌC HỌC VIÊN THEO KHÓA HỌC VÀ NĂM -->
                     <div class="row g-2 mb-2">
                         <div class="col-7">
-                            <label class="small fw-bold text-primary"><i class="bi bi-funnel me-1"></i>Lọc theo Khóa học</label>
+                            <label class="small fw-bold text-dark"><i class="bi bi-funnel me-1"></i>Lọc theo Khóa học</label>
                             <asp:DropDownList ID="ddlLocKhoaHoc" runat="server" CssClass="form-select form-select-sm"
                                 AutoPostBack="true" OnSelectedIndexChanged="ddlLocForm_SelectedIndexChanged" />
                         </div>
                         <div class="col-5">
-                            <label class="small fw-bold text-primary"><i class="bi bi-calendar3 me-1"></i>Năm</label>
+                            <label class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1"></i>Năm</label>
                             <asp:DropDownList ID="ddlLocNam" runat="server" CssClass="form-select form-select-sm"
                                 AutoPostBack="true" OnSelectedIndexChanged="ddlLocForm_SelectedIndexChanged" />
                         </div>

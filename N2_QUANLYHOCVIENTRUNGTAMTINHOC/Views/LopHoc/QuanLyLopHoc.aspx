@@ -13,6 +13,8 @@
         }
         .pagination-ys table > tbody > tr > td > span { background-color: #1677D2; color: #ffffff; border-color: #1677D2; }
         .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
+        .table-lophoc { font-size: 0.8rem; }
+        .table-lophoc th, .table-lophoc td { vertical-align: middle !important; padding: 0.35rem 0.3rem !important; }
     </style>
 </asp:Content>
 
@@ -44,7 +46,7 @@
                     <div class="mb-2"><label class="small fw-bold">Ngày khai giảng</label><asp:TextBox ID="txtKhaiGiang" runat="server" TextMode="Date" CssClass="form-control form-control-sm" /></div>
                     
                     <hr class="my-2" />
-                    <h6 class="small fw-bold text-primary mb-2"><i class="bi bi-clock-history me-1"></i>Thiết lập / Đổi Lịch học cho Lớp:</h6>
+                    <h6 class="small fw-bold text-dark mb-2"><i class="bi bi-clock-history me-1"></i>Thiết lập / Đổi Lịch học cho Lớp:</h6>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="small fw-bold">Ca học</label>
@@ -81,10 +83,10 @@
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2 mt-3">
+                    <div class="d-flex flex-wrap gap-2 mt-3">
                         <asp:Button ID="btnThemLop" runat="server" Text="Thêm Lớp & Lịch" CssClass="btn btn-sm btn-orange flex-grow-1" OnClick="btnThemLop_Click" />
                         <asp:Button ID="btnSuaLop" runat="server" Text="Cập nhật Lớp & Đổi Lịch" CssClass="btn btn-sm btn-primary-gradient flex-grow-1" OnClick="btnSuaLop_Click" />
-                        <asp:Button ID="btnLamMoi" runat="server" Text="Làm mới" CssClass="btn btn-sm btn-secondary" OnClick="btnLamMoi_Click" />
+                        <asp:Button ID="btnLamMoi" runat="server" Text="Làm mới" CssClass="btn btn-sm btn-secondary flex-grow-1" OnClick="btnLamMoi_Click" />
                     </div>
                 </div>
             </div>
@@ -108,7 +110,7 @@
                     </asp:Panel>
                 </div>
                 <div class="card-body p-0">
-                    <asp:GridView ID="gvLopHoc" runat="server" CssClass="table table-sm table-hover table-custom mb-0"
+                    <asp:GridView ID="gvLopHoc" runat="server" CssClass="table table-sm table-hover table-custom table-lophoc mb-0"
                         AutoGenerateColumns="false" DataKeyNames="malop" 
                         AllowPaging="true" PageSize="8" OnPageIndexChanging="gvLopHoc_PageIndexChanging" OnRowCommand="gvLopHoc_RowCommand"
                         EmptyDataText="Không tìm thấy lớp học nào.">

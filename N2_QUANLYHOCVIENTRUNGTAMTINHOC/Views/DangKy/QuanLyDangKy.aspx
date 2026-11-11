@@ -13,12 +13,13 @@
         }
         .pagination-ys table > tbody > tr > td > span { background-color: #1677D2; color: #ffffff; border-color: #1677D2; }
         .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
-        .table-dangky th, .table-dangky td { vertical-align: middle !important; }
-        .table-dangky th { white-space: nowrap; }
+        .table-dangky { font-size: 0.82rem; }
+        .table-dangky th, .table-dangky td { vertical-align: middle !important; padding: 0.4rem 0.35rem !important; }
     </style>
 </asp:Content>
 
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
+    <asp:ScriptManager ID="ScriptManager1" runat="server" />
     <asp:Panel ID="pnlTB" runat="server" Visible="false" ClientIDMode="Static"
         CssClass="alert alert-info fw-semibold alert-dismissible fade show shadow"
         style="position: fixed; top: 76px; right: 24px; z-index: 1060; min-width: 320px; max-width: 500px;">
@@ -85,44 +86,53 @@
 
     <div class="row g-4">
         <!-- 2. FORM ĐĂNG KÝ -->
-        <div class="col-lg-4">
+        <div class="col-lg-4 d-flex flex-column">
             <div class="card card-custom mb-3">
                 <div class="card-header"><span><i class="bi bi-card-checklist me-2"></i>2. Phiếu Đăng ký Học phần</span></div>
                 <div class="card-body">
-                    <div class="mb-2">
-                        <label class="small fw-bold">Mã đăng ký</label>
-                        <asp:TextBox ID="txtMaDK" runat="server" CssClass="form-control" ReadOnly="true" placeholder="Tự động sinh mã..." />
-                    </div>
-                    <div class="mb-2">
-                        <label class="small fw-bold">Học viên (*)</label>
-                        <asp:DropDownList ID="ddlHocVien" runat="server" CssClass="form-select" />
-                    </div>
-                    <div class="mb-2">
-                        <label class="small fw-bold">Khóa học (*)</label>
-                        <asp:DropDownList ID="ddlKhoaHoc" runat="server" CssClass="form-select" AutoPostBack="true" OnSelectedIndexChanged="ddlKhoaHoc_SelectedIndexChanged" />
-                    </div>
-                    <div class="mb-2">
-                        <label class="small fw-bold">Chọn Lớp & Giảng viên muốn học (*)</label>
-                        <asp:DropDownList ID="ddlLopHoc" runat="server" CssClass="form-select" />
-                    </div>
-                    <asp:Panel ID="pnlSoTienDongNgay" runat="server" CssClass="mb-2">
-                        <label class="small fw-bold">Học phí khóa học (VNĐ)</label>
-                        <asp:TextBox ID="txtSoTienDong" runat="server" CssClass="form-control" ReadOnly="true" Text="0" />
-                        <small class="text-muted">Sau khi đăng ký lớp, bấm nút <strong>"Đóng HP"</strong> ở bảng bên phải để quét QR và gửi ảnh chuyển khoản.</small>
-                    </asp:Panel>
-                    <div class="mb-3">
-                        <label class="small fw-bold">Ngày đăng ký</label>
-                        <asp:TextBox ID="txtNgayDK" runat="server" TextMode="Date" CssClass="form-control" />
-                    </div>
-                    <div class="d-flex gap-2">
-                        <asp:Button ID="btnDangKy" runat="server" Text="Xác nhận Đăng ký" CssClass="btn btn-orange flex-grow-1" OnClick="btnDangKy_Click" />
-                        <asp:Button ID="btnDoiLop" runat="server" Text="Đổi Lớp" CssClass="btn btn-primary-gradient" OnClick="btnDoiLop_Click" />
-                    </div>
+                    <asp:UpdatePanel ID="upPhieuDangKy" runat="server" UpdateMode="Conditional">
+                        <ContentTemplate>
+                            <div class="mb-2">
+                                <label class="small fw-bold">Mã đăng ký</label>
+                                <asp:TextBox ID="txtMaDK" runat="server" CssClass="form-control" ReadOnly="true" placeholder="Tự động sinh mã..." />
+                            </div>
+                            <div class="mb-2">
+                                <label class="small fw-bold">Học viên (*)</label>
+                                <asp:DropDownList ID="ddlHocVien" runat="server" CssClass="form-select" />
+                            </div>
+                            <div class="mb-2">
+                                <label class="small fw-bold">Khóa học (*)</label>
+                                <asp:DropDownList ID="ddlKhoaHoc" runat="server" CssClass="form-select" AutoPostBack="true" OnSelectedIndexChanged="ddlKhoaHoc_SelectedIndexChanged" />
+                            </div>
+                            <div class="mb-2">
+                                <label class="small fw-bold">Chọn Lớp & Giảng viên muốn học (*)</label>
+                                <asp:DropDownList ID="ddlLopHoc" runat="server" CssClass="form-select" />
+                            </div>
+                            <asp:Panel ID="pnlSoTienDongNgay" runat="server" CssClass="mb-2">
+                                <label class="small fw-bold">Học phí khóa học (VNĐ)</label>
+                                <asp:TextBox ID="txtSoTienDong" runat="server" CssClass="form-control" ReadOnly="true" Text="0" />
+                                <small class="text-muted">Sau khi đăng ký lớp, bấm nút <strong>"Đóng HP"</strong> ở bảng bên phải để quét QR và gửi ảnh chuyển khoản.</small>
+                            </asp:Panel>
+                            <div class="mb-3">
+                                <label class="small fw-bold">Ngày đăng ký</label>
+                                <asp:TextBox ID="txtNgayDK" runat="server" TextMode="Date" CssClass="form-control" />
+                            </div>
+                            <div class="d-flex gap-2">
+                                <asp:Button ID="btnDangKy" runat="server" Text="Xác nhận Đăng ký" CssClass="btn btn-orange flex-grow-1" OnClick="btnDangKy_Click" />
+                                <asp:Button ID="btnDoiLop" runat="server" Text="Đổi Lớp" CssClass="btn btn-primary-gradient" OnClick="btnDoiLop_Click" />
+                            </div>
+                        </ContentTemplate>
+                        <Triggers>
+                            <asp:AsyncPostBackTrigger ControlID="ddlKhoaHoc" EventName="SelectedIndexChanged" />
+                            <asp:PostBackTrigger ControlID="btnDangKy" />
+                            <asp:PostBackTrigger ControlID="btnDoiLop" />
+                        </Triggers>
+                    </asp:UpdatePanel>
                 </div>
             </div>
 
             <!-- PANEL XỬ LÝ LỚP CHƯA ĐỦ 10 HỌC VIÊN (CHỈ ADMIN THẤY) -->
-            <asp:Panel ID="pnlXuLyLopThieu" runat="server" CssClass="card card-custom border-warning">
+            <asp:Panel ID="pnlXuLyLopThieu" runat="server" CssClass="card card-custom border-warning flex-grow-1">
                 <div class="card-header bg-warning-subtle text-dark fw-bold">
                     <i class="bi bi-tools me-1"></i> Xử lý Lớp chưa đủ 10 Học viên (< 10 HV)
                 </div>
@@ -145,7 +155,7 @@
         </div>
 
         <!-- 3. DANH SÁCH ĐĂNG KÝ & ĐÓNG HỌC PHÍ QR -->
-        <div class="col-lg-8">
+        <div class="col-lg-8 d-flex flex-column">
             <div class="card card-custom h-100 d-flex flex-column">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span class="text-nowrap"><i class="bi bi-list-ul me-2"></i>3. Kết quả Đăng ký Lớp học & Đóng Học phí Chuyển khoản QR</span>
@@ -164,7 +174,7 @@
                 <div class="card-body p-0 flex-grow-1 d-flex flex-column">
                     <div class="table-responsive flex-grow-1">
                         <asp:GridView ID="gvDangKy" runat="server" CssClass="table table-sm table-hover table-custom table-dangky mb-0"
-                            AutoGenerateColumns="false" AllowPaging="true" PageSize="14"
+                            AutoGenerateColumns="false" AllowPaging="true" PageSize="12"
                             OnPageIndexChanging="gvDangKy_PageIndexChanging" OnRowCommand="gvDangKy_RowCommand"
                             EmptyDataText="Không tìm thấy bản ghi đăng ký nào.">
                             <PagerSettings Mode="NumericFirstLast" FirstPageText="&laquo;" LastPageText="&raquo;" PreviousPageText="&lsaquo;" NextPageText="&rsaquo;" PageButtonCount="5" />
