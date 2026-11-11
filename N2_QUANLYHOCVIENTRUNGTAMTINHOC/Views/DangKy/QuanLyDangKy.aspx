@@ -13,6 +13,8 @@
         }
         .pagination-ys table > tbody > tr > td > span { background-color: #1677D2; color: #ffffff; border-color: #1677D2; }
         .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
+        .table-dangky th, .table-dangky td { vertical-align: middle !important; }
+        .table-dangky th { white-space: nowrap; }
     </style>
 </asp:Content>
 
@@ -56,7 +58,7 @@
                         <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
                         <asp:BoundField DataField="tengiangvien" HeaderText="Giảng viên giảng dạy" />
                         <asp:BoundField DataField="thoikhoabieu" HeaderText="Thời khóa biểu (Ca - Thứ - Phòng)" />
-                        <asp:BoundField DataField="hocphi" HeaderText="Học phí" DataFormatString="{0:N0} đ" />
+                        <asp:BoundField DataField="hocphi" HeaderText="Học phí" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-nowrap" />
                         <asp:TemplateField HeaderText="Sĩ số (Chuẩn 10 HV)">
                             <ItemTemplate>
                                 <span class='badge <%# Convert.ToInt32(Eval("siso")) >= 10 ? "bg-success" : "bg-warning text-dark" %>'>
@@ -144,7 +146,7 @@
 
         <!-- 3. DANH SÁCH ĐĂNG KÝ & ĐÓNG HỌC PHÍ QR -->
         <div class="col-lg-8">
-            <div class="card card-custom">
+            <div class="card card-custom h-100 d-flex flex-column">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span class="text-nowrap"><i class="bi bi-list-ul me-2"></i>3. Kết quả Đăng ký Lớp học & Đóng Học phí Chuyển khoản QR</span>
                     <div class="d-flex gap-2">
@@ -159,25 +161,25 @@
                         <asp:Button ID="btnTimDK" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTimDK_Click" />
                     </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <asp:GridView ID="gvDangKy" runat="server" CssClass="table table-sm table-hover table-custom mb-0"
-                            AutoGenerateColumns="false" AllowPaging="true" PageSize="8"
+                <div class="card-body p-0 flex-grow-1 d-flex flex-column">
+                    <div class="table-responsive flex-grow-1">
+                        <asp:GridView ID="gvDangKy" runat="server" CssClass="table table-sm table-hover table-custom table-dangky mb-0"
+                            AutoGenerateColumns="false" AllowPaging="true" PageSize="14"
                             OnPageIndexChanging="gvDangKy_PageIndexChanging" OnRowCommand="gvDangKy_RowCommand"
                             EmptyDataText="Không tìm thấy bản ghi đăng ký nào.">
                             <PagerSettings Mode="NumericFirstLast" FirstPageText="&laquo;" LastPageText="&raquo;" PreviousPageText="&lsaquo;" NextPageText="&rsaquo;" PageButtonCount="5" />
                             <PagerStyle CssClass="pagination-ys" HorizontalAlign="Center" />
                             <Columns>
-                                <asp:BoundField DataField="madangky" HeaderText="Mã ĐK" />
+                                <asp:BoundField DataField="madangky" HeaderText="Mã ĐK" ItemStyle-CssClass="text-nowrap fw-semibold" />
                                 <asp:BoundField DataField="hoten" HeaderText="Học viên" />
                                 <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
                                 <asp:BoundField DataField="tenlop" HeaderText="Lớp & Giảng viên" />
-                                <asp:BoundField DataField="hocphi" HeaderText="Học phí" DataFormatString="{0:N0} đ" />
-                                <asp:BoundField DataField="dadong" HeaderText="Đã đóng" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-success fw-bold" />
+                                <asp:BoundField DataField="hocphi" HeaderText="Học phí" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-nowrap text-end" HeaderStyle-CssClass="text-end" />
+                                <asp:BoundField DataField="dadong" HeaderText="Đã đóng" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-nowrap text-end text-success fw-bold" HeaderStyle-CssClass="text-end" />
                                 <asp:BoundField DataField="trangthailop" HeaderText="Tình trạng Xếp lớp" />
-                                <asp:TemplateField HeaderText="Thao tác">
+                                <asp:TemplateField HeaderText="Thao tác" ItemStyle-CssClass="text-nowrap text-center" HeaderStyle-CssClass="text-center">
                                     <ItemTemplate>
-                                        <div class="d-flex gap-1">
+                                        <div class="d-flex gap-1 justify-content-center">
                                             <asp:LinkButton ID="btnChonDK" runat="server" CommandName="ChonDK" CommandArgument='<%# Eval("madangky") %>'
                                                 CssClass="btn btn-sm btn-outline-primary" title="Chọn để đổi lớp"><i class="bi bi-arrow-left-right"></i></asp:LinkButton>
                                             
