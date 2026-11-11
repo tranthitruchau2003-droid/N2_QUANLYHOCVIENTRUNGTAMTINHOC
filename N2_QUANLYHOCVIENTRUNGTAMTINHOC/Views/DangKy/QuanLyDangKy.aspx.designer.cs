@@ -186,6 +186,33 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         protected global::System.Web.UI.WebControls.Button btnHuyLopThieu;
 
         /// <summary>
+        /// txtTimDK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtTimDK;
+
+        /// <summary>
+        /// litGoiYDK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litGoiYDK;
+
+        /// <summary>
+        /// btnTimDK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnTimDK;
+
+        /// <summary>
         /// gvDangKy control.
         /// </summary>
         /// <remarks>

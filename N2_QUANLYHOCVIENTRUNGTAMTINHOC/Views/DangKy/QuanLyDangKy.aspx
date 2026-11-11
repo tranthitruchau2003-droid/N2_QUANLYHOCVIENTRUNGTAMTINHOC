@@ -1,6 +1,21 @@
 ﻿<%@ Page Title="Đăng ký Học phần & Xếp lớp" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeBehind="QuanLyDangKy.aspx.cs" Inherits="N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy.QuanLyDangKy" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="TitleContent" runat="server">Đăng ký Khóa học & Xếp lớp</asp:Content>
+<asp:Content ID="ContentHead" ContentPlaceHolderID="HeadContent" runat="server">
+    <style>
+        .pagination-ys { padding: 10px 15px; }
+        .pagination-ys table > tbody > tr > td { display: inline-block; margin: 0 3px; }
+        .pagination-ys table > tbody > tr > td > a,
+        .pagination-ys table > tbody > tr > td > span {
+            display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px;
+            padding: 0 10px; font-size: 0.9rem; font-weight: 600; text-decoration: none; border-radius: 6px;
+            border: 1px solid #dee2e6; color: #1677D2; background-color: #ffffff; transition: all 0.2s;
+        }
+        .pagination-ys table > tbody > tr > td > span { background-color: #1677D2; color: #ffffff; border-color: #1677D2; }
+        .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
+    </style>
+</asp:Content>
+
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
     <asp:Panel ID="pnlTB" runat="server" Visible="false" ClientIDMode="Static"
         CssClass="alert alert-info fw-semibold alert-dismissible fade show shadow"
@@ -8,6 +23,12 @@
         <asp:Literal ID="litTB" runat="server" />
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </asp:Panel>
+
+    <!-- Thẻ ẩn để hứng tính năng tự điền (autofill) của trình duyệt -->
+    <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; overflow: hidden;">
+        <input type="text" name="fake_username_autofill" tabindex="-1" />
+        <input type="password" name="fake_password_autofill" tabindex="-1" />
+    </div>
 
     <!-- 1. DANH SÁCH LỚP HỌC PHẦN ĐANG MỞ -->
     <div class="card card-custom mb-4">
@@ -25,7 +46,13 @@
                     AutoGenerateColumns="false" OnRowCommand="gvLopMo_RowCommand">
                     <Columns>
                         <asp:BoundField DataField="malop" HeaderText="Mã Lớp" />
-                        <asp:BoundField DataField="tenlop" HeaderText="Tên Lớp" ItemStyle-CssClass="fw-bold text-primary" />
+                        <asp:TemplateField HeaderText="Tên Lớp">
+                            <ItemTemplate>
+                                <a href='<%# ResolveUrl("~/Views/LopHoc/QuanLyLopHoc.aspx") %>' class="fw-bold text-primary text-decoration-none" title="Xem chi tiết Lớp học & Thời khóa biểu">
+                                    <%# Eval("tenlop") %> <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                            </ItemTemplate>
+                        </asp:TemplateField>
                         <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
                         <asp:BoundField DataField="tengiangvien" HeaderText="Giảng viên giảng dạy" />
                         <asp:BoundField DataField="thoikhoabieu" HeaderText="Thời khóa biểu (Ca - Thứ - Phòng)" />
@@ -118,13 +145,28 @@
         <!-- 3. DANH SÁCH ĐĂNG KÝ & ĐÓNG HỌC PHÍ QR -->
         <div class="col-lg-8">
             <div class="card card-custom">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-list-ul me-2"></i>3. Kết quả Đăng ký Lớp học & Đóng Học phí Chuyển khoản QR</span>
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="text-nowrap"><i class="bi bi-list-ul me-2"></i>3. Kết quả Đăng ký Lớp học & Đóng Học phí Chuyển khoản QR</span>
+                    <div class="d-flex gap-2">
+                        <div class="position-relative" style="width: 220px;">
+                            <asp:TextBox ID="txtTimDK" runat="server" ClientIDMode="Static" TextMode="Search" CssClass="form-control form-control-sm"
+                                placeholder="Tìm mã ĐK, học viên, lớp..." autocomplete="off" onclick="this.select();" />
+                            <div id="goiYDK" class="list-group shadow position-absolute w-100"
+                                style="top: 100%; left: 0; z-index: 1050; max-height: 150px; overflow-y: auto; display: none;">
+                                <asp:Literal ID="litGoiYDK" runat="server" />
+                            </div>
+                        </div>
+                        <asp:Button ID="btnTimDK" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTimDK_Click" />
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <asp:GridView ID="gvDangKy" runat="server" CssClass="table table-sm table-hover table-custom mb-0"
-                            AutoGenerateColumns="false" OnRowCommand="gvDangKy_RowCommand">
+                            AutoGenerateColumns="false" AllowPaging="true" PageSize="8"
+                            OnPageIndexChanging="gvDangKy_PageIndexChanging" OnRowCommand="gvDangKy_RowCommand"
+                            EmptyDataText="Không tìm thấy bản ghi đăng ký nào.">
+                            <PagerSettings Mode="NumericFirstLast" FirstPageText="&laquo;" LastPageText="&raquo;" PreviousPageText="&lsaquo;" NextPageText="&rsaquo;" PageButtonCount="5" />
+                            <PagerStyle CssClass="pagination-ys" HorizontalAlign="Center" />
                             <Columns>
                                 <asp:BoundField DataField="madangky" HeaderText="Mã ĐK" />
                                 <asp:BoundField DataField="hoten" HeaderText="Học viên" />
@@ -227,8 +269,7 @@
             var checkModal = function () {
                 var el = document.getElementById('modalHuyDK');
                 if (el && window.bootstrap) {
-                    var modalHuy = new window.bootstrap.Modal(el);
-                    modalHuy.show();
+                    new window.bootstrap.Modal(el).show();
                 } else {
                     setTimeout(checkModal, 100);
                 }
@@ -240,10 +281,9 @@
             var checkModal = function () {
                 var el = document.getElementById('modalThanhToanQR');
                 if (el && window.bootstrap) {
-                    var m = new window.bootstrap.Modal(el);
-                    m.show();
+                    new window.bootstrap.Modal(el).show();
                 } else {
-                    setTimeout(checkModal, 100); // Chờ bootstrap tải xong rồi mới bật popup
+                    setTimeout(checkModal, 100);
                 }
             };
             checkModal();
@@ -261,8 +301,71 @@
             }
         }
 
+        function thietLapGoiYDK() {
+            var input = document.getElementById('txtTimDK');
+            var list = document.getElementById('goiYDK');
+            var btn = document.getElementById('btnTimDK');
+            if (!input || !list || !btn) return;
+
+            var items = list.querySelectorAll('.goi-y-item');
+
+            function locGoiY() {
+                var kw = input.value.trim().toLowerCase();
+                var co = false;
+                items.forEach(function (item) {
+                    if (kw !== '' && item.innerText.toLowerCase().indexOf(kw) !== -1) {
+                        item.style.display = 'block';
+                        co = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                list.style.display = co ? 'block' : 'none';
+            }
+
+            input.addEventListener('input', function () {
+                if (this.value.trim() === '') {
+                    list.style.display = 'none';
+                    btn.click();
+                } else {
+                    locGoiY();
+                }
+            });
+
+            input.addEventListener('focus', function () {
+                if (this.value.trim() !== '') locGoiY();
+            });
+
+            items.forEach(function (item) {
+                item.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    input.value = this.getAttribute('data-value');
+                    list.style.display = 'none';
+                    btn.click();
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!input.contains(e.target) && !list.contains(e.target)) {
+                    list.style.display = 'none';
+                }
+            });
+        }
+
+        window.addEventListener('beforeunload', function () {
+            sessionStorage.setItem('scrollPos_DangKy', window.scrollY);
+        });
+
+        window.addEventListener('load', function () {
+            var savedScroll = sessionStorage.getItem('scrollPos_DangKy');
+            if (savedScroll !== null) {
+                window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', function () {
-            // Tự động ẩn thông báo sau 5 giây
+            thietLapGoiYDK();
+
             setTimeout(function () {
                 var tb = document.getElementById('pnlTB');
                 if (tb && tb.style.display !== 'none') {
