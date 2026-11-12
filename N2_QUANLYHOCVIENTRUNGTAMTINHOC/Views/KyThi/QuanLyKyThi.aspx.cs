@@ -12,6 +12,26 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 {
     public partial class QuanLyKyThi : System.Web.UI.Page
     {
+        private bool LaGiangVien
+        {
+            get
+            {
+                string q = Session["Quyen"]?.ToString() ?? "";
+                return q.Equals("GiangVien", StringComparison.OrdinalIgnoreCase) || q.Equals("Giảng viên", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private bool LaHocVien
+        {
+            get
+            {
+                string q = Session["Quyen"]?.ToString() ?? "";
+                return q.Equals("HocVien", StringComparison.OrdinalIgnoreCase) || q.Equals("Học viên", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private string MaNguoiDung => Session["TenDangNhap"]?.ToString() ?? "";
+
         private string TuKhoaKT
         {
             get { return ViewState["TuKhoaKT"]?.ToString() ?? ""; }
@@ -40,7 +60,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                 ddlKhoaHoc.DataSource = kncsdl.DocDuLieu("SELECT makhoahoc, tenkhoahoc FROM KHOAHOC ORDER BY tenkhoahoc");
                 ddlKhoaHoc.DataTextField = "tenkhoahoc"; ddlKhoaHoc.DataValueField = "makhoahoc"; ddlKhoaHoc.DataBind();
 
-                if (Session["Quyen"] != null && Session["Quyen"].ToString() == "HocVien")
+                if (LaHocVien)
                 {
                     divFormKyThi.Visible = false;
                     pnlKhuVucNhapDiem.Visible = false;
@@ -50,6 +70,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     gvThamGia.Columns[0].Visible = false;
                     gvThamGia.Columns[1].Visible = false;
                     gvThamGia.Columns[gvThamGia.Columns.Count - 1].Visible = false;
+                }
+                else if (LaGiangVien)
+                {
+                    divFormKyThi.Visible = false;
+                    divFormNhapDiem.Attributes["class"] = "col-12";
+                    litTieuDeDiem.Text = "Nhập Điểm thi & Tính ĐTB (Dành cho Lớp Giảng viên phụ trách)";
                 }
 
                 KhoiTaoNamThi();
@@ -109,9 +135,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                            FROM HOCVIEN hv
                            JOIN DANGKY dk ON hv.mahocvien = dk.mahocvien
                            JOIN KYTHI kt ON dk.makhoahoc = kt.makhoahoc
+                           LEFT JOIN LOPHOC l ON dk.malop = l.malop
                            WHERE kt.makythi = @kt
+                             AND (@isGV = 0 OR l.magiangvien = @user)
                            ORDER BY HienThi";
-            DataTable dt = kncsdl.DocDuLieu(sql, new[] { new SqlParameter("@kt", maKT) });
+            SqlParameter[] p = {
+                new SqlParameter("@kt", maKT),
+                new SqlParameter("@isGV", LaGiangVien ? 1 : 0),
+                new SqlParameter("@user", MaNguoiDung)
+            };
+            DataTable dt = kncsdl.DocDuLieu(sql, p);
             ddlHocVien.DataSource = dt;
             ddlHocVien.DataTextField = "HienThi";
             ddlHocVien.DataValueField = "mahocvien";
@@ -128,22 +161,44 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                            FROM DIEMDANH dd
                            JOIN LOPHOC l ON dd.malop = l.malop
                            JOIN KYTHI kt ON l.makhoahoc = kt.makhoahoc
-                           WHERE dd.mahocvien = @hv AND kt.makythi = @kt";
-            DataTable dt = kncsdl.DocDuLieu(sql, new[] { new SqlParameter("@hv", maHV), new SqlParameter("@kt", maKT) });
+                           WHERE dd.mahocvien = @hv AND kt.makythi = @kt
+                             AND (@isGV = 0 OR l.magiangvien = @user)";
+            SqlParameter[] p = {
+                new SqlParameter("@hv", maHV),
+                new SqlParameter("@kt", maKT),
+                new SqlParameter("@isGV", LaGiangVien ? 1 : 0),
+                new SqlParameter("@user", MaNguoiDung)
+            };
+            DataTable dt = kncsdl.DocDuLieu(sql, p);
             double diemCC = 10;
             if (dt.Rows.Count > 0)
             {
                 int kp = dt.Rows[0]["VangKP"] != DBNull.Value ? Convert.ToInt32(dt.Rows[0]["VangKP"]) : 0;
-                int p = dt.Rows[0]["VangP"] != DBNull.Value ? Convert.ToInt32(dt.Rows[0]["VangP"]) : 0;
-                diemCC = Math.Max(0, 10 - kp * 2 - p * 1);
+                int vp = dt.Rows[0]["VangP"] != DBNull.Value ? Convert.ToInt32(dt.Rows[0]["VangP"]) : 0;
+                diemCC = Math.Max(0, 10 - kp * 2 - vp * 1);
             }
             return diemCC;
+        }
+
+        // Quy đổi ngược chính xác Điểm thi (80%) từ Điểm Trung Bình và Điểm Chuyên Cần (20%)
+        private double QuyDoiDiemThiTuDTB(double diemTB, double diemCC)
+        {
+            double diemThi = Math.Round((diemTB - diemCC * 0.2) / 0.8, 1);
+            if (diemThi < 0) diemThi = 0;
+            if (diemThi > 10) diemThi = 10;
+            return diemThi;
+        }
+
+        // Tính Điểm Trung Bình chính xác từ Điểm Chuyên Cần (20%) và Điểm Thi (80%)
+        private double TinhDiemTrungBinh(double diemCC, double diemThi)
+        {
+            return Math.Round(diemCC * 0.2 + diemThi * 0.8, 1, MidpointRounding.AwayFromZero);
         }
 
         private void TinhDiemChuyenCanTuDiemDanh()
         {
             double diemCC = TinhDiemCC(ddlHocVien.SelectedValue, ddlKyThi.SelectedValue);
-            txtDiemCC.Text = diemCC.ToString(CultureInfo.InvariantCulture);
+            txtDiemCC.Text = diemCC.ToString("0.##", CultureInfo.InvariantCulture);
         }
 
         protected void ddlKyThi_SelectedIndexChanged(object sender, EventArgs e)
@@ -159,14 +214,22 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 
         private void TaiDuLieu()
         {
-            TaiDanhSachKyThi();
+            if (!LaGiangVien && !LaHocVien)
+            {
+                TaiDanhSachKyThi();
+            }
 
             string prevKT = ddlKyThi.SelectedValue;
             string sqlKT = @"SELECT kt.makythi, kt.makythi + N' - ' + kh.tenkhoahoc + N' (' + kt.nienkhoa + N')' AS HienThi 
                              FROM KYTHI kt 
                              JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc 
+                             WHERE (@isGV = 0 OR EXISTS (SELECT 1 FROM LOPHOC l WHERE l.makhoahoc = kt.makhoahoc AND l.magiangvien = @user))
                              ORDER BY kt.makythi DESC";
-            ddlKyThi.DataSource = kncsdl.DocDuLieu(sqlKT);
+            SqlParameter[] pKT = {
+                new SqlParameter("@isGV", LaGiangVien ? 1 : 0),
+                new SqlParameter("@user", MaNguoiDung)
+            };
+            ddlKyThi.DataSource = kncsdl.DocDuLieu(sqlKT, pKT);
             ddlKyThi.DataTextField = "HienThi"; ddlKyThi.DataValueField = "makythi"; ddlKyThi.DataBind();
             if (!string.IsNullOrEmpty(prevKT) && ddlKyThi.Items.FindByValue(prevKT) != null)
                 ddlKyThi.SelectedValue = prevKT;
@@ -192,10 +255,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         {
             string tuKhoa = TuKhoaTG;
             string ketQua = ddlLocKetQua.SelectedValue;
-            bool isHV = Session["Quyen"] != null && Session["Quyen"].ToString() == "HocVien";
-            string user = Session["TenDangNhap"]?.ToString() ?? "";
 
-            if (isHV)
+            if (LaHocVien)
             {
                 string sqlHV = @"SELECT ISNULL(tg.matg, '') AS matg,
                                         hv.hoten,
@@ -211,7 +272,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                                  LEFT JOIN THAM_GIA tg ON tg.mahocvien = dk.mahocvien AND tg.makythi = kt.makythi
                                  WHERE dk.mahocvien = @user
                                  ORDER BY dk.ngaydangky DESC";
-                gvThamGia.DataSource = kncsdl.DocDuLieu(sqlHV, new[] { new SqlParameter("@user", user) });
+                gvThamGia.DataSource = kncsdl.DocDuLieu(sqlHV, new[] { new SqlParameter("@user", MaNguoiDung) });
                 gvThamGia.DataBind();
             }
             else
@@ -223,10 +284,17 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                                JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc
                                WHERE (@kw = '' OR tg.matg LIKE @kw OR hv.hoten LIKE @kw OR tg.makythi LIKE @kw OR kh.tenkhoahoc LIKE @kw)
                                  AND (@kq = '' OR tg.ketqua = @kq)
+                                 AND (@isGV = 0 OR EXISTS (
+                                     SELECT 1 FROM DANGKY dk 
+                                     JOIN LOPHOC l ON dk.malop = l.malop 
+                                     WHERE dk.mahocvien = tg.mahocvien AND l.makhoahoc = kt.makhoahoc AND l.magiangvien = @user
+                                 ))
                                ORDER BY tg.matg DESC";
                 SqlParameter[] p = {
                     new SqlParameter("@kw", string.IsNullOrEmpty(tuKhoa) ? "" : "%" + tuKhoa + "%"),
-                    new SqlParameter("@kq", ketQua ?? "")
+                    new SqlParameter("@kq", ketQua ?? ""),
+                    new SqlParameter("@isGV", LaGiangVien ? 1 : 0),
+                    new SqlParameter("@user", MaNguoiDung)
                 };
                 gvThamGia.DataSource = kncsdl.DocDuLieu(sql, p);
                 gvThamGia.DataBind();
@@ -235,16 +303,31 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 
         private void TaiGoiYTimKiem()
         {
-            DataTable dtKT = kncsdl.DocDuLieu("SELECT kt.makythi, kt.nienkhoa, kh.tenkhoahoc FROM KYTHI kt JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc");
-            StringBuilder sbKT = new StringBuilder();
-            foreach (DataRow r in dtKT.Rows)
+            if (!LaGiangVien && !LaHocVien)
             {
-                sbKT.AppendFormat("<button type=\"button\" class=\"list-group-item list-group-item-action py-2 px-2 small goi-y-item\" data-value=\"{0}\"><strong>{0}</strong> - {1} ({2})</button>",
-                    r["makythi"], r["tenkhoahoc"], r["nienkhoa"]);
+                DataTable dtKT = kncsdl.DocDuLieu("SELECT kt.makythi, kt.nienkhoa, kh.tenkhoahoc FROM KYTHI kt JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc");
+                StringBuilder sbKT = new StringBuilder();
+                foreach (DataRow r in dtKT.Rows)
+                {
+                    sbKT.AppendFormat("<button type=\"button\" class=\"list-group-item list-group-item-action py-2 px-2 small goi-y-item\" data-value=\"{0}\"><strong>{0}</strong> - {1} ({2})</button>",
+                        r["makythi"], r["tenkhoahoc"], r["nienkhoa"]);
+                }
+                litGoiYKT.Text = sbKT.ToString();
             }
-            litGoiYKT.Text = sbKT.ToString();
 
-            DataTable dtTG = kncsdl.DocDuLieu("SELECT tg.matg, tg.makythi, hv.hoten FROM THAM_GIA tg JOIN HOCVIEN hv ON tg.mahocvien = hv.mahocvien");
+            string sqlTG = @"SELECT tg.matg, tg.makythi, hv.hoten 
+                             FROM THAM_GIA tg 
+                             JOIN HOCVIEN hv ON tg.mahocvien = hv.mahocvien
+                             JOIN KYTHI kt ON tg.makythi = kt.makythi
+                             WHERE (@isGV = 0 OR EXISTS (
+                                 SELECT 1 FROM DANGKY dk 
+                                 JOIN LOPHOC l ON dk.malop = l.malop 
+                                 WHERE dk.mahocvien = tg.mahocvien AND l.makhoahoc = kt.makhoahoc AND l.magiangvien = @user
+                             ))";
+            DataTable dtTG = kncsdl.DocDuLieu(sqlTG, new[] {
+                new SqlParameter("@isGV", LaGiangVien ? 1 : 0),
+                new SqlParameter("@user", MaNguoiDung)
+            });
             StringBuilder sbTG = new StringBuilder();
             foreach (DataRow r in dtTG.Rows)
             {
@@ -281,6 +364,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 
         protected void btnTaoKyThi_Click(object sender, EventArgs e)
         {
+            if (LaGiangVien || LaHocVien)
+            {
+                HienThongBao("Bạn không có quyền tạo kỳ thi!", true);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(txtNgayThi.Text))
             {
                 HienThongBao("Vui lòng chọn Ngày thi!", true);
@@ -309,6 +398,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 
         protected void btnCapNhatKT_Click(object sender, EventArgs e)
         {
+            if (LaGiangVien || LaHocVien) return;
+
             if (string.IsNullOrWhiteSpace(txtMaKT.Text) || string.IsNullOrWhiteSpace(txtNgayThi.Text))
             {
                 HienThongBao("Vui lòng chọn kỳ thi cần sửa và nhập đầy đủ Ngày thi!", true);
@@ -382,6 +473,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 
         protected void btnXoaKTChinhThuc_Click(object sender, EventArgs e)
         {
+            if (LaGiangVien || LaHocVien) return;
+
             string ma = hfMaKTXoa.Value;
             if (!string.IsNullOrEmpty(ma))
             {
@@ -434,7 +527,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         {
             if (string.IsNullOrEmpty(ddlHocVien.SelectedValue) || string.IsNullOrEmpty(ddlKyThi.SelectedValue))
             {
-                HienThongBao("Vui lòng chọn Kỳ thi và Học viên!", true);
+                HienThongBao("Vui lòng chọn Kỳ thi và Học viên thuộc lớp bạn phụ trách!", true);
                 return;
             }
 
@@ -457,9 +550,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                 }
 
                 SinhMaTGMoi();
-                TinhDiemChuyenCanTuDiemDanh();
-                double diemCC = double.Parse(txtDiemCC.Text, CultureInfo.InvariantCulture);
-                double diemTB = Math.Round(diemCC * 0.2 + diemThi * 0.8, 1);
+                double diemCC = TinhDiemCC(ddlHocVien.SelectedValue, ddlKyThi.SelectedValue);
+                txtDiemCC.Text = diemCC.ToString("0.##", CultureInfo.InvariantCulture);
+
+                double diemTB = TinhDiemTrungBinh(diemCC, diemThi);
                 string ketQua = diemTB >= 5.0 ? "Đạt" : "Không đạt";
 
                 string sql = "INSERT INTO THAM_GIA(matg, mahocvien, makythi, diem, ketqua) VALUES(@ma, @hv, @kt, @diem, @kq)";
@@ -471,7 +565,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     new SqlParameter("@kq", ketQua)
                 };
                 kncsdl.ThucThiLenh(sql, p);
-                HienThongBao($"Thêm điểm thành công (CC: {diemCC} | Thi: {diemThi} -> ĐTB: {diemTB} - {ketQua})!");
+                HienThongBao($"Thêm điểm thành công (CC: {diemCC:0.##} | Thi: {diemThi:0.##} -> ĐTB: {diemTB:0.0} - {ketQua})!");
                 gvThamGia.PageIndex = 0;
                 TaiDuLieu();
                 LamMoiFormTG();
@@ -497,9 +591,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     return;
                 }
 
-                TinhDiemChuyenCanTuDiemDanh();
-                double diemCC = double.Parse(txtDiemCC.Text, CultureInfo.InvariantCulture);
-                double diemTB = Math.Round(diemCC * 0.2 + diemThi * 0.8, 1);
+                double diemCC = TinhDiemCC(ddlHocVien.SelectedValue, ddlKyThi.SelectedValue);
+                txtDiemCC.Text = diemCC.ToString("0.##", CultureInfo.InvariantCulture);
+
+                double diemTB = TinhDiemTrungBinh(diemCC, diemThi);
                 string ketQua = diemTB >= 5.0 ? "Đạt" : "Không đạt";
 
                 string sql = "UPDATE THAM_GIA SET mahocvien=@hv, makythi=@kt, diem=@diem, ketqua=@kq WHERE matg=@ma";
@@ -511,7 +606,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     new SqlParameter("@kq", ketQua)
                 };
                 kncsdl.ThucThiLenh(sql, p);
-                HienThongBao($"Cập nhật điểm thành công (CC: {diemCC} | Thi: {diemThi} -> ĐTB: {diemTB} - {ketQua})!");
+                HienThongBao($"Cập nhật điểm thành công (CC: {diemCC:0.##} | Thi: {diemThi:0.##} -> ĐTB: {diemTB:0.0} - {ketQua})!");
                 TaiDuLieu();
                 LamMoiFormTG();
             }
@@ -539,19 +634,30 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                 {
                     DataRow r = dt.Rows[0];
                     txtMaTG.Text = r["matg"].ToString();
-                    ddlKyThi.SelectedValue = r["makythi"].ToString();
+                    string maKT = r["makythi"].ToString();
+                    if (ddlKyThi.Items.FindByValue(maKT) != null)
+                        ddlKyThi.SelectedValue = maKT;
                     TaiHocVienTheoKyThi();
 
                     string maHV = r["mahocvien"].ToString();
-                    if (ddlHocVien.Items.FindByValue(maHV) == null)
-                    {
-                        string tenHV = kncsdl.LayGiaTriDon("SELECT hoten FROM HOCVIEN WHERE mahocvien=@hv", new[] { new SqlParameter("@hv", maHV) })?.ToString() ?? maHV;
-                        ddlHocVien.Items.Add(new ListItem(maHV + " - " + tenHV, maHV));
-                    }
-                    ddlHocVien.SelectedValue = maHV;
+                    if (ddlHocVien.Items.FindByValue(maHV) != null)
+                        ddlHocVien.SelectedValue = maHV;
 
-                    txtDiem.Text = r["diem"].ToString();
-                    TinhDiemChuyenCanTuDiemDanh();
+                    double diemCC = TinhDiemCC(maHV, maKT);
+                    txtDiemCC.Text = diemCC.ToString("0.##", CultureInfo.InvariantCulture);
+
+                    // Quy đổi ngược từ ĐTB lưu trong CSDL ra đúng Điểm thi (80%) để hiển thị khi sửa
+                    if (r["diem"] != DBNull.Value)
+                    {
+                        double diemTB = Convert.ToDouble(r["diem"]);
+                        double diemThiGoc = QuyDoiDiemThiTuDTB(diemTB, diemCC);
+                        txtDiem.Text = diemThiGoc.ToString("0.##", CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        txtDiem.Text = "";
+                    }
+
                     pnlTB.Visible = false;
                 }
             }
@@ -585,18 +691,40 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 
             litTenKyThiHL.Text = ddlKyThi.SelectedItem.Text;
 
-            string sql = @"SELECT DISTINCT hv.mahocvien, hv.hoten, tg.diem AS DiemHienTai
+            string sql = @"SELECT DISTINCT hv.mahocvien, hv.hoten, tg.diem AS DiemTBCSDL
                            FROM HOCVIEN hv
                            JOIN DANGKY dk ON hv.mahocvien = dk.mahocvien
                            JOIN KYTHI kt ON dk.makhoahoc = kt.makhoahoc
+                           LEFT JOIN LOPHOC l ON dk.malop = l.malop
                            LEFT JOIN THAM_GIA tg ON tg.mahocvien = hv.mahocvien AND tg.makythi = kt.makythi
                            WHERE kt.makythi = @kt
+                             AND (@isGV = 0 OR l.magiangvien = @user)
                            ORDER BY hv.hoten";
-            DataTable dt = kncsdl.DocDuLieu(sql, new[] { new SqlParameter("@kt", maKT) });
+            SqlParameter[] p = {
+                new SqlParameter("@kt", maKT),
+                new SqlParameter("@isGV", LaGiangVien ? 1 : 0),
+                new SqlParameter("@user", MaNguoiDung)
+            };
+            DataTable dt = kncsdl.DocDuLieu(sql, p);
             dt.Columns.Add("DiemCC", typeof(string));
+            dt.Columns.Add("DiemHienTai", typeof(string));
+
             foreach (DataRow r in dt.Rows)
             {
-                r["DiemCC"] = TinhDiemCC(r["mahocvien"].ToString(), maKT).ToString(CultureInfo.InvariantCulture);
+                string maHV = r["mahocvien"].ToString();
+                double diemCC = TinhDiemCC(maHV, maKT);
+                r["DiemCC"] = diemCC.ToString("0.##", CultureInfo.InvariantCulture);
+
+                if (r["DiemTBCSDL"] != DBNull.Value)
+                {
+                    double diemTB = Convert.ToDouble(r["DiemTBCSDL"]);
+                    double diemThiGoc = QuyDoiDiemThiTuDTB(diemTB, diemCC);
+                    r["DiemHienTai"] = diemThiGoc.ToString("0.##", CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    r["DiemHienTai"] = "";
+                }
             }
 
             gvNhapHangLoat.DataSource = dt;
@@ -614,21 +742,25 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             foreach (GridViewRow row in gvNhapHangLoat.Rows)
             {
                 string maHV = gvNhapHangLoat.DataKeys[row.RowIndex].Value.ToString();
-                Label lblCC = (Label)row.FindControl("lblDiemCCHL");
                 TextBox txtThi = (TextBox)row.FindControl("txtDiemThiHL");
 
-                if (txtThi == null || string.IsNullOrWhiteSpace(txtThi.Text)) continue;
-
-                double diemThi;
-                if (!double.TryParse(txtThi.Text.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out diemThi) || diemThi < 0 || diemThi > 10)
-                    continue;
-
-                double diemCC = double.Parse(lblCC.Text, CultureInfo.InvariantCulture);
-                double diemTB = Math.Round(diemCC * 0.2 + diemThi * 0.8, 1);
-                string ketQua = diemTB >= 5.0 ? "Đạt" : "Không đạt";
+                if (txtThi == null) continue;
+                string rawVal = txtThi.Text.Trim();
 
                 object existingMaTG = kncsdl.LayGiaTriDon("SELECT matg FROM THAM_GIA WHERE mahocvien=@hv AND makythi=@kt",
                     new[] { new SqlParameter("@hv", maHV), new SqlParameter("@kt", maKT) });
+
+                // Nếu ô trống và thí sinh này chưa từng có điểm -> bỏ qua
+                if (string.IsNullOrEmpty(rawVal)) continue;
+
+                double diemThi;
+                if (!double.TryParse(rawVal.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out diemThi) || diemThi < 0 || diemThi > 10)
+                    continue;
+
+                // Tính lại điểm chuyên cần chuẩn xác trực tiếp theo từng thí sinh
+                double diemCC = TinhDiemCC(maHV, maKT);
+                double diemTB = TinhDiemTrungBinh(diemCC, diemThi);
+                string ketQua = diemTB >= 5.0 ? "Đạt" : "Không đạt";
 
                 if (existingMaTG != null && existingMaTG != DBNull.Value)
                 {
@@ -644,7 +776,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                 daLuu++;
             }
 
-            HienThongBao($"Đã lưu điểm hàng loạt cho {daLuu} học viên!");
+            HienThongBao($"Đã lưu điểm hàng loạt chính xác cho {daLuu} học viên!");
             TaiDuLieu();
             LamMoiFormTG();
         }

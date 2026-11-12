@@ -50,9 +50,9 @@
                     <button type="button" class="btn btn-orange btn-sm" data-bs-toggle="modal" data-bs-target="#modalDangKy">
                         <i class="bi bi-person-plus-fill me-1"></i> Học viên Tự Đăng ký Tài khoản
                     </button>
-                    <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTraCuu">
+                    <%--<button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTraCuu">
                         <i class="bi bi-search me-1"></i> Tra cứu & Xác thực Chứng chỉ
-                    </button>
+                    </button>--%>
                 </div>
             </div>
         </div>

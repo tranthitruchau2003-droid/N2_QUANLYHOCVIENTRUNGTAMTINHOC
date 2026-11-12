@@ -33,12 +33,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 
             if (isAdmin)
             {
-                // Admin thấy toàn bộ chức năng
                 liCaiDat.Visible = true;
             }
             else if (isGV)
             {
-                // Giảng viên: Chỉ xem Dashboard, Lớp học & Lịch học, Kỳ thi & Điểm thi
+                // Giảng viên: KHÔNG xem Dashboard, chỉ xem Lớp học & Lịch học, Kỳ thi & Điểm thi
+                liDashboard.Visible = false;
                 liHocVien.Visible = false;
                 liKhoaHoc.Visible = false;
                 liGiangVien.Visible = false;
@@ -47,10 +47,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 liChungChi.Visible = false;
                 liBaoCao.Visible = false;
                 liCaiDat.Visible = false;
+
+                liLopHoc.Visible = true;
+                liKyThi.Visible = true;
             }
             else if (isHV)
             {
-                // Học viên CHỈ XEM ĐÚNG 4 MỤC: Lớp học & Lịch học, Đăng ký Khóa học, Kỳ thi & Điểm thi, Cấp Chứng chỉ
                 liDashboard.Visible = false;
                 liHocVien.Visible = false;
                 liKhoaHoc.Visible = false;
@@ -66,7 +68,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             }
             else
             {
-                // Nhân viên giáo vụ: Thấy tất cả trừ Cài đặt hệ thống
+                // Nhân viên giáo vụ
                 liCaiDat.Visible = false;
             }
         }

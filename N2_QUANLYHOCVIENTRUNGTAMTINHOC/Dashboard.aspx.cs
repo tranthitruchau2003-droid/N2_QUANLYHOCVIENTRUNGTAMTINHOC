@@ -9,6 +9,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            string quyen = Session["Quyen"]?.ToString() ?? "";
+            if (quyen.Equals("GiangVien", StringComparison.OrdinalIgnoreCase) ||
+                quyen.Equals("Giảng viên", StringComparison.OrdinalIgnoreCase) ||
+                quyen.Equals("HocVien", StringComparison.OrdinalIgnoreCase) ||
+                quyen.Equals("Học viên", StringComparison.OrdinalIgnoreCase))
+            {
+                Response.Redirect("~/Views/LopHoc/QuanLyLopHoc.aspx");
+                return;
+            }
+
             if (!IsPostBack) TaiDuLieuDashboard();
         }
 

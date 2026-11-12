@@ -199,3 +199,22 @@ body {
     color: #6c757d;
     border-top: 1px solid #e9ecef;
 }
+
+/* Hiệu ứng khi trỏ chuột (hover) hoặc đang chọn (active) trên Menu trái */
+.sidebar .nav-link:hover,
+.sidebar ul li a:hover,
+.sidebar .nav-link.active-orange,
+.sidebar ul li a.active-orange {
+    background-color: #FF8A26 !important;
+    color: #ffffff !important;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+    .sidebar .nav-link:hover i,
+    .sidebar ul li a:hover i,
+    .sidebar .nav-link.active-orange i,
+    .sidebar ul li a.active-orange i {
+        color: #ffffff !important;
+    }
