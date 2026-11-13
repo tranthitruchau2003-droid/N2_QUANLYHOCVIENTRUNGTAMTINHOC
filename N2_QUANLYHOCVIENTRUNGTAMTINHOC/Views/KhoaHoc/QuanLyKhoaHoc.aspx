@@ -55,8 +55,12 @@
                             autocomplete="off" placeholder="VD: 1,500,000" oninput="dinhDangHocPhi(this);" />
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small fw-bold">Thời gian học (*)</label>
-                        <asp:TextBox ID="txtThoiGian" runat="server" CssClass="form-control" placeholder="VD: 3 tháng (36 buổi)" autocomplete="off" />
+                        <label class="form-label small fw-bold">Thời gian học/ tháng (*)</label>
+                        <div class="input-group input-group-sm">
+                            <asp:TextBox ID="txtThoiGian" runat="server" ClientIDMode="Static" CssClass="form-control" 
+                                placeholder="VD: 3 hoặc 2.5" autocomplete="off" onkeypress="return chiChoNhapSoVaCham(event);" oninput="chiChoNhapSoVaChamInput(this);" />
+                            <span class="input-group-text bg-light fw-bold text-muted">tháng</span>
+                        </div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label small fw-bold">Trạng thái</label>
@@ -149,7 +153,36 @@
     <asp:HiddenField ID="hfMaKHXoa" runat="server" ClientIDMode="Static" />
 
     <script>
-        // @ts-nocheck
+// @ts-nocheck
+
+function chiChoNhapSoVaCham(e) {
+    var charCode = (e.which) ? e.which : e.keyCode;
+    // Cho phép các phím điều hướng, xóa, backspace, tab
+    if (charCode === 8 || charCode === 9 || charCode === 37 || charCode === 39 || charCode === 46) {
+        return true;
+    }
+    var charStr = String.fromCharCode(charCode);
+    // Chỉ cho phép số 0-9 và dấu chấm (.)
+    if (/^[0-9.]$/.test(charStr)) {
+        // Không cho phép nhập nhiều hơn 1 dấu chấm
+        if (charStr === '.' && e.target.value.indexOf('.') !== -1) {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+function chiChoNhapSoVaChamInput(input) {
+    // Lọc bỏ mọi ký tự không phải số và dấu chấm
+    var val = input.value.replace(/[^0-9.]/g, '');
+    // Chỉ giữ lại dấu chấm đầu tiên nếu có nhiều dấu chấm
+    var parts = val.split('.');
+    if (parts.length > 2) {
+        val = parts[0] + '.' + parts.slice(1).join('');
+    }
+    input.value = val;
+}
         function hienThiModalXoaKH(maKH) {
             document.getElementById('hfMaKHXoa').value = maKH;
             document.getElementById('maKHCanXoa').innerText = maKH;

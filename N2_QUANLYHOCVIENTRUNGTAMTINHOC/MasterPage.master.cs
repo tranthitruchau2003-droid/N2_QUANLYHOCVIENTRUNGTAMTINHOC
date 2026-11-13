@@ -23,7 +23,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             return "";
         }
 
-      
+
         protected void Page_Init(object sender, EventArgs e)
         {
             Response.Cache.SetCacheability(HttpCacheability.NoCache);
@@ -53,7 +53,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         {
             string path = Request.AppRelativeCurrentExecutionFilePath?.ToLowerInvariant() ?? "";
 
-            if (quyen == "Admin") return; 
+            if (quyen == "Admin") return;
 
             if (quyen == "NhanVien")
             {
@@ -100,6 +100,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 string quyenAnToan = HttpUtility.HtmlEncode(quyen);
                 litNguoiDung.Text = string.Format("{0} ({1})", hoTenAnToan, quyenAnToan);
             }
+
+            if (Session["BatBuocDoiMK"] != null && (bool)Session["BatBuocDoiMK"])
+            {
+                ScriptManager.RegisterStartupScript(this.Page, this.Page.GetType(), "force_change_pw",
+                    "document.addEventListener('DOMContentLoaded', function () { moModalDoiMKBatBuoc(); });", true);
+            }
         }
 
         private void PhanQuyenMenu(string quyen)
@@ -144,7 +150,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             }
             else
             {
-        
+
                 liDashboard.Visible = liHocVien.Visible = liKhoaHoc.Visible = liGiangVien.Visible =
                 liLopHoc.Visible = liDangKy.Visible = liPhieuThu.Visible = liKyThi.Visible =
                 liChungChi.Visible = liBaoCao.Visible = liCaiDat.Visible = false;
@@ -165,7 +171,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             Context.ApplicationInstance.CompleteRequest();
         }
 
-    
+
         protected void btnLuuMatKhau_Click(object sender, EventArgs e)
         {
             string user = Session["TenDangNhap"]?.ToString();
@@ -220,15 +226,22 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 }
                 else
                 {
-                
+
                     kq = kncsdl.ThucThiLenh("UPDATE TAIKHOAN SET matkhau=@mkm WHERE tendangnhap=@u AND matkhau=@mkc AND trangthai=1",
                         new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
                 }
 
                 if (kq > 0)
-                    ThongBaoPopup("Đổi mật khẩu thành công!");
+                {
+                    Session.Remove("BatBuocDoiMK");
+                    string safeMsg = HttpUtility.JavaScriptStringEncode("Đổi mật khẩu thành công! Bạn đã có thể sử dụng hệ thống.");
+                    ScriptManager.RegisterStartupScript(this.Page, this.Page.GetType(), "mk_ok",
+                        $"alert('{safeMsg}'); window.location.href = window.location.href;", true);
+                }
                 else
+                {
                     ThongBaoPopup("Mật khẩu hiện tại không đúng!");
+                }
             }
             catch
             {

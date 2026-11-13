@@ -119,17 +119,20 @@
             </div>
         </div>
 
-        <!-- POPUP ĐỔI MẬT KHẨU CHO HỌC VIÊN / GIẢNG VIÊN / ADMIN -->
+        <!-- POPUP ĐỔI MẬT KHẨU (HỖ TRỢ CHẾ ĐỘ BẮT BUỘC ĐỔI LẦN ĐẦU) -->
         <div class="modal fade" id="modalDoiMatKhau" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-0 shadow">
                     <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title fw-bold"><i class="bi bi-key-fill me-2"></i>Đổi Mật khẩu Tài khoản</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title fw-bold" id="titleDoiMK"><i class="bi bi-key-fill me-2"></i>Đổi Mật khẩu Tài khoản</h5>
+                        <button type="button" class="btn-close btn-close-white" id="btnCloseDoiMK" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        <div id="alertBatBuocDoiMK" class="alert alert-warning py-2 small fw-semibold d-none">
+                            <i class="bi bi-shield-exclamation me-1"></i> Đây là lần đăng nhập đầu tiên. Vui lòng đổi mật khẩu mới (khác SĐT, tối thiểu 6 ký tự) để tiếp tục!
+                        </div>
                         <div class="mb-2">
-                            <label class="small fw-bold">Mật khẩu hiện tại (*)</label>
+                            <label class="small fw-bold">Mật khẩu hiện tại (SĐT nếu đăng nhập lần đầu) (*)</label>
                             <asp:TextBox ID="txtMKCu" runat="server" TextMode="Password" CssClass="form-control" />
                         </div>
                         <div class="mb-2">
@@ -142,8 +145,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <asp:Button ID="btnLuuMatKhau" runat="server" Text="Cập nhật Mật khẩu" CssClass="btn btn-primary-gradient" OnClick="btnLuuMatKhau_Click" />
+                        <button type="button" class="btn btn-secondary" id="btnHuyDoiMK" data-bs-dismiss="modal">Hủy</button>
+                        <asp:Button ID="btnLuuMatKhau" runat="server" Text="Cập nhật Mật khẩu" CssClass="btn btn-primary-gradient fw-bold" OnClick="btnLuuMatKhau_Click" />
                     </div>
                 </div>
             </div>
@@ -326,6 +329,32 @@
                 });
             });
         });
+
+function moModalDoiMKBatBuoc() {
+    var check = function () {
+        var el = document.getElementById('modalDoiMatKhau');
+        if (el && window.bootstrap) {
+            var btnClose = document.getElementById('btnCloseDoiMK');
+            var btnHuy = document.getElementById('btnHuyDoiMK');
+            var alertBox = document.getElementById('alertBatBuocDoiMK');
+            var title = document.getElementById('titleDoiMK');
+
+            if (btnClose) btnClose.style.display = 'none';
+            if (btnHuy) btnHuy.style.display = 'none';
+            if (alertBox) alertBox.classList.remove('d-none');
+            if (title) title.innerHTML = '<i class="bi bi-shield-lock-fill me-2"></i>Yêu cầu Đổi Mật khẩu Lần đầu';
+
+            var modal = new window.bootstrap.Modal(el, {
+                backdrop: 'static',
+                keyboard: false
+            });
+            modal.show();
+        } else {
+            setTimeout(check, 100);
+        }
+    };
+    check();
+}
 
         function toggleSidebar() {
             var sidebar = document.getElementById('sidebar');

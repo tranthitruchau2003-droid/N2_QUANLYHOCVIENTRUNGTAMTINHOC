@@ -39,7 +39,10 @@
             <div class="card card-custom">
                 <div class="card-header"><span><i class="bi bi-easel2-fill me-2"></i>Mở Lớp & Cập nhật Lịch học (TKB)</span></div>
                 <div class="card-body">
-                    <div class="mb-2"><label class="small fw-bold">Mã Lớp (*)</label><asp:TextBox ID="txtMaLop" runat="server" CssClass="form-control form-control-sm" placeholder="VD: LH12" /></div>
+                    <div class="mb-2">
+                        <label class="small fw-bold">Mã Lớp (*)</label>
+                        <asp:TextBox ID="txtMaLop" runat="server" CssClass="form-control form-control-sm bg-light" ReadOnly="true" placeholder="Tự động sinh mã..." />
+                    </div>
                     <div class="mb-2"><label class="small fw-bold">Tên Lớp (*)</label><asp:TextBox ID="txtTenLop" runat="server" CssClass="form-control form-control-sm" autocomplete="new-password" placeholder="VD: Lớp Web K12 - Tối 2-4-6" /></div>
                     <div class="mb-2"><label class="small fw-bold">Thuộc Khóa học (*)</label><asp:DropDownList ID="ddlKhoaHoc" runat="server" CssClass="form-select form-select-sm" /></div>
                     <div class="mb-2"><label class="small fw-bold">Giảng viên phụ trách</label><asp:DropDownList ID="ddlGiangVien" runat="server" CssClass="form-select form-select-sm" /></div>
@@ -97,7 +100,7 @@
             <div class="card card-custom">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span class="text-nowrap"><i class="bi bi-list-task me-2"></i><asp:Literal ID="litTieuDeBangLop" runat="server" Text="Danh sách Lớp học phần & Thời khóa biểu" /></span>
-                    <asp:Panel ID="pnlTimKiemLop" runat="server" CssClass="d-flex gap-2 w-100 justify-content-end">
+                    <asp:Panel ID="pnlTimKiemLop" runat="server" CssClass="d-flex gap-2 w-100 justify-content-end" DefaultButton="btnTimLop">
                         <div class="position-relative flex-grow-1" style="max-width: 260px;">
                             <asp:TextBox ID="txtTimLop" runat="server" ClientIDMode="Static" TextMode="Search" CssClass="form-control form-control-sm"
                                 placeholder="Tìm mã, tên lớp, khóa..." autocomplete="off" onclick="this.select();" />
@@ -122,9 +125,7 @@
                             <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
                             <asp:BoundField DataField="hotengv" HeaderText="Giảng viên" />
                             <asp:BoundField DataField="thoikhoabieu" HeaderText="Thời khóa biểu (Ca - Thứ - Phòng)" />
-                            <asp:BoundField DataField="thoikhoabieu" HeaderText="Thời khóa biểu (Ca - Thứ - Phòng)" />
                             <asp:BoundField DataField="thoigianlop" HeaderText="Thời gian học (Từ - Đến)" ItemStyle-CssClass="text-nowrap" />
-                            <asp:BoundField DataField="siso" HeaderText="Sĩ số" ItemStyle-CssClass="text-center fw-semibold text-success" />
                             <asp:BoundField DataField="siso" HeaderText="Sĩ số" ItemStyle-CssClass="text-center fw-semibold text-success" />
                             <asp:TemplateField HeaderText="Thao tác">
                                 <ItemTemplate>

@@ -32,8 +32,22 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
                 txtNgayDiemDanh.Text = DateTime.Now.ToString("yyyy-MM-dd");
                 CauHinhPhanQuyen();
                 TaiDanhMuc();
+                SinhMaLopMoi();
                 TaiDanhSachLop();
             }
+        }
+
+        private void SinhMaLopMoi()
+        {
+            int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM LOPHOC")) + 1;
+            string maLop = "LH" + soLuong.ToString("D2");
+            while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM LOPHOC WHERE malop=@ma", new[] { new SqlParameter("@ma", maLop) })) > 0)
+            {
+                soLuong++;
+                maLop = "LH" + soLuong.ToString("D2");
+            }
+            txtMaLop.Text = maLop;
+            txtMaLop.ReadOnly = true;
         }
 
         private void CauHinhPhanQuyen()
@@ -255,8 +269,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
 
         private void LamMoiForm()
         {
-            txtMaLop.Text = txtTenLop.Text = "";
-            txtMaLop.ReadOnly = false;
+            SinhMaLopMoi();
+            txtTenLop.Text = "";
             if (ddlKhoaHoc.Items.Count > 0) ddlKhoaHoc.SelectedIndex = 0;
             if (ddlGiangVien.Items.Count > 0) ddlGiangVien.SelectedIndex = 0;
             txtKhaiGiang.Text = DateTime.Now.ToString("yyyy-MM-dd");
@@ -274,8 +288,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             int c = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM LOPHOC WHERE malop=@m", new[] { new SqlParameter("@m", txtMaLop.Text.Trim()) }));
             if (c > 0)
             {
-                HienTB("Mã lớp đã tồn tại!", true);
-                return;
+                // Nếu mã tự động bị trùng, sinh lại mã mới
+                SinhMaLopMoi();
             }
 
             string sql = "INSERT INTO LOPHOC(malop, tenlop, makhoahoc, magiangvien, ngaykhaigiang) VALUES(@ma, @ten, @kh, @gv, @ngay)";
@@ -415,7 +429,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
 
         private void LoadDanhSachDiemDanh(string maLop, string ngayDD)
         {
-            // Lấy tổng số buổi học từ thời gian học của khóa (mặc định 36 buổi nếu không có số)
             object tgObj = kncsdl.LayGiaTriDon(@"SELECT kh.thoigianhoc FROM LOPHOC l JOIN KHOAHOC kh ON l.makhoahoc = kh.makhoahoc WHERE l.malop=@malop",
                 new[] { new SqlParameter("@malop", maLop) });
             int tongBuoi = 36;

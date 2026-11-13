@@ -70,29 +70,35 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     return;
                 }
 
-           
+
+                // 2. Kiểm tra Giảng viên (Tên đăng nhập là Số điện thoại)
                 DataTable dtGV = kncsdl.DocDuLieu(
-                    "SELECT * FROM GIANGVIEN WHERE (magiangvien=@u OR email=@u) AND ISNULL(NULLIF(matkhau, ''), dienthoai)=@p",
+                    "SELECT * FROM GIANGVIEN WHERE LTRIM(RTRIM(dienthoai))=@u AND ISNULL(NULLIF(matkhau, ''), dienthoai)=@p",
                     new[] { new SqlParameter("@u", u), new SqlParameter("@p", p) });
 
                 if (dtGV.Rows.Count > 0)
                 {
                     HttpRuntime.Cache.Remove(cacheKey);
                     string maGV = dtGV.Rows[0]["magiangvien"].ToString();
-                    if (dtGV.Rows[0]["matkhau"] == DBNull.Value || string.IsNullOrEmpty(dtGV.Rows[0]["matkhau"].ToString()))
-                    {
-                        kncsdl.ThucThiLenh("UPDATE GIANGVIEN SET matkhau=@p WHERE magiangvien=@ma",
-                            new[] { new SqlParameter("@p", p), new SqlParameter("@ma", maGV) });
-                    }
+                    string sdtGV = dtGV.Rows[0]["dienthoai"]?.ToString().Trim() ?? "";
+                    string mkDB = dtGV.Rows[0]["matkhau"] != DBNull.Value ? dtGV.Rows[0]["matkhau"].ToString().Trim() : "";
+
+                    // Nếu chưa có mật khẩu riêng hoặc mật khẩu vẫn đang bằng SĐT -> bắt buộc đổi mật khẩu lần đầu
+                    bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || mkDB == sdtGV;
 
                     Session["TenDangNhap"] = maGV;
                     Session["HoTen"] = dtGV.Rows[0]["hoten"].ToString();
                     Session["Quyen"] = "GiangVien";
+                    if (canDoiMKLanDau)
+                        Session["BatBuocDoiMK"] = true;
+                    else
+                        Session.Remove("BatBuocDoiMK");
+
                     ChuyenHuongTheoQuyen("GiangVien");
                     return;
                 }
 
-            
+
                 DataTable dtHV = kncsdl.DocDuLieu(
                     "SELECT * FROM HOCVIEN WHERE (mahocvien=@u OR dienthoai=@u OR email=@u) AND ISNULL(NULLIF(matkhau, ''), dienthoai)=@p",
                     new[] { new SqlParameter("@u", u), new SqlParameter("@p", p) });
