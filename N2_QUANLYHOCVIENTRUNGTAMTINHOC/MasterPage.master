@@ -151,11 +151,11 @@
 
         <!-- MODAL HƯỚNG DẪN SỬ DỤNG HIỂN THỊ THEO ĐÚNG PHÂN QUYỀN ĐANG ĐĂNG NHẬP -->
         <%
-            string qHelp = (Session["Quyen"] != null ? Session["Quyen"].ToString().Trim() : "Admin");
-            bool isHelpAdmin = qHelp.Equals("Admin", StringComparison.OrdinalIgnoreCase);
-            bool isHelpGV = qHelp.Equals("GiangVien", StringComparison.OrdinalIgnoreCase) || qHelp.Equals("Giảng viên", StringComparison.OrdinalIgnoreCase);
-            bool isHelpHV = qHelp.Equals("HocVien", StringComparison.OrdinalIgnoreCase) || qHelp.Equals("Học viên", StringComparison.OrdinalIgnoreCase) || qHelp.Equals("SinhVien", StringComparison.OrdinalIgnoreCase);
-            bool isHelpNV = !isHelpAdmin && !isHelpGV && !isHelpHV;
+            string qHelp = N2_QUANLYHOCVIENTRUNGTAMTINHOC.MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+            bool isHelpAdmin = qHelp == "Admin";
+            bool isHelpGV = qHelp == "GiangVien";
+            bool isHelpHV = qHelp == "HocVien";
+            bool isHelpNV = qHelp == "NhanVien";
         %>
         <div class="modal fade" id="modalHuongDanSuDung" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -166,111 +166,123 @@
                     </div>
                     <div class="modal-body p-4">
                         <% if (isHelpAdmin) { %>
-                        <!-- CHỈ HIỂN THỊ CHO ADMIN -->
+                        <!-- 1. CHỈ HIỂN THỊ CHO ADMIN -->
                         <div class="mb-3">
-                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-shield-lock-fill me-2"></i>Tài khoản: Quản trị viên (Admin)</span>
+                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-shield-lock-fill me-2"></i>Phân quyền: Quản trị viên Hệ thống (Admin)</span>
                         </div>
                         <div class="border rounded p-3 bg-light">
-                            <h6 class="fw-bold text-primary mb-3">Toàn quyền quản trị hệ thống, nhân sự, tài chính và đào tạo:</h6>
+                            <h6 class="fw-bold text-primary mb-3">Toàn quyền quản trị hệ thống, nhân sự, tài chính, đào tạo và sao lưu dữ liệu:</h6>
                             <div class="row g-3 small">
                                 <div class="col-md-6">
                                     <div class="p-3 bg-white rounded border h-100">
-                                        <strong class="text-dark d-block mb-2"><i class="bi bi-easel2 me-1 text-primary"></i>Quản lý Lớp học & Thời khóa biểu:</strong>
+                                        <strong class="text-dark d-block mb-2"><i class="bi bi-easel2 me-1 text-primary"></i>1. Quản lý Lớp học & Thời khóa biểu:</strong>
                                         <ul class="mb-0 ps-3">
-                                            <li><span class="badge bg-warning text-dark">Thêm Lớp & Lịch</span>: Mở lớp học phần mới và gán Ca học, Thứ, Giờ, Phòng Lab.</li>
-                                            <li><span class="badge bg-primary">Cập nhật Lớp & Đổi Lịch</span>: Sửa thông tin lớp hoặc đổi phòng, đổi ca học.</li>
-                                            <li><strong>Bấm trực tiếp vào ô lớp trên Bảng Thời Khóa Biểu</strong>: Mở popup đổi nhanh lịch học và cảnh báo <span class="badge bg-danger">TRÙNG LỊCH HỌC!</span>.</li>
-                                            <li><span class="badge bg-outline-danger text-danger border border-danger"><i class="bi bi-trash"></i> Xóa</span>: Xóa lớp học (chỉ Admin mới có nút này và chỉ xóa được lớp chưa có học viên đăng ký).</li>
+                                            <li><span class="badge bg-warning text-dark">Thêm Lớp & Lịch</span> / <span class="badge bg-primary">Cập nhật Lớp & Đổi Lịch</span>: Mở lớp mới, thiết lập ngày khai giảng (hệ thống tự tính ngày kết thúc) và gán Ca, Thứ, Giờ, Phòng Lab.</li>
+                                            <li><strong>Bấm trực tiếp vào ô lớp trên Bảng Thời Khóa Biểu</strong>: Đổi nhanh lịch học và cảnh báo <span class="badge bg-danger">TRÙNG LỊCH HỌC!</span>.</li>
+                                            <li><span class="badge bg-outline-danger text-danger border border-danger"><i class="bi bi-trash"></i> Xóa</span>: Chỉ Admin có quyền xóa lớp (chỉ xóa được lớp chưa có học viên đăng ký).</li>
                                         </ul>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="p-3 bg-white rounded border h-100">
-                                        <strong class="text-dark d-block mb-2"><i class="bi bi-card-checklist me-1 text-primary"></i>Đăng ký Học phần & Xếp lớp (&lt; 10 HV):</strong>
+                                        <strong class="text-dark d-block mb-2"><i class="bi bi-card-checklist me-1 text-primary"></i>2. Xử lý Lớp thiếu (&lt; 10 HV) & Hoàn tiền hủy lớp:</strong>
                                         <ul class="mb-0 ps-3">
-                                            <li><span class="badge bg-primary">1. Ghép toàn bộ HV sang Lớp đích</span>: Chuyển toàn bộ học viên từ lớp thiếu (&lt; 10 HV) sang lớp đích cùng khóa còn chỗ.</li>
-                                            <li><span class="badge bg-success">2. Duyệt mở lớp đặc cách</span>: Cho phép lớp mở học chính thức dù chưa đủ 10 học viên.</li>
-                                            <li><span class="badge bg-danger">3. Hủy lớp & Bảo lưu học phí</span>: Hủy lớp không đủ sĩ số và bảo lưu học phí cho học viên chờ xếp lớp sau.</li>
+                                            <li><span class="badge bg-primary">Ghép toàn bộ HV sang Lớp đích</span>: Chuyển học viên từ lớp thiếu sang lớp cùng khóa còn chỗ.</li>
+                                            <li><span class="badge bg-success">Duyệt mở lớp đặc cách</span> / <span class="badge bg-outline-danger text-danger border border-danger">Hủy lớp & Bảo lưu học phí</span>: Duyệt mở hoặc hủy lớp (lưu kèm tên lớp bị hủy).</li>
+                                            <li><span class="badge bg-warning text-dark">Danh sách Lớp bị hủy & Hoàn tiền</span>: Xem danh sách ưu tiên các hồ sơ chờ hoàn, bấm <span class="badge bg-danger">Tạo QR & Hoàn tiền</span> để quét mã chuyển trả theo STK học viên đã gửi và tải ảnh biên lai xác nhận.</li>
                                         </ul>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="p-3 bg-white rounded border h-100">
-                                        <strong class="text-dark d-block mb-2"><i class="bi bi-journal-check me-1 text-primary"></i>Kỳ thi, Chứng chỉ & Báo cáo:</strong>
+                                        <strong class="text-dark d-block mb-2"><i class="bi bi-receipt-cutoff me-1 text-primary"></i>3. Quản lý Phiếu thu, Kỳ thi & Chứng chỉ:</strong>
                                         <ul class="mb-0 ps-3">
-                                            <li><span class="badge bg-warning text-dark">Tạo Kỳ thi</span>: Lên lịch thi theo Khóa học, Đợt 1/Đợt 2 và Niên khóa.</li>
-                                            <li><span class="badge bg-warning text-dark">Cấp Chứng chỉ</span> / <span class="badge bg-success"><i class="bi bi-printer"></i> In</span>: Cấp mã số hiệu tự động cho học viên Đạt và in phôi chứng chỉ có dấu mộc.</li>
-                                            <li><span class="badge bg-success"><i class="bi bi-file-earmark-excel-fill"></i> Xuất Excel</span>: Xuất danh sách học viên theo khóa/lớp/học phí và báo cáo doanh thu theo năm.</li>
+                                            <li><span class="badge bg-warning text-dark"><i class="bi bi-image"></i> Duyệt ảnh</span>: Kiểm tra ảnh biên lai chuyển khoản QR của học viên rồi bấm <strong>Xác nhận Đã đóng Học phí</strong> (hoặc <strong>Từ chối</strong>).</li>
+                                            <li><span class="badge bg-warning text-dark">Tạo Kỳ thi</span>, chấm điểm (20% CC + 80% Thi) và cấp/in chứng chỉ tự động cho học viên Đạt.</li>
+                                            <li><strong>Báo cáo & Thống kê:</strong> Lọc theo 6 trạng thái học phí (gồm <em>Chưa hoàn tiền</em>, <em>Chờ hoàn tiền</em>, <em>Đã hoàn tiền</em>), bấm tên học viên để chuyển nhanh sang trang Thu tiền hoặc Hoàn tiền và <span class="badge bg-success">Xuất Excel</span>.</li>
                                         </ul>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="p-3 bg-white rounded border h-100">
-                                        <strong class="text-dark d-block mb-2"><i class="bi bi-gear-fill me-1 text-primary"></i>Cài đặt Hệ thống & Danh mục:</strong>
+                                        <strong class="text-dark d-block mb-2"><i class="bi bi-database-fill-gear me-1 text-primary"></i>4. Cài đặt & Sao lưu CSDL (Chỉ Admin thấy):</strong>
                                         <ul class="mb-0 ps-3">
-                                            <li>Quản lý danh mục <strong>Học viên, Giảng viên, Khóa học</strong>.</li>
-                                            <li>Phân quyền tài khoản người dùng và cấu hình thông tin Trung tâm (chỉ Admin mới thấy mục Cài đặt).</li>
+                                            <li><span class="badge bg-primary">THỰC HIỆN SAO LƯU NGAY (.BAK)</span> & <span class="badge bg-warning text-dark">PHỤC HỒI CƠ SỞ DỮ LIỆU</span>: Tạo bản sao lưu an toàn và khôi phục dữ liệu khi cần.</li>
+                                            <li><span class="badge bg-outline-primary text-primary border border-primary">Xem thêm (Cả tuần)</span>: Xem nhật ký thao tác hệ thống trong 7 ngày; hệ thống tự động dọn bớt nhật ký cũ quá nửa tuần (3.5 ngày) khi vượt quá 1 tuần.</li>
                                         </ul>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
                         <% } else if (isHelpNV) { %>
-                        <!-- CHỈ HIỂN THỊ CHO NHÂN VIÊN -->
+                        <!-- 2. CHỈ HIỂN THỊ CHO NHÂN VIÊN GIÁO VỤ -->
                         <div class="mb-3">
-                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-person-badge-fill me-2"></i>Tài khoản: Nhân viên Giáo vụ</span>
+                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-person-badge-fill me-2"></i>Phân quyền: Nhân viên Giáo vụ</span>
                         </div>
                         <div class="border rounded p-3 bg-light">
-                            <h6 class="fw-bold text-primary mb-3">Nghiệp vụ Giáo vụ, Tư vấn Ghi danh & Thu học phí:</h6>
+                            <h6 class="fw-bold text-primary mb-3">Nghiệp vụ Quản lý Danh mục, Xếp lớp, Thu học phí QR, Hoàn tiền & Tổ chức Thi:</h6>
                             <ul class="small lh-lg mb-0">
-                                <li><strong>Mở lớp & Xếp Thời khóa biểu:</strong> Sử dụng nút <span class="badge bg-warning text-dark">Thêm Lớp & Lịch</span>, <span class="badge bg-primary">Cập nhật Lớp & Đổi Lịch</span> hoặc bấm trực tiếp vào lớp trên lưới Thời khóa biểu để điều chỉnh lịch (không có nút Xóa lớp của Admin).</li>
-                                <li><strong>Ghi danh & Xếp lớp:</strong> Bấm <span class="badge bg-warning text-dark">Chọn lớp này</span> trên bảng lớp đang mở -&gt; Kiểm tra học phí tự động -&gt; Bấm <span class="badge bg-warning text-dark">Xác nhận Đăng ký</span> (hệ thống tự động chặn trùng lịch học và gợi ý lớp khác).</li>
-                                <li><strong>Đổi lớp & Xử lý lớp thiếu (&lt; 10 HV):</strong> Bấm nút <span class="badge bg-outline-primary text-primary border border-primary"><i class="bi bi-arrow-left-right"></i></span> rồi bấm <span class="badge bg-primary">Đổi Lớp</span>, hoặc dùng khung xử lý ghép lớp / mở đặc cách.</li>
-                                <li><strong>Thu học phí QR & Lập phiếu thu:</strong> Bấm <span class="badge bg-success"><i class="bi bi-qr-code-scan"></i> Đóng HP</span> để tạo mã VietQR tự động theo số tiền còn nợ, tải ảnh biên lai và xác nhận thu tiền.</li>
-                                <li><strong>Tổ chức kỳ thi & Cấp chứng chỉ:</strong> Tạo đợt thi, nhập điểm, xét loại tự động và in chứng chỉ cho học viên.</li>
+                                <li><strong>Quản lý Học viên, Giảng viên, Khóa học:</strong> Thêm mới, cập nhật thông tin và tra cứu danh mục đào tạo.</li>
+                                <li><strong>Mở lớp & Xếp Thời khóa biểu:</strong> Sử dụng <span class="badge bg-warning text-dark">Thêm Lớp & Lịch</span>, <span class="badge bg-primary">Cập nhật Lớp & Đổi Lịch</span> hoặc bấm trực tiếp vào lớp trên Bảng Thời Khóa Biểu để đổi lịch (không có nút Xóa lớp và không truy cập mục Cài đặt CSDL của Admin).</li>
+                                <li><strong>Đăng ký Học phần & Xử lý Lớp thiếu (&lt; 10 HV):</strong>
+                                    <ul>
+                                        <li>Ghi danh cho học viên trước ngày khai giảng (đến ngày khai giảng hệ thống tự đóng đăng ký).</li>
+                                        <li>Xử lý lớp thiếu sĩ số bằng các nút: <span class="badge bg-primary">Ghép toàn bộ HV sang Lớp đích</span>, <span class="badge bg-success">Duyệt mở lớp đặc cách</span>, <span class="badge bg-outline-danger text-danger border border-danger">Hủy lớp & Bảo lưu học phí</span>.</li>
+                                        <li>Bấm <span class="badge bg-warning text-dark">Danh sách Lớp bị hủy & Hoàn tiền</span> -&gt; <span class="badge bg-danger">Tạo QR & Hoàn tiền</span> để quét QR chuyển trả cho học viên và tải ảnh biên lai xác nhận.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Quản lý Phiếu thu & Duyệt biên lai QR:</strong> Lập phiếu thu tiền mặt/chuyển khoản hoặc bấm <span class="badge bg-warning text-dark"><i class="bi bi-image"></i> Duyệt ảnh</span> để kiểm tra ảnh chuyển khoản của học viên và bấm <strong>Xác nhận Đã đóng Học phí</strong>.</li>
+                                <li><strong>Kỳ thi, Chứng chỉ & Báo cáo:</strong> Tạo kỳ thi, nhập điểm, cấp/in chứng chỉ và lọc danh sách nợ/hoàn tiền để xuất Excel.</li>
                             </ul>
                         </div>
+
                         <% } else if (isHelpGV) { %>
-                        <!-- CHỈ HIỂN THỊ CHO GIẢNG VIÊN -->
+                        <!-- 3. CHỈ HIỂN THỊ CHO GIẢNG VIÊN -->
                         <div class="mb-3">
-                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-easel2-fill me-2"></i>Tài khoản: Giảng viên</span>
+                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-easel2-fill me-2"></i>Phân quyền: Giảng viên</span>
                         </div>
                         <div class="border rounded p-3 bg-light">
-                            <h6 class="fw-bold text-primary mb-3">Nghiệp vụ Giảng dạy, Điểm danh Chuyên cần & Chấm điểm Lớp phụ trách:</h6>
+                            <h6 class="fw-bold text-primary mb-3">Nghiệp vụ Giảng dạy, Điểm danh Chuyên cần & Nhập điểm Lớp phụ trách:</h6>
                             <ul class="small lh-lg mb-0">
-                                <li><strong>Xem Lịch giảng dạy:</strong> Tại mục <em>Lớp học & Lịch học</em>, giảng viên chỉ thấy danh sách các lớp và lưới Thời khóa biểu của chính mình phụ trách (không hiển thị trang Dashboard hay các lớp của giảng viên khác).</li>
+                                <li><strong>Xem Lịch giảng dạy & Thời khóa biểu:</strong> Tại mục <em>Lớp học & Lịch học</em>, giảng viên chỉ xem được danh sách các lớp, thời gian học (Từ ngày - Đến ngày) và lưới Thời khóa biểu của chính mình phụ trách (không xem Dashboard hay lớp của giảng viên khác).</li>
                                 <li><strong>Điểm danh Học viên (<span class="badge bg-success"><i class="bi bi-person-check-fill"></i> Điểm danh</span>):</strong>
                                     <ul>
-                                        <li>Chọn Ngày điểm danh -&gt; Tích trạng thái: <strong>Có mặt</strong>, <strong>Vắng phép</strong> (-1 điểm CC), hoặc <strong>Vắng không phép</strong> (-2 điểm CC) -&gt; Bấm <span class="badge bg-success">Lưu kết quả Điểm danh</span>.</li>
-                                        <li>Hệ thống tự động gắn nhãn <span class="badge bg-warning text-dark">Cảnh báo: Nghỉ 2 buổi</span> và <span class="badge bg-danger">Cấm thi (Nghỉ &ge; 3 buổi)</span> kèm tỷ lệ % số buổi vắng theo thời lượng khóa học.</li>
+                                        <li>Chọn Ngày điểm danh -&gt; Đánh dấu: <strong>Có mặt</strong>, <strong>Vắng phép</strong> (-1 điểm CC), hoặc <strong>Vắng không phép</strong> (-2 điểm CC) -&gt; Bấm <span class="badge bg-success">Lưu kết quả Điểm danh</span>.</li>
+                                        <li>Hệ thống tự động cảnh báo <span class="badge bg-warning text-dark">Nghỉ 2 buổi</span> và <span class="badge bg-danger">Cấm thi (Nghỉ &ge; 3 buổi)</span> kèm tỷ lệ % số buổi vắng.</li>
                                     </ul>
                                 </li>
-                                <li><strong>Chấm điểm Học viên (Mục Kỳ thi & Điểm thi):</strong>
+                                <li><strong>Nhập Điểm thi Học viên (Mục Kỳ thi & Điểm thi):</strong>
                                     <ul>
-                                        <li>Giảng viên <strong>không được tạo kỳ thi</strong> (khung Tổ chức Kỳ thi đã được ẩn).</li>
-                                        <li>Chỉ hiển thị các Kỳ thi và Học viên thuộc lớp do giảng viên đó giảng dạy.</li>
-                                        <li>Điểm chuyên cần (20%) được tự động tính từ dữ liệu Điểm danh. Giảng viên nhập Điểm thi (80%) rồi bấm <span class="badge bg-warning text-dark">Thêm mới & Tính ĐTB</span>, <span class="badge bg-primary">Cập nhật Điểm</span>, hoặc bấm <span class="badge bg-success">Nhập điểm hàng loạt</span> để nhập nhanh cho cả lớp.</li>
+                                        <li>Giảng viên <strong>không được tạo kỳ thi</strong> và chỉ nhìn thấy các kỳ thi, học viên thuộc lớp mình trực tiếp giảng dạy.</li>
+                                        <li>Điểm <strong>Chuyên cần (20%)</strong> được tính tự động từ kết quả điểm danh. Giảng viên nhập <strong>Điểm thi (80%)</strong> rồi bấm <span class="badge bg-warning text-dark">Thêm mới & Tính ĐTB</span>, <span class="badge bg-primary">Cập nhật Điểm</span>, hoặc bấm <span class="badge bg-success">Nhập điểm hàng loạt</span> để nhập nhanh cho cả lớp.</li>
                                     </ul>
                                 </li>
                             </ul>
                         </div>
+
                         <% } else { %>
-                        <!-- CHỈ HIỂN THỊ CHO HỌC VIÊN -->
+                        <!-- 4. CHỈ HIỂN THỊ CHO HỌC VIÊN -->
                         <div class="mb-3">
-                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-mortarboard-fill me-2"></i>Tài khoản: Học viên</span>
+                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-mortarboard-fill me-2"></i>Phân quyền: Học viên</span>
                         </div>
                         <div class="border rounded p-3 bg-light">
-                            <h6 class="fw-bold text-primary mb-3">Tra cứu Lịch học, Đăng ký Học phần, Đóng học phí QR & Xem Kết quả:</h6>
+                            <h6 class="fw-bold text-primary mb-3">Tra cứu Lịch học, Đăng ký Khóa học, Đóng/Hoàn học phí & Xem Kết quả:</h6>
                             <ul class="small lh-lg mb-0">
-                                <li><strong>Lớp học & Lịch học:</strong> Xem danh sách các lớp đã đăng ký và Bảng Thời khóa biểu trong tuần của cá nhân.</li>
-                                <li><strong>Đăng ký Khóa học & Đóng Học phí:</strong>
+                                <li><strong>Lớp học & Lịch học:</strong> Xem danh sách các lớp đã đăng ký, thời gian học (Từ ngày - Đến ngày) và Bảng Thời khóa biểu trong tuần của cá nhân.</li>
+                                <li><strong>Đăng ký Khóa học & Đóng Học phí QR:</strong>
                                     <ul>
-                                        <li>Bấm <span class="badge bg-warning text-dark">Chọn lớp này</span> ở danh sách lớp đang mở (&lt; 10 HV) -&gt; Bấm <span class="badge bg-warning text-dark">Xác nhận Đăng ký</span>.</li>
-                                        <li>Bấm nút <span class="badge bg-success"><i class="bi bi-qr-code-scan"></i> Đóng HP</span> -&gt; Quét mã QR chuyển khoản đúng số tiền & nội dung -&gt; Tải ảnh chụp màn hình biên lai lên và bấm <span class="badge bg-success">Gửi Ảnh & Xác nhận Đã chuyển khoản</span>.</li>
+                                        <li>Bấm <span class="badge bg-warning text-dark">Chọn lớp này</span> trên bảng lớp đang mở (lưu ý chỉ đăng ký được trước ngày khai giảng và khi lớp chưa đủ 10 HV) -&gt; Bấm <span class="badge bg-warning text-dark">Xác nhận Đăng ký</span>.</li>
+                                        <li>Bấm nút <span class="badge bg-success"><i class="bi bi-qr-code-scan"></i> Đóng HP</span> -&gt; Quét mã QR chuyển khoản đúng số tiền &amp; nội dung -&gt; Tải ảnh chụp màn hình biên lai lên và bấm <span class="badge bg-success">Gửi Ảnh &amp; Xác nhận Đã chuyển khoản</span> (trạng thái sẽ chuyển sang <em>Chờ duyệt biên lai CK</em> cho đến khi kế toán xác nhận).</li>
                                     </ul>
                                 </li>
-                                <li><strong>Kỳ thi & Điểm thi:</strong> Tra cứu lịch thi, ngày thi, điểm tổng kết và kết quả (Đạt / Không đạt) của các môn đã đăng ký.</li>
-                                <li><strong>Chứng chỉ cá nhân:</strong> Xem danh sách chứng chỉ đã được cấp và bấm nút <span class="badge bg-outline-success text-success border border-success"><i class="bi bi-printer"></i></span> để tải / in bản sao chứng chỉ.</li>
+                                <li><strong>Nhận Hoàn tiền khi Lớp bị hủy:</strong>
+                                    <ul>
+                                        <li>Nếu lớp đã đóng tiền bị hủy do không đủ sĩ số, bấm nút <span class="badge bg-warning text-dark"><i class="bi bi-bank"></i> Nhận hoàn tiền</span> (hoặc <span class="badge bg-outline-warning text-dark border border-warning">Sửa STK hoàn</span>) để nhập Ngân hàng, Số tài khoản và Tên chủ tài khoản.</li>
+                                        <li>Sau khi trung tâm chuyển khoản hoàn trả xong, bấm nút <span class="badge bg-outline-success text-success border border-success"><i class="bi bi-image"></i> Ảnh hoàn tiền</span> để xem ảnh biên lai xác nhận của trung tâm.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Kỳ thi &amp; Chứng chỉ cá nhân:</strong> Tra cứu lịch thi, điểm tổng kết và bấm nút <span class="badge bg-outline-success text-success border border-success"><i class="bi bi-printer"></i></span> tại mục <em>Cấp Chứng chỉ</em> để tải/in chứng chỉ khi đạt kết quả.</li>
                             </ul>
                         </div>
                         <% } %>
