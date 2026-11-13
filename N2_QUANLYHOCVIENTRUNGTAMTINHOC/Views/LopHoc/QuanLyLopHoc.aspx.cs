@@ -20,7 +20,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (!IsPostBack)
+            if (IsPostBack)
+            {
+                pnlTB.Visible = false;
+            }
+            else
             {
                 TuKhoaHienTai = "";
                 txtTimLop.Text = "";
@@ -72,8 +76,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             string user = Session["TenDangNhap"]?.ToString() ?? "";
             string kw = TuKhoaHienTai;
 
-            string sql = @"SELECT l.malop, l.tenlop, l.makhoahoc, kh.tenkhoahoc, 
-                                  ISNULL(gv.hoten + N' (' + gv.hocvi + N')', N'Chưa phân công') AS hotengv, l.ngaykhaigiang,
+            string sql = @"SELECT l.malop, l.tenlop, l.makhoahoc, kh.tenkhoahoc, kh.thoigianhoc,
+                                  ISNULL(gv.hoten + ISNULL(N' (' + gv.hocvi + N')', N''), N'Chưa phân công') AS hotengv, l.ngaykhaigiang,
                                   ISNULL(STUFF((SELECT '; ' + lh.cahoc + ' - ' + lh.thu + ' (' + lh.giohoc + ', P.' + lh.phonghoc + ')'
                                                 FROM LICHHOC lh WHERE lh.malop = l.malop FOR XML PATH('')), 1, 2, ''), N'Đang cập nhật lịch') AS thoikhoabieu,
                                   CAST((SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) AS NVARCHAR(10)) + '/10 HV' AS siso
@@ -92,11 +96,58 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
                 new SqlParameter("@user", user)
             };
 
-            gvLopHoc.DataSource = kncsdl.DocDuLieu(sql, p);
+            DataTable dt = kncsdl.DocDuLieu(sql, p);
+            dt.Columns.Add("thoigianlop", typeof(string));
+            foreach (DataRow r in dt.Rows)
+            {
+                if (r["ngaykhaigiang"] != DBNull.Value)
+                {
+                    DateTime batDau = Convert.ToDateTime(r["ngaykhaigiang"]);
+                    DateTime ketThuc = TinhNgayKetThuc(batDau, r["thoigianhoc"]?.ToString() ?? "");
+                    r["thoigianlop"] = $"{batDau:dd/MM/yyyy} - {ketThuc:dd/MM/yyyy}";
+                }
+                else
+                {
+                    r["thoigianlop"] = "Chưa xác định";
+                }
+            }
+
+            gvLopHoc.DataSource = dt;
             gvLopHoc.DataBind();
 
             TaoBangLuoiThoiKhoaBieu(quyen, user);
             TaiGoiYTimKiemLop();
+        }
+
+        private DateTime TinhNgayKetThuc(DateTime ngayBatDau, string thoiGianHoc)
+        {
+            if (string.IsNullOrWhiteSpace(thoiGianHoc)) return ngayBatDau.AddMonths(2);
+
+            var mThang = Regex.Match(thoiGianHoc, @"(\d+)\s*tháng", RegexOptions.IgnoreCase);
+            if (mThang.Success)
+            {
+                int thang;
+                if (int.TryParse(mThang.Groups[1].Value, out thang) && thang > 0)
+                    return ngayBatDau.AddMonths(thang);
+            }
+
+            var mTuan = Regex.Match(thoiGianHoc, @"(\d+)\s*tuần", RegexOptions.IgnoreCase);
+            if (mTuan.Success)
+            {
+                int tuan;
+                if (int.TryParse(mTuan.Groups[1].Value, out tuan) && tuan > 0)
+                    return ngayBatDau.AddDays(tuan * 7);
+            }
+
+            var mBuoi = Regex.Match(thoiGianHoc, @"(\d+)\s*buổi", RegexOptions.IgnoreCase);
+            if (mBuoi.Success)
+            {
+                int buoi;
+                if (int.TryParse(mBuoi.Groups[1].Value, out buoi) && buoi > 0)
+                    return ngayBatDau.AddDays((int)Math.Ceiling(buoi / 3.0) * 7);
+            }
+
+            return ngayBatDau.AddMonths(2);
         }
 
         private void TaiGoiYTimKiemLop()
@@ -282,6 +333,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             TuKhoaHienTai = txtTimLop.Text.Trim();
             gvLopHoc.PageIndex = 0;
             TaiDanhSachLop();
+            pnlTB.Visible = false;
         }
 
         protected void gvLopHoc_PageIndexChanging(object sender, GridViewPageEventArgs e)

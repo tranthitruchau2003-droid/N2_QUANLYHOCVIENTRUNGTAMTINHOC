@@ -13,11 +13,13 @@
         }
         .pagination-ys table > tbody > tr > td > span { background-color: #1677D2; color: #ffffff; border-color: #1677D2; }
         .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
+        .table-phieuthu { font-size: 0.85rem; }
+        .table-phieuthu th, .table-phieuthu td { vertical-align: middle !important; }
     </style>
 </asp:Content>
 
 <asp:Content ID="Content3" ContentPlaceHolderID="MainContent" runat="server">
-    <!-- THÔNG BÁO NỔI TỰ ẨN SAU 5S -->
+   
     <asp:Panel ID="pnlTB" runat="server" Visible="false" ClientIDMode="Static"
         CssClass="alert alert-info fw-semibold alert-dismissible fade show shadow"
         style="position: fixed; top: 76px; right: 24px; z-index: 1060; min-width: 320px; max-width: 480px;">
@@ -25,14 +27,14 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </asp:Panel>
 
-    <!-- Thẻ ẩn để hứng tính năng tự điền (autofill) của trình duyệt -->
+ 
     <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; overflow: hidden;">
         <input type="text" name="fake_username_autofill" tabindex="-1" />
         <input type="password" name="fake_password_autofill" tabindex="-1" />
     </div>
 
     <div class="row g-4">
-        <!-- FORM LẬP / SỬA PHIẾU THU -->
+     
         <div class="col-lg-4">
             <div class="card card-custom">
                 <div class="card-header"><span><i class="bi bi-cash-coin me-2"></i>Lập Phiếu thu Học phí</span></div>
@@ -55,6 +57,7 @@
                         <asp:DropDownList ID="ddlPhuongThuc" runat="server" CssClass="form-select">
                             <asp:ListItem Text="Tiền mặt" Value="Tiền mặt" />
                             <asp:ListItem Text="Chuyển khoản Ngân hàng" Value="Chuyển khoản" />
+                            <asp:ListItem Text="Chuyển khoản QR" Value="Chuyển khoản QR" />
                         </asp:DropDownList>
                     </div>
                     <div class="mb-3">
@@ -74,7 +77,7 @@
         <div class="col-lg-8">
             <div class="card card-custom">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span class="text-nowrap"><i class="bi bi-receipt me-2"></i>Danh sách Phiếu thu đã lập</span>
+                    <span class="text-nowrap"><i class="bi bi-receipt me-2"></i>Danh sách Phiếu thu & Xác nhận Ảnh Thanh toán</span>
                     <div class="d-flex gap-2 w-100 justify-content-end">
                         <div class="position-relative flex-grow-1" style="max-width: 260px;">
                             <asp:TextBox ID="txtTim" runat="server" ClientIDMode="Static" TextMode="Search" CssClass="form-control form-control-sm"
@@ -88,33 +91,87 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <asp:GridView ID="gvPhieuThu" runat="server" CssClass="table table-hover table-custom mb-0" AutoGenerateColumns="false"
-                        AllowPaging="true" PageSize="10" OnPageIndexChanging="gvPhieuThu_PageIndexChanging"
-                        OnRowCommand="gvPhieuThu_RowCommand" DataKeyNames="maphieuthu"
-                        EmptyDataText="Không tìm thấy phiếu thu nào.">
-                        <PagerSettings Mode="NumericFirstLast" FirstPageText="&laquo;" LastPageText="&raquo;" PreviousPageText="&lsaquo;" NextPageText="&rsaquo;" PageButtonCount="5" />
-                        <PagerStyle CssClass="pagination-ys" HorizontalAlign="Center" />
-                        <Columns>
-                            <asp:BoundField DataField="maphieuthu" HeaderText="Số PT" />
-                            <asp:BoundField DataField="ngaythu" HeaderText="Ngày thu" DataFormatString="{0:dd/MM/yyyy}" />
-                            <asp:BoundField DataField="hoten" HeaderText="Học viên" />
-                            <asp:BoundField DataField="sotienthu" HeaderText="Số tiền" DataFormatString="{0:N0} đ" />
-                            <asp:BoundField DataField="phuongthucthanhtoan" HeaderText="Hình thức" />
-                            <asp:BoundField DataField="nguoithu" HeaderText="Người thu" />
-                            <asp:TemplateField HeaderText="Thao tác">
-                                <ItemTemplate>
-                                    <div class="d-flex gap-1">
-                                        <asp:LinkButton ID="btnChon" runat="server" CommandName="Chon" CommandArgument='<%# Eval("maphieuthu") %>'
-                                            CssClass="btn btn-sm btn-outline-primary" title="Sửa"><i class="bi bi-pencil"></i></asp:LinkButton>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa"
-                                            onclick="hienThiModalXoaPT('<%# Eval("maphieuthu") %>'); return false;"><i class="bi bi-trash"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" title="In phiếu"
-                                            onclick="inPhieu('<%# Eval("maphieuthu") %>','<%# Eval("hoten") %>','<%# Eval("sotienthu","{0:N0}") %>','<%# Eval("noidungthu") %>')"><i class="bi bi-printer"></i></button>
-                                    </div>
-                                </ItemTemplate>
-                            </asp:TemplateField>
-                        </Columns>
-                    </asp:GridView>
+                    <div class="table-responsive">
+                        <asp:GridView ID="gvPhieuThu" runat="server" CssClass="table table-sm table-hover table-custom table-phieuthu mb-0" AutoGenerateColumns="false"
+                            AllowPaging="true" PageSize="10" OnPageIndexChanging="gvPhieuThu_PageIndexChanging"
+                            OnRowCommand="gvPhieuThu_RowCommand" DataKeyNames="maphieuthu"
+                            EmptyDataText="Không tìm thấy phiếu thu nào.">
+                            <PagerSettings Mode="NumericFirstLast" FirstPageText="&laquo;" LastPageText="&raquo;" PreviousPageText="&lsaquo;" NextPageText="&rsaquo;" PageButtonCount="5" />
+                            <PagerStyle CssClass="pagination-ys" HorizontalAlign="Center" />
+                            <Columns>
+                                <asp:BoundField DataField="maphieuthu" HeaderText="Số PT" ItemStyle-CssClass="fw-semibold text-nowrap" />
+                                <asp:BoundField DataField="ngaythu" HeaderText="Ngày thu" DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="text-nowrap" />
+                                <asp:BoundField DataField="hoten" HeaderText="Học viên" />
+                                <asp:BoundField DataField="sotienthu" HeaderText="Số tiền" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-nowrap fw-bold text-end" HeaderStyle-CssClass="text-end" />
+                                <asp:BoundField DataField="phuongthucthanhtoan" HeaderText="Hình thức" />
+                                <asp:TemplateField HeaderText="Trạng thái" ItemStyle-CssClass="text-nowrap text-center" HeaderStyle-CssClass="text-center">
+                                    <ItemTemplate>
+                                        <span class='badge <%# Eval("noidungthu").ToString().StartsWith("Chờ xác nhận") ? "bg-warning text-dark" : "bg-success" %>'>
+                                            <%# Eval("noidungthu").ToString().StartsWith("Chờ xác nhận") ? "Chờ xác nhận ảnh" : "Đã đóng" %>
+                                        </span>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <asp:TemplateField HeaderText="Thao tác" ItemStyle-CssClass="text-nowrap text-center" HeaderStyle-CssClass="text-center">
+                                    <ItemTemplate>
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <asp:LinkButton ID="btnDuyetAnh" runat="server" CommandName="XemAnhDuyet" CommandArgument='<%# Eval("maphieuthu") %>'
+                                                Visible='<%# Eval("noidungthu").ToString().Contains("Ảnh:") %>'
+                                                CssClass='<%# Eval("noidungthu").ToString().StartsWith("Chờ xác nhận") ? "btn btn-sm btn-warning fw-bold text-dark" : "btn btn-sm btn-outline-info" %>'
+                                                title="Xem ảnh biên lai & Xác nhận thanh toán">
+                                                <i class="bi bi-image"></i> <%# Eval("noidungthu").ToString().StartsWith("Chờ xác nhận") ? "Duyệt ảnh" : "Ảnh" %>
+                                            </asp:LinkButton>
+
+                                            <asp:LinkButton ID="btnChon" runat="server" CommandName="Chon" CommandArgument='<%# Eval("maphieuthu") %>'
+                                                CssClass="btn btn-sm btn-outline-primary" title="Sửa"><i class="bi bi-pencil"></i></asp:LinkButton>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa"
+                                                onclick="hienThiModalXoaPT('<%# Eval("maphieuthu") %>'); return false;"><i class="bi bi-trash"></i></button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="In phiếu"
+                                                onclick="inPhieu('<%# Eval("maphieuthu") %>','<%# Eval("hoten") %>','<%# Eval("sotienthu","{0:N0}") %>','<%# Eval("noidungthu") %>')"><i class="bi bi-printer"></i></button>
+                                        </div>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                            </Columns>
+                        </asp:GridView>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP XEM ẢNH BIÊN LAI & XÁC NHẬN THANH TOÁN -->
+    <div class="modal fade" id="modalDuyetBienLai" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-image me-2"></i>Kiểm tra Ảnh Biên lai & Xác nhận Đã đóng</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-5 text-start">
+                            <p class="mb-2"><strong>Mã phiếu thu:</strong> <span class="text-primary fw-bold"><asp:Literal ID="litDuyetMaPT" runat="server" /></span></p>
+                            <p class="mb-2"><strong>Hồ sơ đăng ký:</strong> <asp:Literal ID="litDuyetMaDK" runat="server" /></p>
+                            <p class="mb-2"><strong>Học viên:</strong> <asp:Literal ID="litDuyetHocVien" runat="server" /></p>
+                            <p class="mb-2"><strong>Số tiền chuyển:</strong> <span class="text-danger fw-bold fs-5"><asp:Literal ID="litDuyetSoTien" runat="server" /></span></p>
+                            <p class="mb-0"><strong>Trạng thái hiện tại:</strong> <asp:Literal ID="litDuyetTrangThai" runat="server" /></p>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="border rounded p-2 bg-light">
+                                <asp:Image ID="imgBienLaiDuyet" runat="server" CssClass="img-fluid rounded" style="max-height: 360px;" />
+                                <div class="mt-2">
+                                    <asp:HyperLink ID="lnkXemAnhGoc" runat="server" Target="_blank" CssClass="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-arrows-fullscreen me-1"></i> Mở ảnh kích thước gốc
+                                    </asp:HyperLink>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <asp:HiddenField ID="hfMaPTDuyet" runat="server" />
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <asp:Button ID="btnTuChoiBienLai" runat="server" Text="Từ chối (Ảnh không hợp lệ)" CssClass="btn btn-outline-danger fw-semibold" OnClick="btnTuChoiBienLai_Click" />
+                    <asp:Button ID="btnXacNhanDaDong" runat="server" Text="Xác nhận Đã đóng Học phí" CssClass="btn btn-success fw-bold" OnClick="btnXacNhanDaDong_Click" />
                 </div>
             </div>
         </div>
@@ -147,6 +204,18 @@
 
     <script>
         // @ts-nocheck
+        function moModalDuyetBienLai() {
+            var checkModal = function () {
+                var el = document.getElementById('modalDuyetBienLai');
+                if (el && window.bootstrap) {
+                    new window.bootstrap.Modal(el).show();
+                } else {
+                    setTimeout(checkModal, 100);
+                }
+            };
+            checkModal();
+        }
+
         function dinhDangSoTienPT(input) {
             var raw = input.value.replace(/[^0-9]/g, '');
             if (raw === '') {

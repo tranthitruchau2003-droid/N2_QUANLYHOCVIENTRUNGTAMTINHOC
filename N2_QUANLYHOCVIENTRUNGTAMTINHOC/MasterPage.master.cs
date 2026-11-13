@@ -2,42 +2,114 @@
 using System;
 using System.Configuration;
 using System.Data.SqlClient;
+using System.Web;
+using System.Web.UI;
 
 namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 {
     public partial class MasterPage : System.Web.UI.MasterPage
     {
-        protected void Page_Load(object sender, EventArgs e)
+        public static string ChuanHoaQuyen(object rawQuyen)
         {
+            string q = rawQuyen?.ToString().Trim() ?? "";
+            if (q.Equals("Admin", StringComparison.OrdinalIgnoreCase) || q.Equals("Quản trị viên", StringComparison.OrdinalIgnoreCase))
+                return "Admin";
+            if (q.Equals("NhanVien", StringComparison.OrdinalIgnoreCase) || q.Equals("Nhân viên", StringComparison.OrdinalIgnoreCase) || q.Equals("GiaoVu", StringComparison.OrdinalIgnoreCase))
+                return "NhanVien";
+            if (q.Equals("GiangVien", StringComparison.OrdinalIgnoreCase) || q.Equals("Giảng viên", StringComparison.OrdinalIgnoreCase))
+                return "GiangVien";
+            if (q.Equals("HocVien", StringComparison.OrdinalIgnoreCase) || q.Equals("Học viên", StringComparison.OrdinalIgnoreCase) || q.Equals("SinhVien", StringComparison.OrdinalIgnoreCase))
+                return "HocVien";
+            return "";
+        }
+
+      
+        protected void Page_Init(object sender, EventArgs e)
+        {
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.Cache.SetNoStore();
+
             if (Session["TenDangNhap"] == null)
             {
-                Response.Redirect("~/Login.aspx");
+                Response.Redirect("~/Login.aspx", false);
+                Context.ApplicationInstance.CompleteRequest();
                 return;
             }
 
-            string quyen = Session["Quyen"] != null ? Session["Quyen"].ToString().Trim() : "Admin";
+            string quyen = ChuanHoaQuyen(Session["Quyen"]);
+            if (string.IsNullOrEmpty(quyen))
+            {
+                Session.Clear();
+                Response.Redirect("~/Login.aspx", false);
+                Context.ApplicationInstance.CompleteRequest();
+                return;
+            }
+
+            Session["Quyen"] = quyen;
+            KiemTraQuyenTruyCapTrang(quyen);
+        }
+
+        private void KiemTraQuyenTruyCapTrang(string quyen)
+        {
+            string path = Request.AppRelativeCurrentExecutionFilePath?.ToLowerInvariant() ?? "";
+
+            if (quyen == "Admin") return; 
+
+            if (quyen == "NhanVien")
+            {
+                if (path.Contains("/caidathethong.aspx"))
+                {
+                    Response.Redirect("~/Dashboard.aspx", false);
+                    Context.ApplicationInstance.CompleteRequest();
+                }
+            }
+            else if (quyen == "GiangVien")
+            {
+                bool choPhepGV = path.Contains("/quanlylophoc.aspx") || path.Contains("/quanlykythi.aspx");
+                if (!choPhepGV)
+                {
+                    Response.Redirect("~/Views/LopHoc/QuanLyLopHoc.aspx", false);
+                    Context.ApplicationInstance.CompleteRequest();
+                }
+            }
+            else if (quyen == "HocVien")
+            {
+                bool choPhepHV = path.Contains("/quanlylophoc.aspx") ||
+                                 path.Contains("/quanlydangky.aspx") ||
+                                 path.Contains("/quanlykythi.aspx") ||
+                                 path.Contains("/quanlychungchi.aspx");
+                if (!choPhepHV)
+                {
+                    Response.Redirect("~/Views/DangKy/QuanLyDangKy.aspx", false);
+                    Context.ApplicationInstance.CompleteRequest();
+                }
+            }
+        }
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (Session["TenDangNhap"] == null) return;
+
+            string quyen = ChuanHoaQuyen(Session["Quyen"]);
             PhanQuyenMenu(quyen);
 
             if (!IsPostBack)
             {
-                litTenTrungTam.Text = ConfigurationManager.AppSettings["TenTrungTam"];
-                litNguoiDung.Text = string.Format("{0} ({1})", Session["HoTen"], quyen);
+                litTenTrungTam.Text = HttpUtility.HtmlEncode(ConfigurationManager.AppSettings["TenTrungTam"] ?? "TRUNG TÂM TIN HỌC NGÔI SAO VIỆT");
+                string hoTenAnToan = HttpUtility.HtmlEncode(Session["HoTen"]?.ToString() ?? "");
+                string quyenAnToan = HttpUtility.HtmlEncode(quyen);
+                litNguoiDung.Text = string.Format("{0} ({1})", hoTenAnToan, quyenAnToan);
             }
         }
 
         private void PhanQuyenMenu(string quyen)
         {
-            bool isAdmin = quyen.Equals("Admin", StringComparison.OrdinalIgnoreCase);
-            bool isGV = quyen.Equals("GiangVien", StringComparison.OrdinalIgnoreCase) || quyen.Equals("Giảng viên", StringComparison.OrdinalIgnoreCase);
-            bool isHV = quyen.Equals("HocVien", StringComparison.OrdinalIgnoreCase) || quyen.Equals("Học viên", StringComparison.OrdinalIgnoreCase) || quyen.Equals("SinhVien", StringComparison.OrdinalIgnoreCase);
-
-            if (isAdmin)
+            if (quyen == "Admin")
             {
                 liCaiDat.Visible = true;
             }
-            else if (isGV)
+            else if (quyen == "GiangVien")
             {
-                // Giảng viên: KHÔNG xem Dashboard, chỉ xem Lớp học & Lịch học, Kỳ thi & Điểm thi
                 liDashboard.Visible = false;
                 liHocVien.Visible = false;
                 liKhoaHoc.Visible = false;
@@ -51,7 +123,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 liLopHoc.Visible = true;
                 liKyThi.Visible = true;
             }
-            else if (isHV)
+            else if (quyen == "HocVien")
             {
                 liDashboard.Visible = false;
                 liHocVien.Visible = false;
@@ -66,10 +138,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 liKyThi.Visible = true;
                 liChungChi.Visible = true;
             }
+            else if (quyen == "NhanVien")
+            {
+                liCaiDat.Visible = false;
+            }
             else
             {
-                // Nhân viên giáo vụ
-                liCaiDat.Visible = false;
+        
+                liDashboard.Visible = liHocVien.Visible = liKhoaHoc.Visible = liGiangVien.Visible =
+                liLopHoc.Visible = liDangKy.Visible = liPhieuThu.Visible = liKyThi.Visible =
+                liChungChi.Visible = liBaoCao.Visible = liCaiDat.Visible = false;
             }
         }
 
@@ -77,43 +155,91 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         {
             Session.Clear();
             Session.Abandon();
-            Response.Redirect("~/Login.aspx");
+            if (Request.Cookies["ASP.NET_SessionId"] != null)
+            {
+                HttpCookie myCookie = new HttpCookie("ASP.NET_SessionId", "");
+                myCookie.Expires = DateTime.Now.AddDays(-1);
+                Response.Cookies.Add(myCookie);
+            }
+            Response.Redirect("~/Login.aspx", false);
+            Context.ApplicationInstance.CompleteRequest();
         }
 
+    
         protected void btnLuuMatKhau_Click(object sender, EventArgs e)
         {
             string user = Session["TenDangNhap"]?.ToString();
-            string quyen = Session["Quyen"]?.ToString() ?? "";
+            string quyen = ChuanHoaQuyen(Session["Quyen"]);
             string mkCu = txtMKCu.Text.Trim();
             string mkMoi = txtMKMoi.Text.Trim();
+            string mkXN = txtMKXacNhan.Text.Trim();
 
-            if (string.IsNullOrEmpty(mkMoi) || mkMoi != txtMKXacNhan.Text.Trim())
+            if (string.IsNullOrEmpty(user))
             {
-                Response.Write("<script>alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');</script>");
+                Response.Redirect("~/Login.aspx", false);
+                Context.ApplicationInstance.CompleteRequest();
                 return;
             }
 
-            int kq = 0;
-            if (quyen.Equals("GiangVien", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(mkCu) || string.IsNullOrEmpty(mkMoi))
             {
-                kq = kncsdl.ThucThiLenh("UPDATE GIANGVIEN SET matkhau=@mkm WHERE magiangvien=@u AND (ISNULL(matkhau, dienthoai)=@mkc)",
-                    new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
-            }
-            else if (quyen.Equals("HocVien", StringComparison.OrdinalIgnoreCase))
-            {
-                kq = kncsdl.ThucThiLenh("UPDATE HOCVIEN SET matkhau=@mkm WHERE mahocvien=@u AND (ISNULL(matkhau, dienthoai)=@mkc)",
-                    new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
-            }
-            else
-            {
-                kq = kncsdl.ThucThiLenh("UPDATE NGUOIDUNG SET matkhau=@mkm WHERE tendangnhap=@u AND matkhau=@mkc",
-                    new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
+                ThongBaoPopup("Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới!");
+                return;
             }
 
-            if (kq > 0)
-                Response.Write("<script>alert('Đổi mật khẩu thành công!');</script>");
-            else
-                Response.Write("<script>alert('Mật khẩu hiện tại không đúng!');</script>");
+            if (mkMoi.Length < 6)
+            {
+                ThongBaoPopup("Mật khẩu mới phải có ít nhất 6 ký tự để đảm bảo an toàn!");
+                return;
+            }
+
+            if (mkMoi != mkXN)
+            {
+                ThongBaoPopup("Mật khẩu mới và xác nhận mật khẩu không khớp!");
+                return;
+            }
+
+            if (mkMoi == mkCu)
+            {
+                ThongBaoPopup("Mật khẩu mới phải khác mật khẩu hiện tại!");
+                return;
+            }
+
+            try
+            {
+                int kq = 0;
+                if (quyen == "GiangVien")
+                {
+                    kq = kncsdl.ThucThiLenh("UPDATE GIANGVIEN SET matkhau=@mkm WHERE magiangvien=@u AND ISNULL(NULLIF(matkhau, ''), dienthoai)=@mkc",
+                        new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
+                }
+                else if (quyen == "HocVien")
+                {
+                    kq = kncsdl.ThucThiLenh("UPDATE HOCVIEN SET matkhau=@mkm WHERE mahocvien=@u AND ISNULL(NULLIF(matkhau, ''), dienthoai)=@mkc",
+                        new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
+                }
+                else
+                {
+                
+                    kq = kncsdl.ThucThiLenh("UPDATE TAIKHOAN SET matkhau=@mkm WHERE tendangnhap=@u AND matkhau=@mkc AND trangthai=1",
+                        new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
+                }
+
+                if (kq > 0)
+                    ThongBaoPopup("Đổi mật khẩu thành công!");
+                else
+                    ThongBaoPopup("Mật khẩu hiện tại không đúng!");
+            }
+            catch
+            {
+                ThongBaoPopup("Có lỗi xảy ra khi cập nhật mật khẩu. Vui lòng thử lại!");
+            }
+        }
+
+        private void ThongBaoPopup(string msg)
+        {
+            string safeMsg = HttpUtility.JavaScriptStringEncode(msg);
+            ScriptManager.RegisterStartupScript(this.Page, this.Page.GetType(), "mk_msg", $"alert('{safeMsg}');", true);
         }
     }
 }

@@ -3,6 +3,9 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
+using System.Web.UI;
 using System.Web.UI.WebControls;
 using N2_QUANLYHOCVIENTRUNGTAMTINHOC.DAL;
 
@@ -22,13 +25,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             {
                 TuKhoaHienTai = "";
                 txtTim.Text = "";
-                TaiDuLieu();
+                TaiDropdownDangKy();
+                TaiDanhSachPhieuThu();
                 SinhMaPTMoi();
 
                 string maDK = Request.QueryString["madk"];
-                if (!string.IsNullOrEmpty(maDK) && ddlDangKy.Items.FindByValue(maDK) != null)
+                if (!string.IsNullOrEmpty(maDK))
                 {
-                    ddlDangKy.SelectedValue = maDK;
+                    TaiDropdownDangKy(maDK);
+                    if (ddlDangKy.Items.FindByValue(maDK) != null)
+                        ddlDangKy.SelectedValue = maDK;
                 }
             }
         }
@@ -45,21 +51,34 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             txtMaPT.Text = maPT;
         }
 
-        private void TaiDuLieu()
+        // PT-01 & PT-02: Tách hàm nạp ddlDangKy riêng và chỉ hiển thị hồ sơ còn nợ (hoặc hồ sơ của phiếu đang sửa)
+        private void TaiDropdownDangKy(string giuMaDK = "")
         {
-            string sqlDK = @"SELECT dk.madangky, dk.madangky + N' - ' + hv.hoten + N' (Còn nợ: ' + FORMAT(kh.hocphi - dk.sotiendong, 'N0') + N'đ)' AS HienThi
-                             FROM DANGKY dk JOIN HOCVIEN hv ON dk.mahocvien=hv.mahocvien JOIN KHOAHOC kh ON dk.makhoahoc=kh.makhoahoc";
-            ddlDangKy.DataSource = kncsdl.DocDuLieu(sqlDK);
+            string sqlDK = @"SELECT dk.madangky, 
+                                    dk.madangky + N' - ' + hv.hoten + N' (Còn nợ: ' + FORMAT(kh.hocphi - ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0), 'N0') + N'đ)' AS HienThi
+                             FROM DANGKY dk 
+                             JOIN HOCVIEN hv ON dk.mahocvien = hv.mahocvien 
+                             JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
+                             LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
+                             GROUP BY dk.madangky, hv.hoten, kh.hocphi
+                             HAVING (kh.hocphi - ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) > 0
+                                 OR dk.madangky = @giu
+                             ORDER BY dk.madangky DESC";
+            ddlDangKy.DataSource = kncsdl.DocDuLieu(sqlDK, new[] { new SqlParameter("@giu", giuMaDK ?? "") });
             ddlDangKy.DataTextField = "HienThi";
             ddlDangKy.DataValueField = "madangky";
             ddlDangKy.DataBind();
+        }
 
+        private void TaiDanhSachPhieuThu()
+        {
             string kw = TuKhoaHienTai;
+            // Ưu tiên đưa các phiếu 'Chờ xác nhận%' lên đầu danh sách để nhân viên thấy và duyệt ngay
             string sqlPT = @"SELECT pt.*, hv.hoten FROM PHIEUTHU pt 
                              JOIN DANGKY dk ON pt.madangky=dk.madangky 
                              JOIN HOCVIEN hv ON dk.mahocvien=hv.mahocvien
-                             WHERE (@kw = '' OR pt.maphieuthu LIKE @kw OR hv.hoten LIKE @kw OR pt.noidungthu LIKE @kw)
-                             ORDER BY pt.ngaythu DESC, pt.maphieuthu DESC";
+                             WHERE (@kw = '' OR pt.maphieuthu LIKE @kw OR hv.hoten LIKE @kw OR pt.noidungthu LIKE @kw OR dk.madangky LIKE @kw)
+                             ORDER BY CASE WHEN ISNULL(pt.noidungthu, N'') LIKE N'Chờ xác nhận%' THEN 0 ELSE 1 END, pt.ngaythu DESC, pt.maphieuthu DESC";
             gvPhieuThu.DataSource = kncsdl.DocDuLieu(sqlPT, new[] { new SqlParameter("@kw", string.IsNullOrEmpty(kw) ? "" : "%" + kw + "%") });
             gvPhieuThu.DataBind();
 
@@ -76,9 +95,27 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             foreach (DataRow r in dt.Rows)
             {
                 sb.AppendFormat("<button type=\"button\" class=\"list-group-item list-group-item-action py-2 px-2 small goi-y-item\" data-value=\"{0}\"><strong>{0}</strong> - {1}</button>",
-                    r["maphieuthu"], r["hoten"]);
+                    HttpUtility.HtmlAttributeEncode(r["maphieuthu"].ToString()),
+                    HttpUtility.HtmlEncode(r["hoten"].ToString()));
             }
             litGoiYPT.Text = sb.ToString();
+        }
+
+        // PT-03: Hàm dùng chung tính lại tổng tiền đã đóng (chỉ tính phiếu đã duyệt) và cập nhật trạng thái thanh toán của DANGKY
+        private void DongBoCongNoDangKy(string maDK, SqlConnection conn, SqlTransaction tran)
+        {
+            string sql = @"UPDATE DANGKY 
+                           SET sotiendong = ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky = @dk AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0),
+                               trangthaithanhtoan = CASE 
+                                   WHEN EXISTS (SELECT 1 FROM PHIEUTHU WHERE madangky = @dk AND ISNULL(noidungthu, N'') LIKE N'Chờ xác nhận%') THEN N'Chờ xác nhận'
+                                   WHEN ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky = @dk AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0) <= 0 THEN N'Chưa thanh toán'
+                                   WHEN ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky = @dk AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0) >= (SELECT hocphi FROM KHOAHOC WHERE makhoahoc = DANGKY.makhoahoc) THEN N'Đã hoàn tất'
+                                   ELSE N'Đóng một phần'
+                               END
+                           WHERE madangky = @dk";
+            SqlCommand cmd = new SqlCommand(sql, conn, tran);
+            cmd.Parameters.AddWithValue("@dk", maDK);
+            cmd.ExecuteNonQuery();
         }
 
         private void HienThongBao(string msg, bool laLoi = false)
@@ -87,7 +124,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             pnlTB.CssClass = laLoi
                 ? "alert alert-danger text-danger fw-semibold alert-dismissible fade show shadow"
                 : "alert alert-success text-success fw-semibold alert-dismissible fade show shadow";
-            litTB.Text = msg;
+            litTB.Text = HttpUtility.HtmlEncode(msg);
         }
 
         private bool LaySoTienHopLe(out decimal soTien)
@@ -108,17 +145,35 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             txtSoTien.Text = "";
             txtNoiDung.Text = "";
             ddlPhuongThuc.SelectedIndex = 0;
-            if (ddlDangKy.Items.Count > 0) ddlDangKy.SelectedIndex = 0;
+            TaiDropdownDangKy();
             SinhMaPTMoi();
         }
 
         protected void btnLapPhieu_Click(object sender, EventArgs e)
         {
+            if (string.IsNullOrEmpty(ddlDangKy.SelectedValue))
+            {
+                HienThongBao("Không có hồ sơ đăng ký nào đang nợ học phí!", true);
+                return;
+            }
+
             decimal soTien;
             if (!LaySoTienHopLe(out soTien)) return;
 
-            SinhMaPTMoi();
             string maDK = ddlDangKy.SelectedValue;
+
+            // PT-02: Kiểm tra không cho thu vượt quá số tiền còn nợ
+            object conNoObj = kncsdl.LayGiaTriDon(@"SELECT (kh.hocphi - ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky=@dk AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0))
+                                                   FROM DANGKY dk JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc WHERE dk.madangky=@dk",
+                new[] { new SqlParameter("@dk", maDK) });
+            decimal conNo = conNoObj != null ? Convert.ToDecimal(conNoObj) : 0;
+            if (soTien > conNo)
+            {
+                HienThongBao($"Số tiền thu ({soTien:N0} đ) không được vượt quá số còn nợ ({conNo:N0} đ)!", true);
+                return;
+            }
+
+            SinhMaPTMoi();
 
             using (SqlConnection conn = new SqlConnection(kncsdl.ChuoiKetNoi))
             {
@@ -130,32 +185,25 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                                                         VALUES(@ma, GETDATE(), @tien, @nguoi, @pt, @nd, @dk)", conn, tran);
                     cmdPT.Parameters.AddWithValue("@ma", txtMaPT.Text.Trim());
                     cmdPT.Parameters.AddWithValue("@tien", soTien);
-                    cmdPT.Parameters.AddWithValue("@nguoi", Session["HoTen"]?.ToString() ?? "Admin");
+                    cmdPT.Parameters.AddWithValue("@nguoi", Session["HoTen"]?.ToString() ?? "Nhân viên");
                     cmdPT.Parameters.AddWithValue("@pt", ddlPhuongThuc.SelectedValue);
-                    cmdPT.Parameters.AddWithValue("@nd", txtNoiDung.Text.Trim());
+                    cmdPT.Parameters.AddWithValue("@nd", string.IsNullOrWhiteSpace(txtNoiDung.Text) ? "Thu học phí trực tiếp" : txtNoiDung.Text.Trim());
                     cmdPT.Parameters.AddWithValue("@dk", maDK);
                     cmdPT.ExecuteNonQuery();
 
-                    SqlCommand cmdDK = new SqlCommand(@"UPDATE DANGKY 
-                        SET sotiendong = sotiendong + @tien,
-                            trangthaithanhtoan = CASE WHEN (sotiendong + @tien) >= (SELECT hocphi FROM KHOAHOC WHERE makhoahoc = DANGKY.makhoahoc) 
-                                                      THEN N'Đã hoàn tất' ELSE N'Đóng một phần' END
-                        WHERE madangky = @dk", conn, tran);
-                    cmdDK.Parameters.AddWithValue("@tien", soTien);
-                    cmdDK.Parameters.AddWithValue("@dk", maDK);
-                    cmdDK.ExecuteNonQuery();
+                    DongBoCongNoDangKy(maDK, conn, tran);
 
                     tran.Commit();
                     kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Lập phiếu thu", $"Mã PT: {txtMaPT.Text.Trim()} - Số tiền: {soTien:N0}đ");
                     HienThongBao("Lập phiếu thu và cập nhật công nợ thành công!");
                     gvPhieuThu.PageIndex = 0;
-                    TaiDuLieu();
+                    TaiDanhSachPhieuThu();
                     LamMoiForm();
                 }
-                catch (Exception ex)
+                catch
                 {
                     tran.Rollback();
-                    HienThongBao("Lỗi Transaction: " + ex.Message, true);
+                    HienThongBao("Lỗi khi lập phiếu thu. Vui lòng thử lại!", true);
                 }
             }
         }
@@ -173,7 +221,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             decimal soTienMoi;
             if (!LaySoTienHopLe(out soTienMoi)) return;
 
-            decimal soTienCu = Convert.ToDecimal(dtCu.Rows[0]["sotienthu"]);
             string maDKCu = dtCu.Rows[0]["madangky"].ToString();
             string maDKMoi = ddlDangKy.SelectedValue;
 
@@ -183,15 +230,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                 SqlTransaction tran = conn.BeginTransaction();
                 try
                 {
-                    // Trừ lại số tiền cũ ở hồ sơ đăng ký cũ
-                    SqlCommand cmdTru = new SqlCommand(@"UPDATE DANGKY 
-                        SET sotiendong = CASE WHEN sotiendong - @tienCu < 0 THEN 0 ELSE sotiendong - @tienCu END
-                        WHERE madangky = @dkCu", conn, tran);
-                    cmdTru.Parameters.AddWithValue("@tienCu", soTienCu);
-                    cmdTru.Parameters.AddWithValue("@dkCu", maDKCu);
-                    cmdTru.ExecuteNonQuery();
-
-                    // Cập nhật phiếu thu
                     SqlCommand cmdPT = new SqlCommand(@"UPDATE PHIEUTHU SET sotienthu=@tien, phuongthucthanhtoan=@pt, noidungthu=@nd, madangky=@dk WHERE maphieuthu=@ma", conn, tran);
                     cmdPT.Parameters.AddWithValue("@ma", maPT);
                     cmdPT.Parameters.AddWithValue("@tien", soTienMoi);
@@ -200,25 +238,20 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                     cmdPT.Parameters.AddWithValue("@dk", maDKMoi);
                     cmdPT.ExecuteNonQuery();
 
-                    // Cộng số tiền mới vào hồ sơ đăng ký mới và cập nhật trạng thái
-                    SqlCommand cmdCong = new SqlCommand(@"UPDATE DANGKY 
-                        SET sotiendong = sotiendong + @tienMoi,
-                            trangthaithanhtoan = CASE WHEN (sotiendong + @tienMoi) >= (SELECT hocphi FROM KHOAHOC WHERE makhoahoc = DANGKY.makhoahoc) 
-                                                      THEN N'Đã hoàn tất' ELSE N'Đóng một phần' END
-                        WHERE madangky = @dkMoi", conn, tran);
-                    cmdCong.Parameters.AddWithValue("@tienMoi", soTienMoi);
-                    cmdCong.Parameters.AddWithValue("@dkMoi", maDKMoi);
-                    cmdCong.ExecuteNonQuery();
+                    DongBoCongNoDangKy(maDKCu, conn, tran);
+                    if (maDKMoi != maDKCu)
+                        DongBoCongNoDangKy(maDKMoi, conn, tran);
 
                     tran.Commit();
+                    kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Sửa phiếu thu", $"Mã PT: {maPT} - Số tiền mới: {soTienMoi:N0}đ");
                     HienThongBao("Cập nhật phiếu thu thành công!");
-                    TaiDuLieu();
+                    TaiDanhSachPhieuThu();
                     LamMoiForm();
                 }
-                catch (Exception ex)
+                catch
                 {
                     tran.Rollback();
-                    HienThongBao("Lỗi cập nhật: " + ex.Message, true);
+                    HienThongBao("Lỗi khi cập nhật phiếu thu!", true);
                 }
             }
         }
@@ -229,7 +262,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             TuKhoaHienTai = "";
             txtTim.Text = "";
             gvPhieuThu.PageIndex = 0;
-            TaiDuLieu();
+            TaiDanhSachPhieuThu();
             pnlTB.Visible = false;
         }
 
@@ -241,9 +274,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                 if (dt.Rows.Count > 0)
                 {
                     DataRow r = dt.Rows[0];
+                    string maDK = r["madangky"].ToString();
+                    TaiDropdownDangKy(maDK);
+
                     txtMaPT.Text = r["maphieuthu"].ToString();
-                    if (ddlDangKy.Items.FindByValue(r["madangky"].ToString()) != null)
-                        ddlDangKy.SelectedValue = r["madangky"].ToString();
+                    if (ddlDangKy.Items.FindByValue(maDK) != null)
+                        ddlDangKy.SelectedValue = maDK;
                     txtSoTien.Text = r["sotienthu"] != DBNull.Value
                         ? Convert.ToDecimal(r["sotienthu"]).ToString("#,##0", CultureInfo.InvariantCulture)
                         : "0";
@@ -251,6 +287,123 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                         ddlPhuongThuc.SelectedValue = r["phuongthucthanhtoan"].ToString();
                     txtNoiDung.Text = r["noidungthu"].ToString();
                     pnlTB.Visible = false;
+                }
+            }
+            else if (e.CommandName == "XemAnhDuyet")
+            {
+                string maPT = e.CommandArgument.ToString();
+                DataTable dt = kncsdl.DocDuLieu(@"SELECT pt.*, hv.hoten 
+                                                  FROM PHIEUTHU pt 
+                                                  JOIN DANGKY dk ON pt.madangky = dk.madangky 
+                                                  JOIN HOCVIEN hv ON dk.mahocvien = hv.mahocvien 
+                                                  WHERE pt.maphieuthu = @ma", new[] { new SqlParameter("@ma", maPT) });
+                if (dt.Rows.Count > 0)
+                {
+                    DataRow r = dt.Rows[0];
+                    string nd = r["noidungthu"].ToString();
+                    bool dangCho = nd.StartsWith("Chờ xác nhận");
+
+                    hfMaPTDuyet.Value = maPT;
+                    litDuyetMaPT.Text = HttpUtility.HtmlEncode(maPT);
+                    litDuyetMaDK.Text = HttpUtility.HtmlEncode(r["madangky"].ToString());
+                    litDuyetHocVien.Text = HttpUtility.HtmlEncode(r["hoten"].ToString());
+                    litDuyetSoTien.Text = Convert.ToDecimal(r["sotienthu"]).ToString("N0") + " VNĐ";
+                    litDuyetTrangThai.Text = dangCho
+                        ? "<span class='badge bg-warning text-dark'>Chờ xác nhận ảnh</span>"
+                        : "<span class='badge bg-success'>Đã đóng học phí</span>";
+
+                    // Trích xuất tên file ảnh từ chuỗi "(Ảnh: BienLai_...)"
+                    var match = Regex.Match(nd, @"Ảnh:\s*([^\)]+)");
+                    string fileName = match.Success ? match.Groups[1].Value.Trim() : "";
+                    string imgUrl = !string.IsNullOrEmpty(fileName) ? ResolveUrl("~/Uploads/BienLai/" + fileName) : "";
+                    imgBienLaiDuyet.ImageUrl = imgUrl;
+                    lnkXemAnhGoc.NavigateUrl = imgUrl;
+
+                    btnXacNhanDaDong.Visible = dangCho;
+                    btnTuChoiBienLai.Visible = dangCho;
+
+                    pnlTB.Visible = false;
+                    ScriptManager.RegisterStartupScript(this, GetType(), "modal_duyet", "moModalDuyetBienLai();", true);
+                }
+            }
+        }
+
+        // BẤM XÁC NHẬN ẢNH THANH TOÁN -> ĐỔI TRẠNG THÁI THÀNH "ĐÃ ĐÓNG" VÀ CỘNG TIỀN VÀO CÔNG NỢ
+        protected void btnXacNhanDaDong_Click(object sender, EventArgs e)
+        {
+            string maPT = hfMaPTDuyet.Value;
+            if (string.IsNullOrEmpty(maPT)) return;
+
+            DataTable dt = kncsdl.DocDuLieu("SELECT madangky, sotienthu, noidungthu FROM PHIEUTHU WHERE maphieuthu=@ma", new[] { new SqlParameter("@ma", maPT) });
+            if (dt.Rows.Count == 0) return;
+
+            string maDK = dt.Rows[0]["madangky"].ToString();
+            decimal soTien = Convert.ToDecimal(dt.Rows[0]["sotienthu"]);
+            string ndCu = dt.Rows[0]["noidungthu"].ToString();
+            string ndMoi = ndCu.Replace("Chờ xác nhận CK QR", "Đã xác nhận CK QR");
+            if (ndMoi == ndCu) ndMoi = "Đã xác nhận thanh toán - " + ndCu;
+
+            using (SqlConnection conn = new SqlConnection(kncsdl.ChuoiKetNoi))
+            {
+                conn.Open();
+                SqlTransaction tran = conn.BeginTransaction();
+                try
+                {
+                    SqlCommand cmdPT = new SqlCommand("UPDATE PHIEUTHU SET noidungthu=@nd, nguoithu=@nguoi, ngaythu=GETDATE() WHERE maphieuthu=@ma", conn, tran);
+                    cmdPT.Parameters.AddWithValue("@nd", ndMoi);
+                    cmdPT.Parameters.AddWithValue("@nguoi", Session["HoTen"]?.ToString() ?? "Nhân viên");
+                    cmdPT.Parameters.AddWithValue("@ma", maPT);
+                    cmdPT.ExecuteNonQuery();
+
+                    DongBoCongNoDangKy(maDK, conn, tran);
+
+                    tran.Commit();
+                    kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Xác nhận biên lai QR", $"Duyệt phiếu {maPT} ({soTien:N0}đ) cho hồ sơ {maDK}");
+                    HienThongBao($"Đã xác nhận ảnh biên lai! Phiếu {maPT} ({soTien:N0} đ) đã chuyển sang trạng thái ĐÃ ĐÓNG.");
+                    TaiDropdownDangKy();
+                    TaiDanhSachPhieuThu();
+                }
+                catch
+                {
+                    tran.Rollback();
+                    HienThongBao("Có lỗi khi xác nhận thanh toán!", true);
+                }
+            }
+        }
+
+        // TỪ CHỐI ẢNH BIÊN LAI KHÔNG HỢP LỆ -> XÓA PHIẾU CHỜ VÀ TRẢ HỒ SƠ VỀ CHƯA THANH TOÁN
+        protected void btnTuChoiBienLai_Click(object sender, EventArgs e)
+        {
+            string maPT = hfMaPTDuyet.Value;
+            if (string.IsNullOrEmpty(maPT)) return;
+
+            DataTable dt = kncsdl.DocDuLieu("SELECT madangky FROM PHIEUTHU WHERE maphieuthu=@ma", new[] { new SqlParameter("@ma", maPT) });
+            if (dt.Rows.Count == 0) return;
+
+            string maDK = dt.Rows[0]["madangky"].ToString();
+
+            using (SqlConnection conn = new SqlConnection(kncsdl.ChuoiKetNoi))
+            {
+                conn.Open();
+                SqlTransaction tran = conn.BeginTransaction();
+                try
+                {
+                    SqlCommand cmdXoa = new SqlCommand("DELETE FROM PHIEUTHU WHERE maphieuthu=@ma", conn, tran);
+                    cmdXoa.Parameters.AddWithValue("@ma", maPT);
+                    cmdXoa.ExecuteNonQuery();
+
+                    DongBoCongNoDangKy(maDK, conn, tran);
+
+                    tran.Commit();
+                    kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Từ chối biên lai QR", $"Từ chối phiếu chờ {maPT} của hồ sơ {maDK}");
+                    HienThongBao($"Đã từ chối biên lai {maPT}. Học viên có thể gửi lại ảnh chuyển khoản khác.", true);
+                    TaiDropdownDangKy();
+                    TaiDanhSachPhieuThu();
+                }
+                catch
+                {
+                    tran.Rollback();
+                    HienThongBao("Có lỗi khi từ chối biên lai!", true);
                 }
             }
         }
@@ -263,7 +416,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                 DataTable dt = kncsdl.DocDuLieu("SELECT sotienthu, madangky FROM PHIEUTHU WHERE maphieuthu=@ma", new[] { new SqlParameter("@ma", maPT) });
                 if (dt.Rows.Count == 0) return;
 
-                decimal soTien = Convert.ToDecimal(dt.Rows[0]["sotienthu"]);
                 string maDK = dt.Rows[0]["madangky"].ToString();
 
                 using (SqlConnection conn = new SqlConnection(kncsdl.ChuoiKetNoi))
@@ -276,28 +428,21 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                         cmdXoa.Parameters.AddWithValue("@ma", maPT);
                         cmdXoa.ExecuteNonQuery();
 
-                        SqlCommand cmdDK = new SqlCommand(@"UPDATE DANGKY 
-                            SET sotiendong = CASE WHEN sotiendong - @tien < 0 THEN 0 ELSE sotiendong - @tien END,
-                                trangthaithanhtoan = CASE 
-                                    WHEN (CASE WHEN sotiendong - @tien < 0 THEN 0 ELSE sotiendong - @tien END) = 0 THEN N'Chưa đóng'
-                                    WHEN (sotiendong - @tien) >= (SELECT hocphi FROM KHOAHOC WHERE makhoahoc = DANGKY.makhoahoc) THEN N'Đã hoàn tất'
-                                    ELSE N'Đóng một phần' END
-                            WHERE madangky = @dk", conn, tran);
-                        cmdDK.Parameters.AddWithValue("@tien", soTien);
-                        cmdDK.Parameters.AddWithValue("@dk", maDK);
-                        cmdDK.ExecuteNonQuery();
+                        DongBoCongNoDangKy(maDK, conn, tran);
 
                         tran.Commit();
+                        kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Xóa phiếu thu", $"Xóa phiếu {maPT} của hồ sơ {maDK}");
                         HienThongBao("Đã xóa phiếu thu và cập nhật lại công nợ!");
                         if (gvPhieuThu.Rows.Count == 1 && gvPhieuThu.PageIndex > 0)
                             gvPhieuThu.PageIndex--;
-                        TaiDuLieu();
+                        TaiDropdownDangKy();
+                        TaiDanhSachPhieuThu();
                         LamMoiForm();
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         tran.Rollback();
-                        HienThongBao("Lỗi khi xóa: " + ex.Message, true);
+                        HienThongBao("Lỗi khi xóa phiếu thu!", true);
                     }
                 }
             }
@@ -307,14 +452,14 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
         {
             TuKhoaHienTai = txtTim.Text.Trim();
             gvPhieuThu.PageIndex = 0;
-            TaiDuLieu();
+            TaiDanhSachPhieuThu();
             pnlTB.Visible = false;
         }
 
         protected void gvPhieuThu_PageIndexChanging(object sender, GridViewPageEventArgs e)
         {
             gvPhieuThu.PageIndex = e.NewPageIndex;
-            TaiDuLieu();
+            TaiDanhSachPhieuThu();
             pnlTB.Visible = false;
         }
     }

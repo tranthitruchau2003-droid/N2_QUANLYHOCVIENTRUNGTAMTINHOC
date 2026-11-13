@@ -1,128 +1,154 @@
 ﻿using System;
+using System.Data;
 using System.Data.SqlClient;
 using System.IO;
+using System.Web;
+using System.Web.UI.WebControls;
 using N2_QUANLYHOCVIENTRUNGTAMTINHOC.DAL;
 
 namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.CaiDat
 {
     public partial class CaiDatHeThong : System.Web.UI.Page
     {
+        private bool XemCaTuan
+        {
+            get { return ViewState["XemCaTuan"] != null && (bool)ViewState["XemCaTuan"]; }
+            set { ViewState["XemCaTuan"] = value; }
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["Quyen"] == null || !Session["Quyen"].ToString().Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            if (MasterPage.ChuanHoaQuyen(Session["Quyen"]) != "Admin")
             {
-                Response.Redirect("~/Dashboard.aspx");
+                Response.Redirect("~/Dashboard.aspx", false);
+                Context.ApplicationInstance.CompleteRequest();
                 return;
             }
 
-            if (!IsPostBack)
+            if (IsPostBack)
             {
-                string defaultFolder = Server.MapPath("~/App_Data/Backups");
-                if (!Directory.Exists(defaultFolder)) Directory.CreateDirectory(defaultFolder);
-                txtThuMucBackup.Text = defaultFolder;
-                TaiDanhSachBackup();
-                TaiNhatKy();
+                pnlTB.Visible = false;
+            }
+            else
+            {
+                XemCaTuan = false;
+                string folder = Server.MapPath("~/App_Data/Backup");
+                if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+                txtThuMucBackup.Text = folder;
+                TaiDanhSachFileBak();
+                DonDepVaTaiNhatKy();
             }
         }
 
-        private void TaiDanhSachBackup()
+        private void TaiDanhSachFileBak()
         {
-            ddlFileBackup.Items.Clear();
-            if (Directory.Exists(txtThuMucBackup.Text))
+            ddlFileBak.Items.Clear();
+            string folder = txtThuMucBackup.Text;
+            if (Directory.Exists(folder))
             {
-                foreach (string file in Directory.GetFiles(txtThuMucBackup.Text, "*.bak"))
+                foreach (string f in Directory.GetFiles(folder, "*.bak"))
                 {
-                    ddlFileBackup.Items.Add(new System.Web.UI.WebControls.ListItem(Path.GetFileName(file), file));
+                    string name = Path.GetFileName(f);
+                    ddlFileBak.Items.Add(new ListItem(name, name));
                 }
             }
         }
 
-        private void TaiNhatKy()
+        private void DonDepVaTaiNhatKy()
         {
-            gvNhatKy.DataSource = kncsdl.DocDuLieu("SELECT TOP 8 * FROM NHATKY_HETHONG ORDER BY thoigian DESC");
-            gvNhatKy.DataBind();
+            // Khi dữ liệu nhật ký vượt quá 1 tuần (7 ngày), tự động xóa các bản ghi cũ hơn nửa tuần (84 giờ = 3.5 ngày)
+            int coQua1Tuan = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM NHATKY_HETHONG WHERE thoigian < DATEADD(DAY, -7, GETDATE())"));
+            if (coQua1Tuan > 0)
+            {
+                kncsdl.ThucThiLenh("DELETE FROM NHATKY_HETHONG WHERE thoigian < DATEADD(HOUR, -84, GETDATE())");
+            }
+
+            if (XemCaTuan)
+            {
+                // Hiển thị toàn bộ nhật ký trong vòng 7 ngày (cả tuần)
+                DataTable dtTuan = kncsdl.DocDuLieu(@"SELECT * FROM NHATKY_HETHONG 
+                                                      WHERE thoigian >= DATEADD(DAY, -7, GETDATE()) 
+                                                      ORDER BY thoigian DESC, manhatky DESC");
+                gvNhatKy.DataSource = dtTuan;
+                gvNhatKy.DataBind();
+                btnXemThemNhatKy.Text = "Thu gọn (8 dòng mới nhất)";
+            }
+            else
+            {
+                DataTable dtGanDay = kncsdl.DocDuLieu("SELECT TOP 8 * FROM NHATKY_HETHONG ORDER BY thoigian DESC, manhatky DESC");
+                gvNhatKy.DataSource = dtGanDay;
+                gvNhatKy.DataBind();
+                btnXemThemNhatKy.Text = "Xem thêm (Cả tuần)";
+            }
+        }
+
+        protected void btnXemThemNhatKy_Click(object sender, EventArgs e)
+        {
+            XemCaTuan = !XemCaTuan;
+            DonDepVaTaiNhatKy();
         }
 
         protected void btnBackup_Click(object sender, EventArgs e)
         {
             try
             {
-                string folder = txtThuMucBackup.Text.Trim();
+                string folder = Server.MapPath("~/App_Data/Backup");
                 if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+                string dbName = new SqlConnectionStringBuilder(kncsdl.ChuoiKetNoi).InitialCatalog;
+                string filePath = Path.Combine(folder, $"{dbName}_{DateTime.Now:yyyyMMdd_HHmmss}.bak");
 
-                string fileName = $"QuanLyDaoTao_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
-                string fullPath = Path.Combine(folder, fileName);
+                string sql = $"BACKUP DATABASE [{dbName}] TO DISK = @path WITH FORMAT, INIT";
+                kncsdl.ThucThiLenh(sql, new[] { new SqlParameter("@path", filePath) });
 
-                string sql = $"BACKUP DATABASE [QuanLyDaoTao] TO DISK = @path WITH INIT, NAME = 'Full Backup QuanLyDaoTao'";
-                kncsdl.ThucThiLenh(sql, new[] { new SqlParameter("@path", fullPath) });
-
-                kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Sao lưu DB", "File: " + fileName);
-                pnlTB.Visible = true;
-                litTB.Text = "Sao lưu thành công! Đường dẫn file: " + fullPath;
-                TaiDanhSachBackup();
-                TaiNhatKy();
+                kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Sao lưu CSDL", Path.GetFileName(filePath));
+                HienTB("Sao lưu cơ sở dữ liệu thành công: " + Path.GetFileName(filePath));
+                TaiDanhSachFileBak();
+                DonDepVaTaiNhatKy();
             }
-            catch (Exception ex)
+            catch
             {
-                pnlTB.Visible = true;
-                litTB.Text = "Lỗi sao lưu (Kiểm tra quyền ghi của dịch vụ SQL Server tại thư mục đích): " + ex.Message;
+                HienTB("Không thể sao lưu CSDL. Vui lòng kiểm tra quyền ghi thư mục trên SQL Server!", true);
             }
         }
 
         protected void btnRestore_Click(object sender, EventArgs e)
         {
-            if (ddlFileBackup.SelectedItem == null || !File.Exists(ddlFileBackup.SelectedValue))
+            if (ddlFileBak.Items.Count == 0 || string.IsNullOrEmpty(ddlFileBak.SelectedValue))
             {
-                pnlTB.Visible = true; litTB.Text = "Vui lòng chọn file .bak hợp lệ để phục hồi!";
+                HienTB("Vui lòng chọn file sao lưu (.bak)!", true);
                 return;
             }
 
             try
             {
-                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(kncsdl.ChuoiKetNoi)
-                {
-                    InitialCatalog = "master"
-                };
+                string folder = Server.MapPath("~/App_Data/Backup");
+                string safeFileName = Path.GetFileName(ddlFileBak.SelectedValue);
+                string filePath = Path.Combine(folder, safeFileName);
+                string dbName = new SqlConnectionStringBuilder(kncsdl.ChuoiKetNoi).InitialCatalog;
 
-                using (SqlConnection conn = new SqlConnection(builder.ConnectionString))
-                {
-                    conn.Open();
-                    string sqlRestore = @"
-                        ALTER DATABASE [QuanLyDaoTao] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                        RESTORE DATABASE [QuanLyDaoTao] FROM DISK = @path WITH REPLACE;
-                        ALTER DATABASE [QuanLyDaoTao] SET MULTI_USER;";
-                    using (SqlCommand cmd = new SqlCommand(sqlRestore, conn))
-                    {
-                        cmd.CommandTimeout = 300;
-                        cmd.Parameters.AddWithValue("@path", ddlFileBackup.SelectedValue);
-                        cmd.ExecuteNonQuery();
-                    }
-                }
+                string sql = $@"USE master;
+                                ALTER DATABASE [{dbName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                                RESTORE DATABASE [{dbName}] FROM DISK = @path WITH REPLACE;
+                                ALTER DATABASE [{dbName}] SET MULTI_USER;";
+                kncsdl.ThucThiLenh(sql, new[] { new SqlParameter("@path", filePath) });
 
-                SqlConnection.ClearAllPools();
-                kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Phục hồi DB", "Từ file: " + Path.GetFileName(ddlFileBackup.SelectedValue));
-                pnlTB.Visible = true;
-                litTB.Text = "Phục hồi cơ sở dữ liệu QuanLyDaoTao thành công!";
-                TaiNhatKy();
+                kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Phục hồi CSDL", safeFileName);
+                HienTB("Phục hồi dữ liệu thành công từ bản sao lưu: " + safeFileName);
+                DonDepVaTaiNhatKy();
             }
-            catch (Exception ex)
+            catch
             {
-                pnlTB.Visible = true;
-                litTB.Text = "Lỗi phục hồi dữ liệu: " + ex.Message;
+                HienTB("Lỗi khi phục hồi CSDL. Vui lòng thử lại!", true);
             }
         }
 
-        protected void btnDoiMK_Click(object sender, EventArgs e)
+        private void HienTB(string msg, bool laLoi = false)
         {
-            string u = Session["TenDangNhap"].ToString();
-            string oldHash = txtMKCu.Text.Trim();
-            string newHash = txtMKMoi.Text.Trim();
-
-            int kq = kncsdl.ThucThiLenh("UPDATE TAIKHOAN SET matkhau=@m WHERE tendangnhap=@u AND matkhau=@c",
-                new[] { new SqlParameter("@m", newHash), new SqlParameter("@u", u), new SqlParameter("@c", oldHash) });
-
             pnlTB.Visible = true;
-            litTB.Text = kq > 0 ? "Đổi mật khẩu thành công!" : "Mật khẩu hiện tại không chính xác!";
+            pnlTB.CssClass = laLoi
+                ? "alert alert-danger text-danger fw-semibold alert-dismissible fade show shadow"
+                : "alert alert-success text-success fw-semibold alert-dismissible fade show shadow";
+            litTB.Text = HttpUtility.HtmlEncode(msg);
         }
     }
 }

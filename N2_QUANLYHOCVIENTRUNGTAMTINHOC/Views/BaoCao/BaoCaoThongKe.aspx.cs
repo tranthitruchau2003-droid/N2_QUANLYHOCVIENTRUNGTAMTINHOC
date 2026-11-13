@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text;
+using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.UI.WebControls;
 using N2_QUANLYHOCVIENTRUNGTAMTINHOC.DAL;
@@ -65,31 +66,46 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             ddlLocLopHoc.Items.Insert(0, new ListItem("-- Tất cả Lớp học --", ""));
         }
 
+
         private DataTable LayDuLieuHocVienLoc()
         {
             string sql = @"SELECT dk.madangky, hv.mahocvien, hv.hoten, hv.dienthoai, hv.email,
                                   kh.makhoahoc, kh.tenkhoahoc,
-                                  ISNULL(STUFF((SELECT ', ' + l.tenlop FROM LOPHOC l WHERE l.makhoahoc = kh.makhoahoc AND (@malop = '' OR l.malop = @malop) FOR XML PATH('')), 1, 2, ''), N'Chưa xếp lớp') AS tenlop,
+                                  ISNULL(l.tenlop, N'Chưa xếp lớp') AS tenlop,
                                   kh.hocphi,
-                                  ISNULL(SUM(pt.sotienthu), 0) AS dadong,
-                                  (kh.hocphi - ISNULL(SUM(pt.sotienthu), 0)) AS conno,
                                   CASE 
-                                      WHEN (kh.hocphi - ISNULL(SUM(pt.sotienthu), 0)) <= 0 THEN N'Đã đóng đủ'
-                                      WHEN ISNULL(SUM(pt.sotienthu), 0) = 0 THEN N'Chưa đóng'
+                                      WHEN ISNULL(dk.trangthailop, N'') LIKE N'%Đã hoàn tiền%' OR ISNULL(dk.trangthaithanhtoan, N'') = N'Đã hoàn tiền' THEN 0
+                                      ELSE ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)
+                                  END AS dadong,
+                                  CASE 
+                                      WHEN ISNULL(dk.trangthailop, N'') LIKE N'%Hủy lớp%' THEN 0
+                                      ELSE (kh.hocphi - ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0))
+                                  END AS conno,
+                                  CASE 
+                                      WHEN ISNULL(dk.trangthailop, N'') LIKE N'%Đã hoàn tiền%' OR ISNULL(dk.trangthaithanhtoan, N'') = N'Đã hoàn tiền' THEN N'Đã hoàn tiền'
+                                      WHEN ISNULL(dk.trangthailop, N'') LIKE N'%Chờ hoàn%' OR ISNULL(dk.trangthaithanhtoan, N'') = N'Chờ hoàn tiền' THEN N'Chưa hoàn tiền (Chờ duyệt)'
+                                      WHEN ISNULL(dk.trangthailop, N'') LIKE N'%Hủy lớp%' AND ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) > 0 THEN N'Chưa hoàn tiền'
+                                      WHEN ISNULL(dk.trangthailop, N'') LIKE N'%Hủy lớp%' THEN N'Đã hủy lớp (0 đ)'
+                                      WHEN (kh.hocphi - ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) <= 0 THEN N'Đã đóng đủ'
+                                      WHEN ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) = 0 THEN N'Chưa đóng'
                                       ELSE N'Còn nợ một phần'
                                   END AS trangthaihp
                            FROM DANGKY dk
                            JOIN HOCVIEN hv ON dk.mahocvien = hv.mahocvien
                            JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
+                           LEFT JOIN LOPHOC l ON dk.malop = l.malop
                            LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
                            WHERE (@makh = '' OR kh.makhoahoc = @makh)
-                             AND (@malop = '' OR EXISTS (SELECT 1 FROM LOPHOC l2 WHERE l2.makhoahoc = kh.makhoahoc AND l2.malop = @malop))
+                             AND (@malop = '' OR dk.malop = @malop)
                              AND (@kw = '' OR hv.mahocvien LIKE @kw OR hv.hoten LIKE @kw OR hv.dienthoai LIKE @kw OR dk.madangky LIKE @kw)
-                           GROUP BY dk.madangky, hv.mahocvien, hv.hoten, hv.dienthoai, hv.email, kh.makhoahoc, kh.tenkhoahoc, kh.hocphi
+                           GROUP BY dk.madangky, hv.mahocvien, hv.hoten, hv.dienthoai, hv.email, kh.makhoahoc, kh.tenkhoahoc, l.tenlop, kh.hocphi, dk.trangthailop, dk.trangthaithanhtoan
                            HAVING (@tt = '' 
-                               OR (@tt = 'DaDongDu' AND (kh.hocphi - ISNULL(SUM(pt.sotienthu), 0)) <= 0)
-                               OR (@tt = 'ConNo' AND (kh.hocphi - ISNULL(SUM(pt.sotienthu), 0)) > 0)
-                               OR (@tt = 'ChuaDong' AND ISNULL(SUM(pt.sotienthu), 0) = 0))
+                               OR (@tt = 'DaHoanTien' AND (ISNULL(dk.trangthailop, N'') LIKE N'%Đã hoàn tiền%' OR ISNULL(dk.trangthaithanhtoan, N'') = N'Đã hoàn tiền'))
+                               OR (@tt = 'ChoHoanTien' AND (ISNULL(dk.trangthailop, N'') LIKE N'%Chờ hoàn%' OR ISNULL(dk.trangthaithanhtoan, N'') = N'Chờ hoàn tiền'))
+                               OR (@tt = 'ChuaHoanTien' AND ISNULL(dk.trangthailop, N'') LIKE N'%Hủy lớp%' AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Đã hoàn tiền%' AND ISNULL(dk.trangthaithanhtoan, N'') <> N'Đã hoàn tiền' AND ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) > 0)
+                               OR (@tt = 'DaDongDu' AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%' AND (kh.hocphi - ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) <= 0)
+                               OR (@tt = 'ConNoMotPhan' AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%' AND ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) > 0 AND (kh.hocphi - ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) > 0)
+                               OR (@tt = 'ChuaDong' AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%' AND ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) = 0))
                            ORDER BY dk.madangky DESC";
 
             SqlParameter[] p = {
@@ -128,9 +144,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
 
         private void TaiNam()
         {
-            DataTable dt = kncsdl.DocDuLieu(@"SELECT DISTINCT YEAR(ngaythu) AS Nam FROM PHIEUTHU
+            DataTable dt = kncsdl.DocDuLieu(@"SELECT DISTINCT YEAR(ngaythu) AS Nam FROM PHIEUTHU WHERE ngaythu IS NOT NULL
                                               UNION
-                                              SELECT DISTINCT YEAR(ngaydangky) AS Nam FROM DANGKY
+                                              SELECT DISTINCT YEAR(ngaydangky) AS Nam FROM DANGKY WHERE ngaydangky IS NOT NULL
                                               ORDER BY Nam DESC");
             ddlNam.Items.Clear();
             ddlNamThongKe.Items.Clear();
@@ -156,6 +172,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             }
         }
 
+       
         private DataTable LayDuLieuThongKeKhoaHoc()
         {
             int nam = 0;
@@ -163,15 +180,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             string maKH = ddlKhoaThongKe.SelectedValue ?? "";
 
             string sql = @"SELECT kh.makhoahoc, kh.tenkhoahoc,
-                                  COUNT(DISTINCT dk.madangky) AS soluongdk,
-                                  ISNULL(SUM(pt.sotienthu), 0) AS tongthucthu
+                                  (SELECT COUNT(*) FROM DANGKY dk 
+                                   WHERE dk.makhoahoc = kh.makhoahoc AND (@nam = 0 OR YEAR(dk.ngaydangky) = @nam)) AS soluongdk,
+                                  ISNULL((SELECT SUM(pt.sotienthu) FROM PHIEUTHU pt 
+                                          JOIN DANGKY dk2 ON pt.madangky = dk2.madangky 
+                                          WHERE dk2.makhoahoc = kh.makhoahoc AND (@nam = 0 OR YEAR(pt.ngaythu) = @nam)), 0) AS tongthucthu
                            FROM KHOAHOC kh
-                           LEFT JOIN DANGKY dk ON kh.makhoahoc = dk.makhoahoc
-                               AND (@nam = 0 OR YEAR(dk.ngaydangky) = @nam)
-                           LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
-                               AND (@nam = 0 OR YEAR(pt.ngaythu) = @nam)
                            WHERE (@makh = '' OR kh.makhoahoc = @makh)
-                           GROUP BY kh.makhoahoc, kh.tenkhoahoc
                            ORDER BY kh.makhoahoc";
 
             SqlParameter[] p = {
@@ -209,9 +224,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             TaiTatCaDuLieu();
         }
 
+      
         private void TaiBieuDoThangNam()
         {
-            int nam = int.Parse(ddlNam.SelectedValue);
+            int nam = DateTime.Now.Year;
+            int.TryParse(ddlNam.SelectedValue, out nam);
+
             string sql = @"SELECT MONTH(ngaythu) AS Thang, ISNULL(SUM(sotienthu), 0) AS TongTien
                            FROM PHIEUTHU
                            WHERE YEAR(ngaythu) = @nam
@@ -219,12 +237,20 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
                            ORDER BY Thang";
             DataTable dt = kncsdl.DocDuLieu(sql, new[] { new SqlParameter("@nam", nam) });
 
-            var labels = new List<string>();
-            var doanhThu = new List<decimal>();
+            decimal[] tienTheoThang = new decimal[13];
             foreach (DataRow r in dt.Rows)
             {
-                labels.Add("Tháng " + r["Thang"] + "/" + nam);
-                doanhThu.Add(Convert.ToDecimal(r["TongTien"]));
+                int t = Convert.ToInt32(r["Thang"]);
+                if (t >= 1 && t <= 12)
+                    tienTheoThang[t] = Convert.ToDecimal(r["TongTien"]);
+            }
+
+            var labels = new List<string>();
+            var doanhThu = new List<decimal>();
+            for (int m = 1; m <= 12; m++)
+            {
+                labels.Add("T" + m + "/" + nam);
+                doanhThu.Add(tienTheoThang[m]);
             }
 
             JavaScriptSerializer js = new JavaScriptSerializer();
@@ -260,6 +286,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
                 new[] { "makhoahoc", "tenkhoahoc", "soluongdk", "tongthucthu" });
         }
 
+       
         private void XuatFileExcel(DataTable dt, string fileName, string tieuDe, string[] headers, string[] columns)
         {
             Response.Clear();
@@ -272,13 +299,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
 
             StringBuilder sb = new StringBuilder();
             sb.Append("<html><head><meta charset='utf-8'></head><body>");
-            sb.AppendFormat("<h3 style='color:#0755A6;font-family:Arial;'>{0}</h3>", tieuDe);
+            sb.AppendFormat("<h3 style='color:#0755A6;font-family:Arial;'>{0}</h3>", HttpUtility.HtmlEncode(tieuDe));
             sb.AppendFormat("<p style='font-family:Arial;font-size:12px;'>Ngày xuất báo cáo: {0:dd/MM/yyyy HH:mm}</p>", DateTime.Now);
             sb.Append("<table border='1' style='border-collapse:collapse;font-family:Arial;font-size:13px;'>");
             sb.Append("<tr style='background-color:#1677D2;color:white;font-weight:bold;'>");
             foreach (string h in headers)
             {
-                sb.AppendFormat("<th style='padding:6px 10px;'>{0}</th>", h);
+                sb.AppendFormat("<th style='padding:6px 10px;'>{0}</th>", HttpUtility.HtmlEncode(h));
             }
             sb.Append("</tr>");
 
@@ -288,10 +315,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
                 foreach (string col in columns)
                 {
                     object val = r[col];
-                    if (val is decimal || val is double || val is int)
+                    if (val is decimal || val is double || val is int || val is long)
                         sb.AppendFormat("<td style='padding:5px 8px;text-align:right;'>{0:N0}</td>", val);
                     else
-                        sb.AppendFormat("<td style='padding:5px 8px;mso-number-format:\"\\@\";'>{0}</td>", val);
+                        sb.AppendFormat("<td style='padding:5px 8px;mso-number-format:\"\\@\";'>{0}</td>", HttpUtility.HtmlEncode(val?.ToString() ?? ""));
                 }
                 sb.Append("</tr>");
             }
@@ -299,7 +326,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
 
             Response.Output.Write(sb.ToString());
             Response.Flush();
-            Response.End();
+            Response.SuppressContent = true;
+            Context.ApplicationInstance.CompleteRequest();
         }
     }
 }

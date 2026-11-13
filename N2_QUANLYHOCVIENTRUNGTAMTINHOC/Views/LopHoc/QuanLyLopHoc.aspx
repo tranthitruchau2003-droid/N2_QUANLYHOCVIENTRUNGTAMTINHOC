@@ -122,7 +122,9 @@
                             <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
                             <asp:BoundField DataField="hotengv" HeaderText="Giảng viên" />
                             <asp:BoundField DataField="thoikhoabieu" HeaderText="Thời khóa biểu (Ca - Thứ - Phòng)" />
-                            <asp:BoundField DataField="ngaykhaigiang" HeaderText="Khai giảng" DataFormatString="{0:dd/MM/yyyy}" />
+                            <asp:BoundField DataField="thoikhoabieu" HeaderText="Thời khóa biểu (Ca - Thứ - Phòng)" />
+                            <asp:BoundField DataField="thoigianlop" HeaderText="Thời gian học (Từ - Đến)" ItemStyle-CssClass="text-nowrap" />
+                            <asp:BoundField DataField="siso" HeaderText="Sĩ số" ItemStyle-CssClass="text-center fw-semibold text-success" />
                             <asp:BoundField DataField="siso" HeaderText="Sĩ số" ItemStyle-CssClass="text-center fw-semibold text-success" />
                             <asp:TemplateField HeaderText="Thao tác">
                                 <ItemTemplate>

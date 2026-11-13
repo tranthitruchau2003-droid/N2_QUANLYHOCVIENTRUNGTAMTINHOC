@@ -15,6 +15,7 @@
         .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
         .table-dangky { font-size: 0.82rem; }
         .table-dangky th, .table-dangky td { vertical-align: middle !important; padding: 0.4rem 0.35rem !important; }
+        .btn-xuly-lop { font-size: 0.84rem !important; font-weight: 600 !important; padding: 0.42rem 0.75rem !important; }
     </style>
 </asp:Content>
 
@@ -59,6 +60,7 @@
                         <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
                         <asp:BoundField DataField="tengiangvien" HeaderText="Giảng viên giảng dạy" />
                         <asp:BoundField DataField="thoikhoabieu" HeaderText="Thời khóa biểu (Ca - Thứ - Phòng)" />
+                        <asp:BoundField DataField="thoigianlop" HeaderText="Thời gian học (Từ - Đến)" ItemStyle-CssClass="text-nowrap" />
                         <asp:BoundField DataField="hocphi" HeaderText="Học phí" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-nowrap" />
                         <asp:TemplateField HeaderText="Sĩ số (Chuẩn 10 HV)">
                             <ItemTemplate>
@@ -72,9 +74,9 @@
                             <ItemTemplate>
                                 <asp:LinkButton ID="btnChonLopHocPhan" runat="server" CommandName="DangKyLop"
                                     CommandArgument='<%# Eval("malop") + "|" + Eval("makhoahoc") + "|" + Eval("hocphi") %>'
-                                    Enabled='<%# Convert.ToInt32(Eval("siso")) < 10 %>'
-                                    CssClass='<%# Convert.ToInt32(Eval("siso")) >= 10 ? "btn btn-sm btn-secondary disabled" : "btn btn-sm btn-orange" %>'>
-                                    <%# Convert.ToInt32(Eval("siso")) >= 10 ? "Đã đầy (10/10)" : "Chọn lớp này" %>
+                                    Enabled='<%# !Convert.ToBoolean(Eval("dadongdk")) && Convert.ToInt32(Eval("siso")) < 10 %>'
+                                    CssClass='<%# (Convert.ToBoolean(Eval("dadongdk")) || Convert.ToInt32(Eval("siso")) >= 10) ? "btn btn-sm btn-secondary disabled text-nowrap" : "btn btn-sm btn-orange text-nowrap" %>'>
+                                    <%# Convert.ToBoolean(Eval("dadongdk")) ? "Đã đóng ĐK" : (Convert.ToInt32(Eval("siso")) >= 10 ? "Đã đầy (10/10)" : "Chọn lớp này") %>
                                 </asp:LinkButton>
                             </ItemTemplate>
                         </asp:TemplateField>
@@ -131,7 +133,7 @@
                 </div>
             </div>
 
-            <!-- PANEL XỬ LÝ LỚP CHƯA ĐỦ 10 HỌC VIÊN (CHỈ ADMIN THẤY) -->
+            <!-- PANEL XỬ LÝ LỚP CHƯA ĐỦ 10 HỌC VIÊN (CHỈ ADMIN / NHÂN VIÊN THẤY) -->
             <asp:Panel ID="pnlXuLyLopThieu" runat="server" CssClass="card card-custom border-warning flex-grow-1">
                 <div class="card-header bg-warning-subtle text-dark fw-bold">
                     <i class="bi bi-tools me-1"></i> Xử lý Lớp chưa đủ 10 Học viên (< 10 HV)
@@ -146,9 +148,10 @@
                         <asp:DropDownList ID="ddlLopDich" runat="server" CssClass="form-select form-select-sm" />
                     </div>
                     <div class="d-grid gap-2 mt-3">
-                        <asp:Button ID="btnGhepLop" runat="server" Text="1. Ghép toàn bộ HV sang Lớp đích" CssClass="btn btn-sm btn-primary" OnClick="btnGhepLop_Click" />
-                        <asp:Button ID="btnMoDacCach" runat="server" Text="2. Duyệt mở lớp đặc cách (Dù < 10 HV)" CssClass="btn btn-sm btn-success" OnClick="btnMoDacCach_Click" />
-                        <asp:Button ID="btnHuyLopThieu" runat="server" Text="3. Hủy lớp & Bảo lưu học phí" CssClass="btn btn-sm btn-outline-danger" OnClick="btnHuyLopThieu_Click" />
+                        <asp:Button ID="btnGhepLop" runat="server" Text="Ghép toàn bộ HV sang Lớp đích" CssClass="btn btn-primary btn-xuly-lop" OnClick="btnGhepLop_Click" />
+                        <asp:Button ID="btnMoDacCach" runat="server" Text="Duyệt mở lớp đặc cách (Dù < 10 HV)" CssClass="btn btn-success btn-xuly-lop" OnClick="btnMoDacCach_Click" />
+                        <asp:Button ID="btnHuyLopThieu" runat="server" Text="Hủy lớp & Bảo lưu học phí" CssClass="btn btn-outline-danger btn-xuly-lop" OnClick="btnHuyLopThieu_Click" />
+                        <asp:Button ID="btnXemLopHuyHoanTien" runat="server" Text="Danh sách Lớp bị hủy & Hoàn tiền" CssClass="btn btn-warning text-dark btn-xuly-lop" OnClick="btnXemLopHuyHoanTien_Click" />
                     </div>
                 </div>
             </asp:Panel>
@@ -159,7 +162,7 @@
             <div class="card card-custom h-100 d-flex flex-column">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span class="text-nowrap"><i class="bi bi-list-ul me-2"></i>3. Kết quả Đăng ký Lớp học & Đóng Học phí Chuyển khoản QR</span>
-                    <div class="d-flex gap-2">
+                    <asp:Panel ID="pnlTimDK" runat="server" DefaultButton="btnTimDK" CssClass="d-flex gap-2">
                         <div class="position-relative" style="width: 220px;">
                             <asp:TextBox ID="txtTimDK" runat="server" ClientIDMode="Static" TextMode="Search" CssClass="form-control form-control-sm"
                                 placeholder="Tìm mã ĐK, học viên, lớp..." autocomplete="off" onclick="this.select();" />
@@ -169,7 +172,7 @@
                             </div>
                         </div>
                         <asp:Button ID="btnTimDK" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTimDK_Click" />
-                    </div>
+                    </asp:Panel>
                 </div>
                 <div class="card-body p-0 flex-grow-1 d-flex flex-column">
                     <div class="table-responsive flex-grow-1">
@@ -194,11 +197,22 @@
                                                 CssClass="btn btn-sm btn-outline-primary" title="Chọn để đổi lớp"><i class="bi bi-arrow-left-right"></i></asp:LinkButton>
                                             
                                             <asp:LinkButton ID="btnDongHP" runat="server" CommandName="DongHocPhi" CommandArgument='<%# Eval("madangky") + "|" + Eval("conno") %>'
-                                                Visible='<%# Convert.ToDecimal(Eval("conno")) > 0 %>'
+                                                Visible='<%# Convert.ToDecimal(Eval("conno")) > 0 && Eval("trangthaithanhtoan").ToString() != "Chờ xác nhận" && !Eval("trangthailop").ToString().Contains("Hủy lớp") %>'
                                                 CssClass="btn btn-sm btn-success text-nowrap" title="Mở mã QR chuyển khoản & gửi ảnh biên lai">
                                                 <i class="bi bi-qr-code-scan"></i> Đóng HP
                                             </asp:LinkButton>
-                                            
+
+                                            <asp:LinkButton ID="btnYeuCauHoanTien" runat="server" CommandName="MoYeuCauHoanTien" CommandArgument='<%# Eval("madangky") %>'
+                                                Visible='<%# Convert.ToDecimal(Eval("dadong")) > 0 && Eval("trangthailop").ToString().Contains("Hủy lớp") && !Eval("trangthailop").ToString().Contains("Đã hoàn tiền") %>'
+                                                CssClass='<%# Eval("trangthailop").ToString().Contains("Chờ hoàn") ? "btn btn-sm btn-outline-warning fw-bold text-dark text-nowrap" : "btn btn-sm btn-warning fw-bold text-dark text-nowrap" %>'
+                                                title="Nhập hoặc sửa lại thông tin ngân hàng nhận hoàn tiền">
+                                                <i class="bi bi-bank"></i> <%# Eval("trangthailop").ToString().Contains("Chờ hoàn") ? "Sửa STK hoàn" : "Nhận hoàn tiền" %>
+                                            </asp:LinkButton>
+                                            <asp:LinkButton ID="btnXemBienLaiHoanHV" runat="server" CommandName="XemBienLaiHoanHV" CommandArgument='<%# Eval("madangky") %>'
+                                                Visible='<%# Eval("trangthailop").ToString().Contains("Đã hoàn tiền") || Eval("trangthaithanhtoan").ToString() == "Đã hoàn tiền" %>'
+                                                CssClass="btn btn-sm btn-outline-success fw-semibold text-nowrap" title="Xem ảnh chứng từ trung tâm đã chuyển khoản hoàn tiền">
+                                                <i class="bi bi-image"></i> Ảnh hoàn tiền
+                                            </asp:LinkButton>
                                             <button type="button" class="btn btn-sm btn-outline-danger" title="Hủy học phần"
                                                 onclick="hienThiModalHuyDK('<%# Eval("madangky") %>'); return false;"><i class="bi bi-trash"></i></button>
                                         </div>
@@ -207,6 +221,25 @@
                             </Columns>
                         </asp:GridView>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP THÔNG BÁO KẾT QUẢ HOÀN TIỀN -->
+    <div class="modal fade" id="modalThongBaoHoanTien" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Thông báo Xử lý Hoàn tiền</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-4 text-center">
+                    <i class="bi bi-cash-coin display-4 text-success mb-3 d-block"></i>
+                    <p class="fs-6 mb-0"><asp:Literal ID="litNoiDungTBHoanTien" runat="server" /></p>
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-3">
+                    <button type="button" class="btn btn-success px-4 fw-semibold" data-bs-dismiss="modal">Đã hiểu</button>
                 </div>
             </div>
         </div>
@@ -273,36 +306,204 @@
         </div>
     </div>
 
+    <!-- POPUP HỌC VIÊN NHẬP / SỬA THÔNG TIN TÀI KHOẢN NGÂN HÀNG NHẬN HOÀN TIỀN -->
+    <div class="modal fade" id="modalNhapSTKHoanTien" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-bank2 me-2"></i>Thông tin Tài khoản Nhận Hoàn tiền</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <asp:HiddenField ID="hfMaDKHoanTien" runat="server" />
+                    <div class="alert alert-info py-2 small mb-3">
+                        Hồ sơ: <strong><asp:Literal ID="litHTMaDK" runat="server" /></strong> | 
+                        Số tiền được hoàn: <strong class="text-danger"><asp:Literal ID="litHTSoTien" runat="server" /></strong>
+                    </div>
+                    <div class="mb-2">
+                        <label class="small fw-bold">Hình thức nhận hoàn tiền (*)</label>
+                        <asp:DropDownList ID="ddlHinhThucHoan" runat="server" CssClass="form-select form-select-sm">
+                            <asp:ListItem Text="Chuyển khoản Ngân hàng" Value="Chuyển khoản" />
+                            <asp:ListItem Text="Nhận tiền mặt tại Trung tâm" Value="Tiền mặt" />
+                        </asp:DropDownList>
+                    </div>
+                    <div class="mb-2">
+                        <label class="small fw-bold">Mã / Tên Ngân hàng (VD: VCB, MB, BIDV, Techcombank...)</label>
+                        <asp:TextBox ID="txtNganHangHT" runat="server" CssClass="form-control form-control-sm" placeholder="VD: MB hoặc Vietcombank" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="small fw-bold">Số tài khoản nhận tiền</label>
+                        <asp:TextBox ID="txtSoTKHT" runat="server" CssClass="form-control form-control-sm" placeholder="Nhập chính xác số tài khoản..." />
+                    </div>
+                    <div class="mb-2">
+                        <label class="small fw-bold">Tên chủ tài khoản (Viết hoa không dấu)</label>
+                        <asp:TextBox ID="txtChuTKHT" runat="server" CssClass="form-control form-control-sm" placeholder="VD: NGUYEN VAN MINH" />
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <asp:Button ID="btnGuiYeuCauHoanTien" runat="server" Text="Lưu & Gửi yêu cầu Hoàn tiền" CssClass="btn btn-warning btn-sm fw-bold text-dark" OnClick="btnGuiYeuCauHoanTien_Click" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP ADMIN QUÉT MÃ QR CHUYỂN TRẢ & GỬI ẢNH BIÊN LAI XÁC NHẬN HOÀN TIỀN -->
+    <div class="modal fade" id="modalQRHoanTienAdmin" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-qr-code-scan me-2"></i>Chuyển khoản Hoàn tiền & Gửi Biên lai</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <asp:HiddenField ID="hfMaDKAdminHoanTien" runat="server" />
+                    <div class="alert alert-warning py-2 small text-start mb-2">
+                        <div><strong>Học viên:</strong> <asp:Literal ID="litAdminHTHocVien" runat="server" /></div>
+                        <div><strong>Tài khoản nhận:</strong> <span class="text-primary fw-bold"><asp:Literal ID="litAdminHTSTK" runat="server" /></span></div>
+                        <div><strong>Số tiền hoàn trả:</strong> <span class="text-danger fw-bold fs-6"><asp:Literal ID="litAdminHTSoTien" runat="server" /></span></div>
+                    </div>
+
+                    <asp:Panel ID="pnlQRHoanTienBox" runat="server">
+                        <p class="small text-muted mb-1">1. Quét mã QR bên dưới để chuyển khoản hoàn tiền cho học viên:</p>
+                        <asp:Image ID="imgQRHoanTien" runat="server" CssClass="img-fluid border p-2 mb-2 rounded" style="max-height: 220px;" />
+                    </asp:Panel>
+
+                    <div class="text-start border-top pt-3 mt-2">
+                        <label class="small fw-bold text-danger mb-1">2. Tải lên ảnh chụp màn hình biên lai đã chuyển hoàn (*):</label>
+                        <asp:FileUpload ID="fuBienLaiHoanTien" runat="server" CssClass="form-control form-control-sm mb-2" accept="image/*" onchange="xemTruocAnhHT(this);" />
+                        <div class="text-center">
+                            <img id="imgXemTruocHT" src="#" alt="Ảnh biên lai hoàn tiền" class="img-thumbnail d-none" style="max-height: 150px;" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                    <asp:Button ID="btnXacNhanHoanTienAdmin" runat="server" Text="Gửi Ảnh & Xác nhận Đã hoàn tiền" CssClass="btn btn-danger btn-sm fw-bold" OnClick="btnXacNhanHoanTienAdmin_Click" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP DANH SÁCH LỚP BỊ HỦY & HOÀN TIỀN HỌC PHÍ (DÀNH CHO ADMIN / KẾ TOÁN) -->
+    <div class="modal fade" id="modalLopBiHuy" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-arrow-counterclockwise me-2"></i>Danh sách Học viên thuộc Lớp bị hủy & Hoàn tiền học phí</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <asp:GridView ID="gvLopBiHuy" runat="server" CssClass="table table-sm table-bordered table-hover mb-0"
+                            AutoGenerateColumns="false" OnRowCommand="gvLopBiHuy_RowCommand"
+                            EmptyDataText="Hiện không có học viên nào thuộc lớp bị hủy.">
+                            <Columns>
+                                <asp:BoundField DataField="madangky" HeaderText="Mã ĐK" ItemStyle-CssClass="fw-semibold text-nowrap" />
+                                <asp:BoundField DataField="hoten" HeaderText="Học viên" ItemStyle-CssClass="fw-bold" />
+                                <asp:BoundField DataField="dienthoai" HeaderText="SĐT" />
+                                <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
+                                <asp:BoundField DataField="tenlopbihuy" HeaderText="Tên Lớp bị hủy" ItemStyle-CssClass="text-danger fw-semibold" />
+                                <asp:BoundField DataField="dadong" HeaderText="Đã đóng" DataFormatString="{0:N0} đ" ItemStyle-CssClass="text-end fw-bold text-success text-nowrap" HeaderStyle-CssClass="text-end" />
+                                <asp:BoundField DataField="thongtinstk" HeaderText="Tài khoản nhận hoàn tiền" ItemStyle-CssClass="text-primary fw-semibold" />
+                                <asp:TemplateField HeaderText="Xử lý Hoàn tiền" ItemStyle-CssClass="text-center text-nowrap" HeaderStyle-CssClass="text-center">
+                                    <ItemTemplate>
+                                        <asp:LinkButton ID="btnNhapSTKHo" runat="server" CommandName="MoYeuCauHoanTien" CommandArgument='<%# Eval("madangky") %>'
+                                            Visible='<%# Convert.ToDecimal(Eval("dadong")) > 0 && string.IsNullOrEmpty(Eval("thongtinstk").ToString()) && !Eval("trangthailop").ToString().Contains("Đã hoàn tiền") %>'
+                                            CssClass="btn btn-sm btn-outline-primary" title="Nhập STK ngân hàng để hoàn tiền">
+                                            <i class="bi bi-pencil-square me-1"></i> Nhập STK
+                                        </asp:LinkButton>
+
+                                        <asp:LinkButton ID="btnHoanTien" runat="server" CommandName="MoQRHoanTien" CommandArgument='<%# Eval("madangky") %>'
+                                            Visible='<%# Convert.ToDecimal(Eval("dadong")) > 0 && !string.IsNullOrEmpty(Eval("thongtinstk").ToString()) && !Eval("trangthailop").ToString().Contains("Đã hoàn tiền") %>'
+                                            CssClass="btn btn-sm btn-danger fw-semibold">
+                                            <i class="bi bi-qr-code-scan me-1"></i> Tạo QR & Hoàn tiền
+                                        </asp:LinkButton>
+
+                                        <span class='badge bg-secondary' style='<%# Convert.ToDecimal(Eval("dadong")) == 0 && !Eval("trangthailop").ToString().Contains("Đã hoàn tiền") ? "" : "display:none;" %>'>Chưa đóng tiền</span>
+                                        <span class='badge bg-success' style='<%# Eval("trangthailop").ToString().Contains("Đã hoàn tiền") ? "" : "display:none;" %>'>Đã hoàn tiền</span>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                            </Columns>
+                        </asp:GridView>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP HỌC VIÊN XEM ẢNH CHỨNG TỪ TRUNG TÂM ĐÃ HOÀN TIỀN -->
+    <div class="modal fade" id="modalXemBienLaiHoanHV" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Chứng từ Đã Hoàn tiền Học phí</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div class="alert alert-light border text-start small mb-3">
+                        <div><strong>Hồ sơ đăng ký:</strong> <asp:Literal ID="litHVHoanMaDK" runat="server" /></div>
+                        <div><strong>Số tiền đã hoàn:</strong> <span class="text-danger fw-bold"><asp:Literal ID="litHVHoanSoTien" runat="server" /></span></div>
+                        <div><strong>Ngày chuyển hoàn:</strong> <asp:Literal ID="litHVHoanNgay" runat="server" /></div>
+                        <div><strong>Chi tiết giao dịch:</strong> <asp:Literal ID="litHVHoanChiTiet" runat="server" /></div>
+                    </div>
+                    <asp:Image ID="imgBienLaiHoanHV" runat="server" CssClass="img-fluid border rounded p-1 mb-2" style="max-height: 350px;" />
+                    <div>
+                        <asp:HyperLink ID="lnkMoAnhHoanHV" runat="server" Target="_blank" CssClass="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-arrows-fullscreen me-1"></i> Mở ảnh kích thước đầy đủ
+                        </asp:HyperLink>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // @ts-nocheck
+        function showBootstrapModal(id) {
+            var checkModal = function () {
+                var el = document.getElementById(id);
+                if (el && window.bootstrap) {
+                    new window.bootstrap.Modal(el).show();
+                } else {
+                    setTimeout(checkModal, 100);
+                }
+            };
+            checkModal();
+        }
+
         function hienThiModalHuyDK(maDK) {
             document.getElementById('hfMaDKHuy').value = maDK;
             document.getElementById('maDKCanHuy').innerText = maDK;
-            var checkModal = function () {
-                var el = document.getElementById('modalHuyDK');
-                if (el && window.bootstrap) {
-                    new window.bootstrap.Modal(el).show();
-                } else {
-                    setTimeout(checkModal, 100);
-                }
-            };
-            checkModal();
+            showBootstrapModal('modalHuyDK');
         }
 
-        function moModalQR() {
-            var checkModal = function () {
-                var el = document.getElementById('modalThanhToanQR');
-                if (el && window.bootstrap) {
-                    new window.bootstrap.Modal(el).show();
-                } else {
-                    setTimeout(checkModal, 100);
-                }
-            };
-            checkModal();
-        }
+        function moModalQR() { showBootstrapModal('modalThanhToanQR'); }
+        function moModalNhapSTKHoanTien() { showBootstrapModal('modalNhapSTKHoanTien'); }
+        function moModalLopBiHuy() { showBootstrapModal('modalLopBiHuy'); }
+        function moModalQRHoanTienAdmin() { showBootstrapModal('modalQRHoanTienAdmin'); }
+        function moModalThongBaoHoanTien() { showBootstrapModal('modalThongBaoHoanTien'); }
 
         function xemTruocAnhCK(input) {
             var preview = document.getElementById('imgXemTruocCK');
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('d-none');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function xemTruocAnhHT(input) {
+            var preview = document.getElementById('imgXemTruocHT');
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
                 reader.onload = function (e) {
@@ -389,5 +590,7 @@
                 }
             }, 5000);
         });
+
+function moModalXemBienLaiHoanHV() { showBootstrapModal('modalXemBienLaiHoanHV'); }
     </script>
 </asp:Content>

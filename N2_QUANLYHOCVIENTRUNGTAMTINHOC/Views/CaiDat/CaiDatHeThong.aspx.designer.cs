@@ -51,13 +51,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.CaiDat
         protected global::System.Web.UI.WebControls.Button btnBackup;
 
         /// <summary>
-        /// ddlFileBackup control.
+        /// ddlFileBak control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlFileBackup;
+        protected global::System.Web.UI.WebControls.DropDownList ddlFileBak;
 
         /// <summary>
         /// btnRestore control.
@@ -69,31 +69,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.CaiDat
         protected global::System.Web.UI.WebControls.Button btnRestore;
 
         /// <summary>
-        /// txtMKCu control.
+        /// btnXemThemNhatKy control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtMKCu;
-
-        /// <summary>
-        /// txtMKMoi control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtMKMoi;
-
-        /// <summary>
-        /// btnDoiMK control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnDoiMK;
+        protected global::System.Web.UI.WebControls.Button btnXemThemNhatKy;
 
         /// <summary>
         /// gvNhatKy control.

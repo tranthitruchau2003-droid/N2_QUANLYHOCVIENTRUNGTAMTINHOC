@@ -14,6 +14,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
     public partial class QuanLyDangKy
     {
 
+
         /// <summary>
         /// ScriptManager1 control.
         /// </summary>
@@ -204,6 +205,24 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         protected global::System.Web.UI.WebControls.Button btnHuyLopThieu;
 
         /// <summary>
+        /// btnXemLopHuyHoanTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnXemLopHuyHoanTien;
+
+        /// <summary>
+        /// pnlTimDK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlTimDK;
+
+        /// <summary>
         /// txtTimDK control.
         /// </summary>
         /// <remarks>
@@ -238,6 +257,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.GridView gvDangKy;
+
+        /// <summary>
+        /// litNoiDungTBHoanTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litNoiDungTBHoanTien;
 
         /// <summary>
         /// btnHuyDKChinhThuc control.
@@ -328,5 +356,212 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnXacNhanCK;
+
+        /// <summary>
+        /// hfMaDKHoanTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfMaDKHoanTien;
+
+        /// <summary>
+        /// litHTMaDK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litHTMaDK;
+
+        /// <summary>
+        /// litHTSoTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litHTSoTien;
+
+        /// <summary>
+        /// ddlHinhThucHoan control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlHinhThucHoan;
+
+        /// <summary>
+        /// txtNganHangHT control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtNganHangHT;
+
+        /// <summary>
+        /// txtSoTKHT control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtSoTKHT;
+
+        /// <summary>
+        /// txtChuTKHT control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtChuTKHT;
+
+        /// <summary>
+        /// btnGuiYeuCauHoanTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnGuiYeuCauHoanTien;
+
+        /// <summary>
+        /// hfMaDKAdminHoanTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfMaDKAdminHoanTien;
+
+        /// <summary>
+        /// litAdminHTHocVien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litAdminHTHocVien;
+
+        /// <summary>
+        /// litAdminHTSTK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litAdminHTSTK;
+
+        /// <summary>
+        /// litAdminHTSoTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litAdminHTSoTien;
+
+        /// <summary>
+        /// pnlQRHoanTienBox control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlQRHoanTienBox;
+
+        /// <summary>
+        /// imgQRHoanTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Image imgQRHoanTien;
+
+        /// <summary>
+        /// fuBienLaiHoanTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fuBienLaiHoanTien;
+
+        /// <summary>
+        /// btnXacNhanHoanTienAdmin control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnXacNhanHoanTienAdmin;
+
+        /// <summary>
+        /// gvLopBiHuy control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView gvLopBiHuy;
+
+        /// <summary>
+        /// litHVHoanMaDK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litHVHoanMaDK;
+
+        /// <summary>
+        /// litHVHoanSoTien control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litHVHoanSoTien;
+
+        /// <summary>
+        /// litHVHoanNgay control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litHVHoanNgay;
+
+        /// <summary>
+        /// litHVHoanChiTiet control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litHVHoanChiTiet;
+
+        /// <summary>
+        /// imgBienLaiHoanHV control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Image imgBienLaiHoanHV;
+
+        /// <summary>
+        /// lnkMoAnhHoanHV control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HyperLink lnkMoAnhHoanHV;
     }
 }

@@ -30,6 +30,7 @@
     </style>
     <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
 </head>
+
 <body>
     <form id="form1" runat="server">
         <div class="app-wrapper">
@@ -321,7 +322,27 @@
                 var isNowCollapsed = sidebar.classList.contains('collapsed');
                 localStorage.setItem('sidebar_collapsed', String(isNowCollapsed));
             }
+}
+// Sửa triệt để lỗi ấn Enter ở mọi ô tìm kiếm kích nhầm nút Thêm/Đăng ký đầu form
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target && e.target.tagName === 'INPUT') {
+        var inp = e.target;
+        var type = (inp.type || '').toLowerCase();
+        if (type !== 'text' && type !== 'search') return;
+
+        var ph = (inp.placeholder || '').toLowerCase();
+        var id = (inp.id || '').toLowerCase();
+        if (ph.indexOf('tìm') !== -1 || id.indexOf('tim') !== -1 || type === 'search') {
+            e.preventDefault();
+            var container = inp.closest('.d-flex, .input-group, .card-header, .row') || inp.parentElement;
+            if (container) {
+                var btn = container.querySelector('input[type="submit"], button[type="submit"], .btn-primary-gradient');
+                if (btn) btn.click();
+            }
         }
+    }
+});
     </script>
+
 </body>
 </html>

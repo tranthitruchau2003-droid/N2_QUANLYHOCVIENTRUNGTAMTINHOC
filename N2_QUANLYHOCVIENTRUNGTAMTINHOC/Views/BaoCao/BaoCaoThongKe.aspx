@@ -50,8 +50,11 @@
                         AutoPostBack="true" OnSelectedIndexChanged="BoLocHocVien_Changed">
                         <asp:ListItem Text="-- Tất cả trạng thái --" Value="" />
                         <asp:ListItem Text="Đã đóng đủ học phí" Value="DaDongDu" />
-                        <asp:ListItem Text="Chưa đóng đủ (Còn nợ)" Value="ConNo" />
+                        <asp:ListItem Text="Còn nợ một phần" Value="ConNoMotPhan" />
                         <asp:ListItem Text="Chưa đóng đồng nào (0 đ)" Value="ChuaDong" />
+                        <asp:ListItem Text="Chưa hoàn tiền (Hủy lớp)" Value="ChuaHoanTien" />
+                        <asp:ListItem Text="Chờ hoàn tiền (Đã gửi STK)" Value="ChoHoanTien" />
+                        <asp:ListItem Text="Đã hoàn tiền học phí" Value="DaHoanTien" />
                     </asp:DropDownList>
                 </div>
                 <div class="col-md-3">
@@ -75,8 +78,15 @@
                         <asp:BoundField DataField="mahocvien" HeaderText="Mã HV" />
                         <asp:TemplateField HeaderText="Họ tên Học viên">
                             <ItemTemplate>
-                                <a href='/Views/PhieuThu/QuanLyPhieuThu.aspx?madk=<%# Eval("madangky") %>'
-                                   class="fw-bold text-primary text-decoration-none" title="Chuyển sang lập Phiếu thu">
+                                <a href='<%# (Eval("trangthaihp").ToString().Contains("Chưa hoàn tiền") || Eval("trangthaihp").ToString().Contains("Chờ hoàn tiền")) 
+                                        ? ResolveUrl("~/Views/DangKy/QuanLyDangKy.aspx?madk=" + Eval("madangky")) 
+                                        : ResolveUrl("~/Views/PhieuThu/QuanLyPhieuThu.aspx?madk=" + Eval("madangky")) %>'
+                                   class='<%# (Eval("trangthaihp").ToString().Contains("Chưa hoàn tiền") || Eval("trangthaihp").ToString().Contains("Chờ hoàn tiền")) 
+                                        ? "fw-bold text-danger text-decoration-none" 
+                                        : "fw-bold text-primary text-decoration-none" %>'
+                                   title='<%# (Eval("trangthaihp").ToString().Contains("Chưa hoàn tiền") || Eval("trangthaihp").ToString().Contains("Chờ hoàn tiền")) 
+                                        ? "Chuyển sang trang Đăng ký để xử lý hoàn tiền" 
+                                        : "Chuyển sang lập Phiếu thu" %>'>
                                     <%# Eval("hoten") %>
                                 </a>
                             </ItemTemplate>
