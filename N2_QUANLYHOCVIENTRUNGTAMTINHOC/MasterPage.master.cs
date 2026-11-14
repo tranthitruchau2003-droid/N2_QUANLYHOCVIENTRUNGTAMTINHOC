@@ -56,29 +56,36 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             }
             else
             {
-                KiemTraQuyenTruyCapTrang(quyen);
+                PhanQuyenMenu(quyen);
             }
         }
 
-        private void KiemTraQuyenTruyCapTrang(string quyen)
+        private void PhanQuyenMenu(string quyen)
         {
-            string path = Request.AppRelativeCurrentExecutionFilePath?.ToLowerInvariant() ?? "";
-            if (quyen == "Admin") return;
+            // Thiết lập hiển thị menu minh bạch và chính xác theo từng phân quyền
+            bool isDashboard = (quyen == "Admin" || quyen == "NhanVien");
+            bool isHocVienMenu = (quyen == "Admin" || quyen == "NhanVien");
+            bool isKhoaHocMenu = (quyen == "Admin" || quyen == "NhanVien");
+            bool isGiangVienMenu = (quyen == "Admin" || quyen == "NhanVien");
+            bool isLopHocMenu = (quyen == "Admin" || quyen == "NhanVien" || quyen == "GiangVien" || quyen == "HocVien");
+            bool isDangKyMenu = (quyen == "Admin" || quyen == "NhanVien" || quyen == "HocVien");
+            bool isPhieuThuMenu = (quyen == "Admin" || quyen == "NhanVien");
+            bool isKyThiMenu = (quyen == "Admin" || quyen == "NhanVien" || quyen == "GiangVien" || quyen == "HocVien");
+            bool isChungChiMenu = (quyen == "Admin" || quyen == "NhanVien" || quyen == "HocVien");
+            bool isBaoCaoMenu = (quyen == "Admin" || quyen == "NhanVien");
+            bool isCaiDatMenu = (quyen == "Admin");
 
-            if (quyen == "NhanVien")
-            {
-                if (path.Contains("/caidathethong.aspx")) Response.Redirect("~/Dashboard.aspx", true);
-            }
-            else if (quyen == "GiangVien")
-            {
-                bool choPhepGV = path.Contains("/quanlylophoc.aspx") || path.Contains("/quanlykythi.aspx");
-                if (!choPhepGV) Response.Redirect("~/Views/LopHoc/QuanLyLopHoc.aspx", true);
-            }
-            else if (quyen == "HocVien")
-            {
-                bool choPhepHV = path.Contains("/quanlylophoc.aspx") || path.Contains("/quanlydangky.aspx") || path.Contains("/quanlykythi.aspx") || path.Contains("/quanlychungchi.aspx");
-                if (!choPhepHV) Response.Redirect("~/Views/DangKy/QuanLyDangKy.aspx", true);
-            }
+            if (liDashboard != null) liDashboard.Visible = isDashboard;
+            if (liHocVien != null) liHocVien.Visible = isHocVienMenu;
+            if (liKhoaHoc != null) liKhoaHoc.Visible = isKhoaHocMenu;
+            if (liGiangVien != null) liGiangVien.Visible = isGiangVienMenu;
+            if (liLopHoc != null) liLopHoc.Visible = isLopHocMenu;
+            if (liDangKy != null) liDangKy.Visible = isDangKyMenu;
+            if (liPhieuThu != null) liPhieuThu.Visible = isPhieuThuMenu;
+            if (liKyThi != null) liKyThi.Visible = isKyThiMenu;
+            if (liChungChi != null) liChungChi.Visible = isChungChiMenu;
+            if (liBaoCao != null) liBaoCao.Visible = isBaoCaoMenu;
+            if (liCaiDat != null) liCaiDat.Visible = isCaiDatMenu;
         }
 
         protected void Page_Load(object sender, EventArgs e)
