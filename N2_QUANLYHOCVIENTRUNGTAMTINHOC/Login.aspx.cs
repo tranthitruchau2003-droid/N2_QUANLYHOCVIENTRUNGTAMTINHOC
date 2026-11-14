@@ -26,8 +26,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             if (q == "GiangVien") url = "~/Views/LopHoc/QuanLyLopHoc.aspx";
             else if (q == "HocVien") url = "~/Views/DangKy/QuanLyDangKy.aspx";
 
-            Response.Redirect(url, false);
-            Context.ApplicationInstance.CompleteRequest();
+            ScriptManager.RegisterStartupScript(this, GetType(), "redirect", $"window.location.href = '{ResolveUrl(url)}';", true);
         }
 
         protected void btnDangNhap_Click(object sender, EventArgs e)
@@ -51,7 +50,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 
             try
             {
-                // 1. Kiểm tra Admin / Nhân viên (so sánh mật khẩu phân biệt hoa thường)
+                // 1. Kiểm tra Admin / Nhân viên
                 DataTable dtAdmin = kncsdl.DocDuLieu(
                     "SELECT * FROM TAIKHOAN WHERE tendangnhap=@u AND trangthai=1",
                     new[] { new SqlParameter("@u", u) });
@@ -75,7 +74,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     }
                 }
 
-                // 2. Kiểm tra Giảng viên (Tên đăng nhập là Số điện thoại)
+                // 2. Kiểm tra Giảng viên
                 DataTable dtGV = kncsdl.DocDuLieu(
                     "SELECT * FROM GIANGVIEN WHERE LTRIM(RTRIM(dienthoai))=@u",
                     new[] { new SqlParameter("@u", u) });
@@ -95,10 +94,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                         Session["TenDangNhap"] = maGV;
                         Session["HoTen"] = dtGV.Rows[0]["hoten"].ToString();
                         Session["Quyen"] = "GiangVien";
-                        if (canDoiMKLanDau)
-                            Session["BatBuocDoiMK"] = true;
-                        else
-                            Session.Remove("BatBuocDoiMK");
+                        if (canDoiMKLanDau) Session["BatBuocDoiMK"] = true;
+                        else Session.Remove("BatBuocDoiMK");
 
                         kncsdl.GhiNhatKy(maGV, "Đăng nhập hệ thống", $"Giảng viên đăng nhập từ IP {ip}");
                         ChuyenHuongTheoQuyen("GiangVien");
@@ -106,7 +103,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     }
                 }
 
-                // 3. Kiểm tra Học viên (Mã HV, SĐT hoặc Email)
+                // 3. Kiểm tra Học viên
                 DataTable dtHV = kncsdl.DocDuLieu(
                     "SELECT * FROM HOCVIEN WHERE mahocvien=@u OR LTRIM(RTRIM(dienthoai))=@u OR (@u <> '' AND LOWER(LTRIM(RTRIM(ISNULL(email,''))))=LOWER(@u))",
                     new[] { new SqlParameter("@u", u) });
@@ -126,10 +123,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                         Session["TenDangNhap"] = maHV;
                         Session["HoTen"] = dtHV.Rows[0]["hoten"].ToString();
                         Session["Quyen"] = "HocVien";
-                        if (canDoiMKLanDau)
-                            Session["BatBuocDoiMK"] = true;
-                        else
-                            Session.Remove("BatBuocDoiMK");
+                        if (canDoiMKLanDau) Session["BatBuocDoiMK"] = true;
+                        else Session.Remove("BatBuocDoiMK");
 
                         kncsdl.GhiNhatKy(maHV, "Đăng nhập hệ thống", $"Học viên đăng nhập từ IP {ip}");
                         ChuyenHuongTheoQuyen("HocVien");
@@ -152,28 +147,41 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             string sdt = txtDKDienThoai.Text.Trim();
             string email = txtDKEmail.Text.Trim();
             string matKhau = txtDKMatKhau.Text.Trim();
+            string matKhauXN = txtDKMatKhauXN.Text.Trim();
 
-            if (string.IsNullOrEmpty(hoTen) || hoTen.Length > 100 || !Regex.IsMatch(sdt, @"^0\d{9}$") || matKhau.Length < 6)
+            if (string.IsNullOrEmpty(hoTen) || hoTen.Length > 100)
             {
-                HienAlertDangKy("Vui lòng nhập Họ tên hợp lệ, SĐT đủ 10 số và Mật khẩu tối thiểu 6 ký tự!");
+                HienLoiDKModal("Vui lòng nhập Họ và tên hợp lệ (tối đa 100 ký tự)!");
                 return;
             }
-
+            if (string.IsNullOrEmpty(sdt) || !Regex.IsMatch(sdt, @"^0\d{9}$"))
+            {
+                HienLoiDKModal("Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0)!");
+                return;
+            }
+            if (string.IsNullOrEmpty(matKhau) || matKhau.Contains(" ") || matKhau.Length < 6 || matKhau.Length > 50)
+            {
+                HienLoiDKModal("Mật khẩu phải từ 6 đến 50 ký tự và không chứa khoảng trắng!");
+                return;
+            }
             if (matKhau == sdt)
             {
-                HienAlertDangKy("Mật khẩu đăng ký không được trùng với Số điện thoại!");
+                HienLoiDKModal("Mật khẩu đăng ký không được trùng với Số điện thoại!");
                 return;
             }
-
+            if (matKhau != matKhauXN)
+            {
+                HienLoiDKModal("Xác nhận mật khẩu không khớp!");
+                return;
+            }
             if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             {
-                HienAlertDangKy("Định dạng Email không hợp lệ!");
+                HienLoiDKModal("Định dạng Email không hợp lệ!");
                 return;
             }
-
             if (hoTen.IndexOfAny(new[] { '<', '>' }) >= 0 || txtDKDiaChi.Text.IndexOfAny(new[] { '<', '>' }) >= 0)
             {
-                HienAlertDangKy("Họ tên và Địa chỉ không được chứa ký tự < hoặc >!");
+                HienLoiDKModal("Họ tên và Địa chỉ không được chứa ký tự đặc biệt (< hoặc >)!");
                 return;
             }
 
@@ -183,7 +191,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 DateTime ns;
                 if (!DateTime.TryParse(txtDKNgaySinh.Text, out ns) || ns >= DateTime.Today || ns.Year < 1940)
                 {
-                    HienAlertDangKy("Ngày sinh không hợp lệ!");
+                    HienLoiDKModal("Ngày sinh không hợp lệ!");
                     return;
                 }
                 ngaySinhParam = ns;
@@ -196,7 +204,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     new[] { new SqlParameter("@dt", sdt), new SqlParameter("@em", email) }));
                 if (check > 0)
                 {
-                    HienAlertDangKy("Số điện thoại hoặc Email này đã được đăng ký!");
+                    HienLoiDKModal("Số điện thoại hoặc Email này đã được đăng ký trong hệ thống!");
                     return;
                 }
 
@@ -222,28 +230,28 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 Session["Quyen"] = "HocVien";
                 Session.Remove("BatBuocDoiMK");
                 kncsdl.GhiNhatKy(maHV, "Tự đăng ký tài khoản", $"Học viên {hoTen} tự tạo tài khoản");
-                Response.Redirect("~/Views/DangKy/QuanLyDangKy.aspx", false);
-                Context.ApplicationInstance.CompleteRequest();
+
+                // Đăng ký thành công -> Đăng nhập ngay và chuyển hướng thẳng vào trang đăng ký học phần
+                ChuyenHuongTheoQuyen("HocVien");
             }
             catch
             {
-                HienAlertDangKy("Không thể tạo tài khoản lúc này. Vui lòng kiểm tra lại thông tin đã nhập!");
+                HienLoiDKModal("Không thể tạo tài khoản lúc này. Vui lòng kiểm tra lại thông tin!");
             }
         }
 
-        private void HienAlertDangKy(string msg)
+        private void HienLoiDKModal(string msg)
         {
-            string safe = HttpUtility.JavaScriptStringEncode(msg);
-            // Gọi modal thông báo, khi người dùng tắt thông báo sẽ tự động bật lại form đăng ký
-            string script = $@"
-                document.getElementById('msgThongBaoLogin').innerText = '{safe}';
-                var alertModal = new window.bootstrap.Modal(document.getElementById('modalThongBaoLogin'));
-                alertModal.show();
-                document.getElementById('modalThongBaoLogin').addEventListener('hidden.bs.modal', function () {{
-                    openModal('modalDangKy');
-                }}, {{ once: true }});
+            pnlLoiDK.Visible = true;
+            litLoiDK.Text = HttpUtility.HtmlEncode(msg);
+            // Giữ nguyên pop-up mở bằng đoạn lệnh JavaScript an toàn sau khi UpdatePanel cập nhật
+            string script = @"
+                var modalEl = document.getElementById('modalDangKy');
+                if (modalEl && window.bootstrap) {
+                    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                }
             ";
-            ScriptManager.RegisterStartupScript(this, GetType(), "dk_loi", script, true);
+            ScriptManager.RegisterStartupScript(this, GetType(), "reopen_dk", script, true);
         }
 
         private void HienLoi(string msg)

@@ -69,6 +69,33 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         protected global::System.Web.UI.WebControls.Button btnDangNhap;
 
         /// <summary>
+        /// upDangKy control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.UpdatePanel upDangKy;
+
+        /// <summary>
+        /// pnlLoiDK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlLoiDK;
+
+        /// <summary>
+        /// litLoiDK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litLoiDK;
+
+        /// <summary>
         /// txtDKHoTen control.
         /// </summary>
         /// <remarks>
@@ -130,6 +157,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtDKMatKhau;
+
+        /// <summary>
+        /// txtDKMatKhauXN control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtDKMatKhauXN;
 
         /// <summary>
         /// btnDangKyTK control.

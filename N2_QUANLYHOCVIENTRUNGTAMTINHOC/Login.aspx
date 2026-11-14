@@ -14,10 +14,13 @@
         .login-header { background: linear-gradient(135deg, #1677D2, #0B5394); color: #fff; padding: 25px 20px; text-align: center; }
         .btn-orange { background: linear-gradient(135deg, #FF8A26, #E67215); color: #fff; border: none; font-weight: 600; }
         .btn-orange:hover { background: linear-gradient(135deg, #E67215, #CC620E); color: #fff; }
+        input::-ms-reveal, input::-ms-clear { display: none !important; }
     </style>
 </head>
 <body>
     <form id="form1" runat="server">
+        <asp:ScriptManager runat="server" />
+
         <div class="login-card">
             <div class="login-header">
                 <i class="bi bi-mortarboard-fill display-4 mb-2 d-block text-warning"></i>
@@ -50,9 +53,6 @@
                     <button type="button" class="btn btn-orange btn-sm" data-bs-toggle="modal" data-bs-target="#modalDangKy">
                         <i class="bi bi-person-plus-fill me-1"></i> Học viên Tự Đăng ký Tài khoản
                     </button>
-                    <%--<button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTraCuu">
-                        <i class="bi bi-search me-1"></i> Tra cứu & Xác thực Chứng chỉ
-                    </button>--%>
                 </div>
             </div>
         </div>
@@ -61,65 +61,171 @@
         <div class="modal fade" id="modalDangKy" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-0 shadow">
-                    <div class="modal-header text-white" style="background: #FF8A26;">
-                        <h5 class="modal-title fw-bold"><i class="bi bi-person-badge me-2"></i>Đăng ký Tài khoản Học viên</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="row g-2 mb-2">
-                            <div class="col-12"><label class="small fw-bold">Họ và tên (*)</label><asp:TextBox ID="txtDKHoTen" runat="server" CssClass="form-control" /></div>
-                            <div class="col-6"><label class="small fw-bold">Ngày sinh</label><asp:TextBox ID="txtDKNgaySinh" runat="server" TextMode="Date" CssClass="form-control" /></div>
-                            <div class="col-6">
-                                <label class="small fw-bold">Giới tính</label>
-                                <asp:DropDownList ID="ddlDKGioiTinh" runat="server" CssClass="form-select">
-                                    <asp:ListItem Text="Nam" Value="Nam" /><asp:ListItem Text="Nữ" Value="Nữ" />
-                                </asp:DropDownList>
+                    <asp:UpdatePanel ID="upDangKy" runat="server" UpdateMode="Conditional">
+                        <ContentTemplate>
+                            <div class="modal-header text-white" style="background: #FF8A26;">
+                                <h5 class="modal-title fw-bold"><i class="bi bi-person-badge me-2"></i>Đăng ký Tài khoản Học viên</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <div class="col-6"><label class="small fw-bold">Điện thoại (*)</label><asp:TextBox ID="txtDKDienThoai" runat="server" CssClass="form-control" /></div>
-                            <div class="col-6"><label class="small fw-bold">Email</label><asp:TextBox ID="txtDKEmail" runat="server" CssClass="form-control" /></div>
-                            <div class="col-12"><label class="small fw-bold">Địa chỉ</label><asp:TextBox ID="txtDKDiaChi" runat="server" CssClass="form-control" /></div>
-                            <div class="col-12"><label class="small fw-bold">Mật khẩu đăng nhập (*)</label><asp:TextBox ID="txtDKMatKhau" runat="server" TextMode="Password" CssClass="form-control" /></div>
-                        </div>
-                    </div>
-                    <div class="modal-footer justify-content-between bg-light">
-                        <small class="text-danger">(*) Bắt buộc nhập</small>
-                        <div>
-                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
-                            <asp:Button ID="btnDangKyTK" runat="server" Text="Đăng ký & Đăng nhập ngay" CssClass="btn btn-orange btn-sm" OnClick="btnDangKyTK_Click" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                            <div class="modal-body p-4">
+                                <!-- Khung báo lỗi trực tiếp màu đỏ bên trong modal -->
+                                <div id="divLoiDK" class="alert alert-danger py-2 small fw-semibold mb-3 d-none">
+                                    <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                    <span id="txtLoiDK"></span>
+                                </div>
+                                <asp:Panel ID="pnlLoiDK" runat="server" Visible="false" CssClass="alert alert-danger py-2 small fw-semibold mb-3">
+                                    <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                    <asp:Literal ID="litLoiDK" runat="server" />
+                                </asp:Panel>
 
-        <!-- POPUP THÔNG BÁO LOGIN/ĐĂNG KÝ -->
-        <div class="modal fade" id="modalThongBaoLogin" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
-            <div class="modal-dialog modal-dialog-centered modal-sm">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-header bg-warning text-dark py-2">
-                        <h6 class="modal-title fw-bold"><i class="bi bi-exclamation-circle me-2"></i>Thông báo</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body text-center py-4">
-                        <span id="msgThongBaoLogin" class="fw-semibold"></span>
-                    </div>
-                    <div class="modal-footer justify-content-center py-2 bg-light">
-                        <button type="button" class="btn btn-sm btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
-                    </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-12">
+                                        <label class="small fw-bold">Họ và tên (*)</label>
+                                        <asp:TextBox ID="txtDKHoTen" runat="server" ClientIDMode="Static" CssClass="form-control" oninput="anLoiDK();" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small fw-bold">Ngày sinh</label>
+                                        <asp:TextBox ID="txtDKNgaySinh" runat="server" ClientIDMode="Static" TextMode="Date" CssClass="form-control" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small fw-bold">Giới tính</label>
+                                        <asp:DropDownList ID="ddlDKGioiTinh" runat="server" ClientIDMode="Static" CssClass="form-select">
+                                            <asp:ListItem Text="Nam" Value="Nam" />
+                                            <asp:ListItem Text="Nữ" Value="Nữ" />
+                                        </asp:DropDownList>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small fw-bold">Điện thoại (*)</label>
+                                        <asp:TextBox ID="txtDKDienThoai" runat="server" ClientIDMode="Static" CssClass="form-control" oninput="anLoiDK();" placeholder="0xxxxxxxxx" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small fw-bold">Email</label>
+                                        <asp:TextBox ID="txtDKEmail" runat="server" ClientIDMode="Static" CssClass="form-control" oninput="anLoiDK();" />
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="small fw-bold">Địa chỉ</label>
+                                        <asp:TextBox ID="txtDKDiaChi" runat="server" ClientIDMode="Static" CssClass="form-control" />
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="small fw-bold">Mật khẩu đăng nhập (*)</label>
+                                        <div class="input-group">
+                                            <asp:TextBox ID="txtDKMatKhau" runat="server" ClientIDMode="Static" TextMode="Password"
+                                                CssClass="form-control" autocomplete="new-password" oninput="anLoiDK();" placeholder="Tối thiểu 6 ký tự..." />
+                                            <button type="button" class="btn btn-outline-secondary" tabindex="-1" onclick="toggleHienMatKhauLogin('txtDKMatKhau', this)" title="Hiện/Ẩn mật khẩu">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="small fw-bold">Xác nhận mật khẩu (*)</label>
+                                        <div class="input-group">
+                                            <asp:TextBox ID="txtDKMatKhauXN" runat="server" ClientIDMode="Static" TextMode="Password"
+                                                CssClass="form-control" autocomplete="new-password" oninput="anLoiDK();" placeholder="Nhập lại mật khẩu..." />
+                                            <button type="button" class="btn btn-outline-secondary" tabindex="-1" onclick="toggleHienMatKhauLogin('txtDKMatKhauXN', this)" title="Hiện/Ẩn mật khẩu">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer justify-content-between bg-light">
+                                <small class="text-danger">(*) Bắt buộc nhập</small>
+                                <div>
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                    <asp:Button ID="btnDangKyTK" runat="server" Text="Đăng ký & Đăng nhập ngay" CssClass="btn btn-orange btn-sm fw-bold"
+                                        OnClientClick="return kiemTraFormDangKy();" OnClick="btnDangKyTK_Click" />
+                                </div>
+                            </div>
+                        </ContentTemplate>
+                        <Triggers>
+                            <asp:AsyncPostBackTrigger ControlID="btnDangKyTK" EventName="Click" />
+                        </Triggers>
+                    </asp:UpdatePanel>
                 </div>
             </div>
         </div>
-       
     </form>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // @ts-nocheck
-        function openModal(id) {
-            var el = document.getElementById(id);
-            if (el && window.bootstrap) {
-                var myModal = new window.bootstrap.Modal(el);
-                myModal.show();
+        function toggleHienMatKhauLogin(inputId, btn) {
+            var inp = document.getElementById(inputId);
+            if (!inp) return;
+            var icon = btn.querySelector('i');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                if (icon) { icon.classList.remove('bi-eye'); icon.classList.add('bi-eye-slash'); }
+            } else {
+                inp.type = 'password';
+                if (icon) { icon.classList.remove('bi-eye-slash'); icon.classList.add('bi-eye'); }
             }
+        }
+
+        function anLoiDK() {
+            var div = document.getElementById('divLoiDK');
+            if (div && !div.classList.contains('d-none')) {
+                div.classList.add('d-none');
+            }
+        }
+
+        function hienLoiDKClient(msg) {
+            var div = document.getElementById('divLoiDK');
+            var span = document.getElementById('txtLoiDK');
+            if (div && span) {
+                span.innerText = msg;
+                div.classList.remove('d-none');
+            }
+        }
+
+        function kiemTraFormDangKy() {
+            anLoiDK();
+            var hoTen = (document.getElementById('txtDKHoTen')?.value || '').trim();
+            var sdt = (document.getElementById('txtDKDienThoai')?.value || '').trim();
+            var mk = (document.getElementById('txtDKMatKhau')?.value || '').trim();
+            var mkXN = (document.getElementById('txtDKMatKhauXN')?.value || '').trim();
+
+            if (!hoTen) {
+                hienLoiDKClient('Vui lòng nhập Họ và tên!');
+                document.getElementById('txtDKHoTen')?.focus();
+                return false;
+            }
+            if (!sdt || !/^0\d{9}$/.test(sdt)) {
+                hienLoiDKClient('Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0)!');
+                document.getElementById('txtDKDienThoai')?.focus();
+                return false;
+            }
+            if (!mk) {
+                hienLoiDKClient('Vui lòng nhập Mật khẩu đăng nhập!');
+                document.getElementById('txtDKMatKhau')?.focus();
+                return false;
+            }
+            if (mk.indexOf(' ') !== -1) {
+                hienLoiDKClient('Mật khẩu không được chứa khoảng trắng!');
+                document.getElementById('txtDKMatKhau')?.focus();
+                return false;
+            }
+            if (mk.length < 6 || mk.length > 50) {
+                hienLoiDKClient('Mật khẩu phải từ 6 đến 50 ký tự!');
+                document.getElementById('txtDKMatKhau')?.focus();
+                return false;
+            }
+            if (mk === sdt) {
+                hienLoiDKClient('Mật khẩu không được trùng với Số điện thoại!');
+                document.getElementById('txtDKMatKhau')?.focus();
+                return false;
+            }
+            if (!mkXN) {
+                hienLoiDKClient('Vui lòng nhập Xác nhận mật khẩu!');
+                document.getElementById('txtDKMatKhauXN')?.focus();
+                return false;
+            }
+            if (mk !== mkXN) {
+                hienLoiDKClient('Xác nhận mật khẩu mới không khớp!');
+                document.getElementById('txtDKMatKhauXN')?.focus();
+                return false;
+            }
+            return true;
         }
     </script>
 </body>
