@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 using System.Web.UI.WebControls;
 using N2_QUANLYHOCVIENTRUNGTAMTINHOC.DAL;
 
@@ -19,7 +20,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (!IsPostBack)
+            if (IsPostBack)
+            {
+                pnlTB.Visible = false;
+            }
+            else
             {
                 TuKhoaHienTai = "";
                 txtTim.Text = "";
@@ -43,7 +48,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
         private void TaiDuLieu()
         {
             string kw = TuKhoaHienTai;
-            string sql = "SELECT * FROM KHOAHOC WHERE (@kw='' OR tenkhoahoc LIKE @kw OR makhoahoc LIKE @kw) ORDER BY makhoahoc DESC";
+            string sql = @"SELECT * FROM KHOAHOC 
+                           WHERE (@kw = '' 
+                               OR tenkhoahoc COLLATE Vietnamese_CI_AI LIKE @kw COLLATE Vietnamese_CI_AI 
+                               OR makhoahoc COLLATE Vietnamese_CI_AI LIKE @kw COLLATE Vietnamese_CI_AI) 
+                           ORDER BY makhoahoc DESC";
             gvKhoaHoc.DataSource = kncsdl.DocDuLieu(sql, new[] { new SqlParameter("@kw", string.IsNullOrEmpty(kw) ? "" : "%" + kw + "%") });
             gvKhoaHoc.DataBind();
 
@@ -52,15 +61,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
 
         private void TaiGoiYTimKiem()
         {
-            DataTable dt = kncsdl.DocDuLieu("SELECT makhoahoc, tenkhoahoc FROM KHOAHOC ORDER BY makhoahoc");
+            DataTable dt = kncsdl.DocDuLieu("SELECT makhoahoc, tenkhoahoc FROM KHOAHOC ORDER BY makhoahoc DESC");
             StringBuilder sbTim = new StringBuilder();
             StringBuilder sbTen = new StringBuilder();
             foreach (DataRow r in dt.Rows)
             {
                 sbTim.AppendFormat("<button type=\"button\" class=\"list-group-item list-group-item-action py-2 px-2 small goi-y-item\" data-value=\"{0}\"><strong>{0}</strong> - {1}</button>",
-                    r["makhoahoc"], r["tenkhoahoc"]);
+                    HttpUtility.HtmlAttributeEncode(Convert.ToString(r["makhoahoc"])), HttpUtility.HtmlEncode(Convert.ToString(r["tenkhoahoc"])));
                 sbTen.AppendFormat("<button type=\"button\" class=\"list-group-item list-group-item-action py-2 px-2 small goi-y-item\" data-value=\"{0}\">{0}</button>",
-                    r["tenkhoahoc"]);
+                    HttpUtility.HtmlEncode(Convert.ToString(r["tenkhoahoc"])));
             }
             litGoiYKH.Text = sbTim.ToString();
             litGoiYTenKH.Text = sbTen.ToString();
@@ -72,11 +81,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
             pnlTB.CssClass = laLoi
                 ? "alert alert-danger text-danger fw-semibold alert-dismissible fade show shadow"
                 : "alert alert-success text-success fw-semibold alert-dismissible fade show shadow";
-            litTB.Text = msg;
+            litTB.Text = HttpUtility.HtmlEncode(msg);
         }
 
-        private bool KiemTraDuLieu(bool laCapNhat = false)
+        private bool KiemTraDuLieu(out decimal hocPhiVal, bool laCapNhat = false)
         {
+            hocPhiVal = 0;
+
             if (string.IsNullOrWhiteSpace(txtTenKH.Text))
             {
                 HienThongBao("Vui lòng nhập Tên khóa học!", true);
@@ -96,6 +107,14 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
             {
                 HienThongBao("Tên khóa học này đã tồn tại, vui lòng nhập tên khác!", true);
                 txtTenKH.Focus();
+                return false;
+            }
+
+            string hocPhiStr = txtHocPhi.Text.Replace(",", "").Trim();
+            if (string.IsNullOrEmpty(hocPhiStr) || !decimal.TryParse(hocPhiStr, NumberStyles.Any, CultureInfo.InvariantCulture, out hocPhiVal) || hocPhiVal <= 0)
+            {
+                HienThongBao("Học phí không hợp lệ! Vui lòng nhập số tiền lớn hơn 0 (VD: 1500000).", true);
+                txtHocPhi.Focus();
                 return false;
             }
 
@@ -120,13 +139,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
 
         protected void btnThem_Click(object sender, EventArgs e)
         {
-            if (!KiemTraDuLieu(false)) return;
+            decimal hocPhiVal;
+            if (!KiemTraDuLieu(out hocPhiVal, false)) return;
 
             SinhMaKHMoi();
-            string hocPhiStr = txtHocPhi.Text.Replace(",", "").Replace(".", "").Trim();
-            decimal hocPhiVal = 0;
-            decimal.TryParse(hocPhiStr, NumberStyles.Any, CultureInfo.InvariantCulture, out hocPhiVal);
-
             string rawThoiGian = txtThoiGian.Text.Replace(",", ".").Trim();
             string thoiGianHoc = rawThoiGian + " tháng";
 
@@ -140,6 +156,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
                 new SqlParameter("@tt", ddlTrangThai.SelectedValue)
             };
             kncsdl.ThucThiLenh(sql, p);
+            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Thêm khóa học", $"Mã KH: {txtMaKH.Text.Trim()} - {txtTenKH.Text.Trim()} ({hocPhiVal:N0}đ)");
             HienThongBao("Đã thêm khóa học thành công!");
             TaiDuLieu();
             LamMoiForm();
@@ -154,11 +171,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
                 return;
             }
 
-            if (!KiemTraDuLieu(true)) return;
-
-            string hocPhiStr = txtHocPhi.Text.Replace(",", "").Replace(".", "").Trim();
-            decimal hocPhiVal = 0;
-            decimal.TryParse(hocPhiStr, NumberStyles.Any, CultureInfo.InvariantCulture, out hocPhiVal);
+            decimal hocPhiVal;
+            if (!KiemTraDuLieu(out hocPhiVal, true)) return;
 
             string rawThoiGian = txtThoiGian.Text.Replace(",", ".").Trim();
             string thoiGianHoc = rawThoiGian + " tháng";
@@ -173,6 +187,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
                 new SqlParameter("@tt", ddlTrangThai.SelectedValue)
             };
             kncsdl.ThucThiLenh(sql, p);
+            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Sửa khóa học", $"Mã KH: {txtMaKH.Text.Trim()} - {txtTenKH.Text.Trim()} ({hocPhiVal:N0}đ)");
             HienThongBao("Cập nhật khóa học thành công!");
             TaiDuLieu();
             LamMoiForm();
@@ -199,11 +214,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
                     DataRow r = dt.Rows[0];
                     txtMaKH.Text = r["makhoahoc"].ToString();
                     txtTenKH.Text = r["tenkhoahoc"].ToString();
-                    txtHocPhi.Text = r["hocphi"].ToString();
+                    txtHocPhi.Text = r["hocphi"] != DBNull.Value
+                        ? Convert.ToDecimal(r["hocphi"]).ToString("#,##0", CultureInfo.InvariantCulture)
+                        : "0";
 
-                    // Lọc lấy phần số tháng (bỏ chữ " tháng" đi khi đổ lên ô input để user dễ sửa)
                     string tgDb = r["thoigianhoc"].ToString();
-                    txtThoiGian.Text = Regex.Replace(tgDb, @"[^\d\.]", "");
+                    var m = Regex.Match(tgDb, @"\d+(?:[\.,]\d+)?");
+                    txtThoiGian.Text = m.Success ? m.Value.Replace(",", ".") : "";
 
                     txtMoTa.Text = r["mota"].ToString();
                     ddlTrangThai.SelectedValue = r["trangthaikhoahoc"].ToString();
@@ -220,6 +237,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
                 try
                 {
                     kncsdl.ThucThiLenh("DELETE FROM KHOAHOC WHERE makhoahoc=@ma", new[] { new SqlParameter("@ma", ma) });
+                    kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Xóa khóa học", $"Mã KH: {ma}");
                     HienThongBao("Xóa khóa học thành công!");
 
                     if (gvKhoaHoc.Rows.Count == 1 && gvKhoaHoc.PageIndex > 0)

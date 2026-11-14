@@ -85,5 +85,22 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.DAL
                 return sb.ToString();
             }
         }
+
+        public static string BoDauTiengViet(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return "";
+            string normalized = text.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in normalized)
+            {
+                if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    if (c == 'đ') sb.Append('d');
+                    else if (c == 'Đ') sb.Append('D');
+                    else sb.Append(c);
+                }
+            }
+            return sb.ToString().Normalize(System.Text.NormalizationForm.FormC).ToLowerInvariant();
+        }
     }
 }

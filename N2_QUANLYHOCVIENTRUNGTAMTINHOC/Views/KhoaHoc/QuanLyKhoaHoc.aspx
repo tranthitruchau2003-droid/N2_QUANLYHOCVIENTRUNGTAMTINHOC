@@ -192,62 +192,94 @@ function chiChoNhapSoVaChamInput(input) {
             }
         }
 
-        function thietLapGoiY(inputId, listId, btnId) {
-            var input = document.getElementById(inputId);
-            var list = document.getElementById(listId);
-            var btn = btnId ? document.getElementById(btnId) : null;
-            if (!input || !list) return;
+function boDauTiengViet(str) {
+    return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+}
 
-            var items = list.querySelectorAll('.goi-y-item');
+function thietLapGoiY(inputId, listId, btnId) {
+    var input = document.getElementById(inputId);
+    var list = document.getElementById(listId);
+    var btn = btnId ? document.getElementById(btnId) : null;
+    if (!input || !list) return;
 
-            function locGoiY() {
-                var kw = input.value.trim().toLowerCase();
-                var co = false;
-                items.forEach(function (item) {
-                    if (kw === '' || item.innerText.toLowerCase().indexOf(kw) !== -1) {
-                        item.style.display = 'block';
-                        co = true;
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-                list.style.display = co ? 'block' : 'none';
+    var items = list.querySelectorAll('.goi-y-item');
+
+    function locGoiY() {
+        var kw = boDauTiengViet(input.value.trim());
+        var co = false;
+        items.forEach(function (item) {
+            var txt = boDauTiengViet(item.innerText);
+            if (kw !== '' && txt.indexOf(kw) !== -1) {
+                item.style.display = 'block';
+                co = true;
+            } else {
+                item.style.display = 'none';
             }
+        });
+        list.style.display = co ? 'block' : 'none';
+    }
 
-            input.addEventListener('input', function () {
-                if (this.value.trim() === '' && btn) {
-                    list.style.display = 'none';
-                    btn.click();
-                } else {
-                    locGoiY();
-                }
-            });
-
-            input.addEventListener('focus', function () {
-                locGoiY();
-            });
-
-            items.forEach(function (item) {
-                item.addEventListener('mousedown', function (e) {
-                    e.preventDefault();
-                    input.value = this.getAttribute('data-value');
-                    list.style.display = 'none';
-                    if (btn) {
-                        btn.click();
-                    } else {
-                        setTimeout(function () {
-                            input.blur();
-                        }, 10);
-                    }
-                });
-            });
-
-            document.addEventListener('click', function (e) {
-                if (!input.contains(e.target) && !list.contains(e.target)) {
-                    list.style.display = 'none';
-                }
-            });
+    input.addEventListener('input', function () {
+        if (this.value.trim() === '' && btn) {
+            list.style.display = 'none';
+            sessionStorage.setItem('focusSearch_KH', inputId);
+            btn.click();
+        } else {
+            locGoiY();
         }
+    });
+
+    if (btn) {
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                list.style.display = 'none';
+                sessionStorage.setItem('focusSearch_KH', inputId);
+                btn.click();
+            }
+        });
+    }
+
+    input.addEventListener('focus', function () {
+        if (this.value.trim() !== '') locGoiY();
+    });
+
+    items.forEach(function (item) {
+        item.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            input.value = this.getAttribute('data-value');
+            list.style.display = 'none';
+            if (btn) {
+                sessionStorage.setItem('focusSearch_KH', inputId);
+                btn.click();
+            } else {
+                setTimeout(function () {
+                    input.blur();
+                }, 10);
+            }
+        });
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!input.contains(e.target) && !list.contains(e.target)) {
+            list.style.display = 'none';
+        }
+    });
+}
+
+window.addEventListener('load', function () {
+    var focusId = sessionStorage.getItem('focusSearch_KH');
+    if (focusId) {
+        var el = document.getElementById(focusId);
+        if (el) {
+            el.focus();
+            if (typeof el.selectionStart === 'number') {
+                el.selectionStart = el.selectionEnd = el.value.length;
+            }
+        }
+        sessionStorage.removeItem('focusSearch_KH');
+    }
+});
 
         window.addEventListener('DOMContentLoaded', function () {
             thietLapGoiY('txtTim', 'goiYKH', 'btnTim');

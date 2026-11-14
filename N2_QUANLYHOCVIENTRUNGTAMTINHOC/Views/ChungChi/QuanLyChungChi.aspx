@@ -177,6 +177,10 @@
 
     <script>
         // @ts-nocheck
+        function boDauTiengViet(str) {
+            return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+        }
+
         function hienThiModalXoaCC(maCC) {
             document.getElementById('hfMaCCXoa').value = maCC;
             document.getElementById('maCCCanXoa').innerText = maCC;
@@ -193,10 +197,11 @@
             var items = list.querySelectorAll('.goi-y-item');
 
             function locGoiY() {
-                var kw = input.value.trim().toLowerCase();
+                var kw = boDauTiengViet(input.value.trim());
                 var co = false;
                 items.forEach(function (item) {
-                    if (kw !== '' && item.innerText.toLowerCase().indexOf(kw) !== -1) {
+                    var txt = boDauTiengViet(item.innerText);
+                    if (kw !== '' && txt.indexOf(kw) !== -1) {
                         item.style.display = 'block';
                         co = true;
                     } else {
@@ -209,9 +214,19 @@
             input.addEventListener('input', function () {
                 if (this.value.trim() === '') {
                     list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_CC', 'txtTimCC');
                     btn.click();
                 } else {
                     locGoiY();
+                }
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_CC', 'txtTimCC');
+                    btn.click();
                 }
             });
 
@@ -224,6 +239,7 @@
                     e.preventDefault();
                     input.value = this.getAttribute('data-value');
                     list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_CC', 'txtTimCC');
                     btn.click();
                 });
             });
@@ -234,6 +250,20 @@
                 }
             });
         }
+
+        window.addEventListener('load', function () {
+            var focusId = sessionStorage.getItem('focusSearch_CC');
+            if (focusId) {
+                var el = document.getElementById(focusId);
+                if (el) {
+                    el.focus();
+                    if (typeof el.selectionStart === 'number') {
+                        el.selectionStart = el.selectionEnd = el.value.length;
+                    }
+                }
+                sessionStorage.removeItem('focusSearch_CC');
+            }
+        });
 
         window.addEventListener('DOMContentLoaded', function () {
             thietLapGoiYCC();

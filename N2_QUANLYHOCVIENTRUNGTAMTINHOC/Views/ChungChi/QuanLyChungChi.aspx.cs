@@ -2,6 +2,7 @@
 using System.Data;
 using System.Data.SqlClient;
 using System.Text;
+using System.Web;
 using System.Web.UI.WebControls;
 using N2_QUANLYHOCVIENTRUNGTAMTINHOC.DAL;
 
@@ -9,6 +10,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
 {
     public partial class QuanLyChungChi : System.Web.UI.Page
     {
+        private bool LaQuanTriHoacNV
+        {
+            get
+            {
+                string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+                return q == "Admin" || q == "NhanVien";
+            }
+        }
+
         private string TuKhoaHienTai
         {
             get { return ViewState["TuKhoaTimCC"]?.ToString() ?? ""; }
@@ -17,7 +27,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["Quyen"] != null && Session["Quyen"].ToString() == "HocVien")
+            if (MasterPage.ChuanHoaQuyen(Session["Quyen"]) == "HocVien")
             {
                 divFormCapCC.Visible = false;
                 pnlTimKiemCC.Visible = false;
@@ -100,7 +110,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
             CapNhatXepLoaiTuDong();
         }
 
-        private void TaiHocVienDat()
+        private void TaiHocVienDat(string giuMaTG = "")
         {
             string maKH = ddlLocKhoaHoc.SelectedValue;
             string nam = ddlLocNam.SelectedValue;
@@ -111,11 +121,20 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
                            JOIN HOCVIEN hv ON tg.mahocvien = hv.mahocvien
                            JOIN KYTHI kt ON tg.makythi = kt.makythi
                            JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc
-                           WHERE tg.ketqua = N'Đạt'
+                           WHERE ((tg.ketqua = N'Đạt'
+                                   AND EXISTS (
+                                       SELECT 1 FROM DANGKY dk
+                                       WHERE dk.mahocvien = tg.mahocvien AND dk.makhoahoc = kt.makhoahoc
+                                         AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%'
+                                         AND ISNULL(dk.trangthaithanhtoan, N'') NOT IN (N'Chờ hoàn tiền', N'Đã hoàn tiền')
+                                         AND ISNULL((SELECT SUM(pt.sotienthu) FROM PHIEUTHU pt WHERE pt.madangky = dk.madangky AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0) >= kh.hocphi
+                                   ))
+                                  OR tg.matg = @giuMaTG)
                              AND (@maKH = '' OR kt.makhoahoc = @maKH)
                              AND (@nam = '' OR kt.nienkhoa LIKE @namLike)
                            ORDER BY hv.hoten";
             SqlParameter[] p = {
+                new SqlParameter("@giuMaTG", giuMaTG ?? ""),
                 new SqlParameter("@maKH", maKH ?? ""),
                 new SqlParameter("@nam", nam ?? ""),
                 new SqlParameter("@namLike", string.IsNullOrEmpty(nam) ? "" : "%" + nam + "%")
@@ -130,7 +149,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
         {
             string tuKhoa = TuKhoaHienTai;
             string xepLoai = ddlLocXepLoai.SelectedValue;
-            bool isHV = Session["Quyen"] != null && Session["Quyen"].ToString() == "HocVien";
+            bool isHV = MasterPage.ChuanHoaQuyen(Session["Quyen"]) == "HocVien";
             string user = Session["TenDangNhap"]?.ToString() ?? "";
 
             string sql = @"SELECT cc.*, hv.hoten, tg.diem, kh.tenkhoahoc, kt.nienkhoa
@@ -139,7 +158,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
                            JOIN HOCVIEN hv ON tg.mahocvien = hv.mahocvien
                            JOIN KYTHI kt ON tg.makythi = kt.makythi
                            JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc
-                           WHERE (@kw = '' OR cc.sohieuchungchi LIKE @kw OR hv.hoten LIKE @kw OR kh.tenkhoahoc LIKE @kw OR cc.machungchi LIKE @kw)
+                           WHERE (@kw = '' OR cc.sohieuchungchi COLLATE Latin1_General_CI_AI LIKE @kw 
+                                           OR hv.hoten COLLATE Latin1_General_CI_AI LIKE @kw 
+                                           OR kh.tenkhoahoc COLLATE Latin1_General_CI_AI LIKE @kw 
+                                           OR cc.machungchi COLLATE Latin1_General_CI_AI LIKE @kw)
                              AND (@xl = '' OR cc.xeploai = @xl)
                              AND (@isHV = 0 OR tg.mahocvien = @user)
                            ORDER BY cc.ngaycap DESC, cc.machungchi DESC";
@@ -169,7 +191,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
             foreach (DataRow r in dt.Rows)
             {
                 sb.AppendFormat("<button type=\"button\" class=\"list-group-item list-group-item-action py-2 px-2 small goi-y-item\" data-value=\"{0}\"><strong>{0}</strong> - {1} ({2})</button>",
-                    r["sohieuchungchi"], r["hoten"], r["tenkhoahoc"]);
+                    HttpUtility.HtmlAttributeEncode(Convert.ToString(r["sohieuchungchi"])),
+                    HttpUtility.HtmlEncode(Convert.ToString(r["hoten"])),
+                    HttpUtility.HtmlEncode(Convert.ToString(r["tenkhoahoc"])));
             }
             litGoiYCC.Text = sb.ToString();
         }
@@ -180,7 +204,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
             pnlTB.CssClass = laLoi
                 ? "alert alert-danger text-danger fw-semibold alert-dismissible fade show shadow"
                 : "alert alert-success text-success fw-semibold alert-dismissible fade show shadow";
-            litTB.Text = msg;
+            litTB.Text = HttpUtility.HtmlEncode(msg);
         }
 
         private void LamMoiForm()
@@ -196,6 +220,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
 
         protected void btnCapCC_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV)
+            {
+                HienThongBao("Bạn không có quyền cấp chứng chỉ!", true);
+                return;
+            }
+
             if (string.IsNullOrEmpty(ddlThamGia.SelectedValue))
             {
                 HienThongBao("Vui lòng chọn Học viên đủ điều kiện!", true);
@@ -204,7 +234,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
 
             try
             {
-                int checkTG = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI WHERE matg=@tg", new[] { new SqlParameter("@tg", ddlThamGia.SelectedValue) }));
+                string maTG = ddlThamGia.SelectedValue;
+                int checkTG = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI WHERE matg=@tg", new[] { new SqlParameter("@tg", maTG) }));
                 if (checkTG > 0)
                 {
                     HienThongBao("Học viên ở kỳ thi này đã được cấp chứng chỉ rồi!", true);
@@ -218,19 +249,26 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
                     new SqlParameter("@nc", string.IsNullOrEmpty(txtNgayCap.Text) ? DateTime.Now.ToString("yyyy-MM-dd") : txtNgayCap.Text),
                     new SqlParameter("@sh", txtSoHieu.Text.Trim()),
                     new SqlParameter("@xl", ddlXepLoai.SelectedValue),
-                    new SqlParameter("@tg", ddlThamGia.SelectedValue)
+                    new SqlParameter("@tg", maTG)
                 };
                 kncsdl.ThucThiLenh(sql, p);
+                kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Cấp chứng chỉ", $"Mã CC: {txtMaCC.Text.Trim()} - Số hiệu: {txtSoHieu.Text.Trim()}");
                 HienThongBao("Cấp chứng chỉ thành công!");
                 gvChungChi.PageIndex = 0;
                 TaiDanhSach();
                 LamMoiForm();
             }
-            catch (Exception ex) { HienThongBao("Lỗi cấp chứng chỉ: " + ex.Message, true); }
+            catch { HienThongBao("Không thể cấp chứng chỉ lúc này. Vui lòng kiểm tra lại dữ liệu!", true); }
         }
 
         protected void btnCapNhatCC_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV)
+            {
+                HienThongBao("Bạn không có quyền cập nhật chứng chỉ!", true);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(txtMaCC.Text) || string.IsNullOrWhiteSpace(txtSoHieu.Text))
             {
                 HienThongBao("Vui lòng chọn chứng chỉ cần sửa!", true);
@@ -239,28 +277,44 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
 
             try
             {
-                int check = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI WHERE machungchi=@ma", new[] { new SqlParameter("@ma", txtMaCC.Text.Trim()) }));
-                if (check == 0)
+                string maCC = txtMaCC.Text.Trim();
+                DataTable dtGoc = kncsdl.DocDuLieu("SELECT matg FROM CHUNGCHI WHERE machungchi=@ma", new[] { new SqlParameter("@ma", maCC) });
+                if (dtGoc.Rows.Count == 0)
                 {
                     HienThongBao("Chứng chỉ này chưa có trong danh sách. Hãy bấm Cấp Chứng chỉ!", true);
                     return;
                 }
 
+                // Tránh rơi về người đầu danh sách nếu dropdown trống; đồng thời chặn gán sang người khác đã có chứng chỉ
+                string maTGGoc = dtGoc.Rows[0]["matg"].ToString();
+                string maTGMoi = !string.IsNullOrEmpty(ddlThamGia.SelectedValue) ? ddlThamGia.SelectedValue : maTGGoc;
+                if (maTGMoi != maTGGoc)
+                {
+                    int daCoCCKhac = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI WHERE matg=@tg AND machungchi<>@ma",
+                        new[] { new SqlParameter("@tg", maTGMoi), new SqlParameter("@ma", maCC) }));
+                    if (daCoCCKhac > 0)
+                    {
+                        HienThongBao("Học viên được chọn đã có chứng chỉ khác rồi!", true);
+                        return;
+                    }
+                }
+
                 string sql = "UPDATE CHUNGCHI SET ngaycap=@nc, sohieuchungchi=@sh, xeploai=@xl, matg=@tg WHERE machungchi=@ma";
                 SqlParameter[] p = {
-                    new SqlParameter("@ma", txtMaCC.Text.Trim()),
+                    new SqlParameter("@ma", maCC),
                     new SqlParameter("@nc", string.IsNullOrEmpty(txtNgayCap.Text) ? DateTime.Now.ToString("yyyy-MM-dd") : txtNgayCap.Text),
                     new SqlParameter("@sh", txtSoHieu.Text.Trim()),
                     new SqlParameter("@xl", ddlXepLoai.SelectedValue),
-                    new SqlParameter("@tg", ddlThamGia.SelectedValue)
+                    new SqlParameter("@tg", maTGMoi)
                 };
                 kncsdl.ThucThiLenh(sql, p);
+                kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Cập nhật chứng chỉ", $"Mã CC: {maCC}");
                 HienThongBao("Cập nhật chứng chỉ thành công!");
                 gvChungChi.PageIndex = 0;
                 TaiDanhSach();
                 LamMoiForm();
             }
-            catch (Exception ex) { HienThongBao("Lỗi cập nhật: " + ex.Message, true); }
+            catch { HienThongBao("Không thể cập nhật chứng chỉ lúc này!", true); }
         }
 
         protected void btnLamMoiCC_Click(object sender, EventArgs e)
@@ -278,20 +332,23 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
         {
             if (e.CommandName == "ChonCC")
             {
+                if (!LaQuanTriHoacNV) return;
+
                 string ma = e.CommandArgument.ToString();
                 DataTable dt = kncsdl.DocDuLieu("SELECT * FROM CHUNGCHI WHERE machungchi=@ma", new[] { new SqlParameter("@ma", ma) });
                 if (dt.Rows.Count > 0)
                 {
                     DataRow r = dt.Rows[0];
+                    string maTG = r["matg"].ToString();
                     ddlLocKhoaHoc.SelectedIndex = 0;
                     ddlLocNam.SelectedIndex = 0;
-                    TaiHocVienDat();
+                    TaiHocVienDat(maTG);
 
                     txtMaCC.Text = r["machungchi"].ToString();
                     txtSoHieu.Text = r["sohieuchungchi"].ToString();
                     ddlXepLoai.SelectedValue = r["xeploai"].ToString();
-                    if (ddlThamGia.Items.FindByValue(r["matg"].ToString()) != null)
-                        ddlThamGia.SelectedValue = r["matg"].ToString();
+                    if (ddlThamGia.Items.FindByValue(maTG) != null)
+                        ddlThamGia.SelectedValue = maTG;
                     if (r["ngaycap"] != DBNull.Value)
                         txtNgayCap.Text = Convert.ToDateTime(r["ngaycap"]).ToString("yyyy-MM-dd");
                     pnlTB.Visible = false;
@@ -301,19 +358,26 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
 
         protected void btnXoaCCChinhThuc_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV)
+            {
+                HienThongBao("Bạn không có quyền xóa chứng chỉ!", true);
+                return;
+            }
+
             string ma = hfMaCCXoa.Value;
             if (!string.IsNullOrEmpty(ma))
             {
                 try
                 {
                     kncsdl.ThucThiLenh("DELETE FROM CHUNGCHI WHERE machungchi=@ma", new[] { new SqlParameter("@ma", ma) });
+                    kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Xóa chứng chỉ", $"Mã CC: {ma}");
                     HienThongBao("Đã xóa chứng chỉ thành công.");
                     if (gvChungChi.Rows.Count == 1 && gvChungChi.PageIndex > 0)
                         gvChungChi.PageIndex--;
                     TaiDanhSach();
                     LamMoiForm();
                 }
-                catch (Exception ex) { HienThongBao("Lỗi khi xóa: " + ex.Message, true); }
+                catch { HienThongBao("Không thể xóa chứng chỉ này!", true); }
             }
         }
 

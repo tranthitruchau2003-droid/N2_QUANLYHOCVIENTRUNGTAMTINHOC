@@ -20,11 +20,18 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            if (MasterPage.ChuanHoaQuyen(Session["Quyen"]) != "Admin" && MasterPage.ChuanHoaQuyen(Session["Quyen"]) != "NhanVien")
+            {
+                Response.Redirect("~/Dashboard.aspx", true);
+                return;
+            }
+
             if (!IsPostBack)
             {
                 txtTimHVLoc.Text = "";
                 TaiBoLocKhoaVaLop();
                 TaiNam();
+                TaiGoiYTimKiem();
                 TaiTatCaDuLieu();
             }
         }
@@ -66,9 +73,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             ddlLocLopHoc.Items.Insert(0, new ListItem("-- Tất cả Lớp học --", ""));
         }
 
-
         private DataTable LayDuLieuHocVienLoc()
         {
+            // Sử dụng COLLATE Latin1_General_CI_AI để tìm kiếm không dấu và không phân biệt hoa thường
             string sql = @"SELECT dk.madangky, hv.mahocvien, hv.hoten, hv.dienthoai, hv.email,
                                   kh.makhoahoc, kh.tenkhoahoc,
                                   ISNULL(l.tenlop, N'Chưa xếp lớp') AS tenlop,
@@ -97,12 +104,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
                            LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
                            WHERE (@makh = '' OR kh.makhoahoc = @makh)
                              AND (@malop = '' OR dk.malop = @malop)
-                             AND (@kw = '' OR hv.mahocvien LIKE @kw OR hv.hoten LIKE @kw OR hv.dienthoai LIKE @kw OR dk.madangky LIKE @kw)
+                             AND (@kw = '' OR hv.mahocvien COLLATE Latin1_General_CI_AI LIKE @kw 
+                                           OR hv.hoten COLLATE Latin1_General_CI_AI LIKE @kw 
+                                           OR hv.dienthoai COLLATE Latin1_General_CI_AI LIKE @kw 
+                                           OR dk.madangky COLLATE Latin1_General_CI_AI LIKE @kw)
                            GROUP BY dk.madangky, hv.mahocvien, hv.hoten, hv.dienthoai, hv.email, kh.makhoahoc, kh.tenkhoahoc, l.tenlop, kh.hocphi, dk.trangthailop, dk.trangthaithanhtoan
                            HAVING (@tt = '' 
                                OR (@tt = 'DaHoanTien' AND (ISNULL(dk.trangthailop, N'') LIKE N'%Đã hoàn tiền%' OR ISNULL(dk.trangthaithanhtoan, N'') = N'Đã hoàn tiền'))
                                OR (@tt = 'ChoHoanTien' AND (ISNULL(dk.trangthailop, N'') LIKE N'%Chờ hoàn%' OR ISNULL(dk.trangthaithanhtoan, N'') = N'Chờ hoàn tiền'))
                                OR (@tt = 'ChuaHoanTien' AND ISNULL(dk.trangthailop, N'') LIKE N'%Hủy lớp%' AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Đã hoàn tiền%' AND ISNULL(dk.trangthaithanhtoan, N'') <> N'Đã hoàn tiền' AND ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) > 0)
+                               OR (@tt = 'DaHuyLop' AND ISNULL(dk.trangthailop, N'') LIKE N'%Hủy lớp%' AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Đã hoàn tiền%' AND ISNULL(dk.trangthaithanhtoan, N'') <> N'Đã hoàn tiền' AND ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) = 0)
                                OR (@tt = 'DaDongDu' AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%' AND (kh.hocphi - ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) <= 0)
                                OR (@tt = 'ConNoMotPhan' AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%' AND ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) > 0 AND (kh.hocphi - ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) > 0)
                                OR (@tt = 'ChuaDong' AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%' AND ISNULL(SUM(CASE WHEN pt.sotienthu > 0 AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) = 0))
@@ -172,7 +183,20 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             }
         }
 
-       
+        private void TaiGoiYTimKiem()
+        {
+            DataTable dt = kncsdl.DocDuLieu("SELECT mahocvien, hoten, dienthoai FROM HOCVIEN ORDER BY mahocvien DESC");
+            StringBuilder sb = new StringBuilder();
+            foreach (DataRow r in dt.Rows)
+            {
+                sb.AppendFormat("<button type=\"button\" class=\"list-group-item list-group-item-action py-2 px-2 small goi-y-item\" data-value=\"{0}\"><strong>{0}</strong> - {1} ({2})</button>",
+                    HttpUtility.HtmlAttributeEncode(Convert.ToString(r["mahocvien"])),
+                    HttpUtility.HtmlEncode(Convert.ToString(r["hoten"])),
+                    HttpUtility.HtmlEncode(Convert.ToString(r["dienthoai"])));
+            }
+            litGoiY.Text = sb.ToString();
+        }
+
         private DataTable LayDuLieuThongKeKhoaHoc()
         {
             int nam = 0;
@@ -181,10 +205,14 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
 
             string sql = @"SELECT kh.makhoahoc, kh.tenkhoahoc,
                                   (SELECT COUNT(*) FROM DANGKY dk 
-                                   WHERE dk.makhoahoc = kh.makhoahoc AND (@nam = 0 OR YEAR(dk.ngaydangky) = @nam)) AS soluongdk,
+                                   WHERE dk.makhoahoc = kh.makhoahoc 
+                                     AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%' 
+                                     AND (@nam = 0 OR YEAR(dk.ngaydangky) = @nam)) AS soluongdk,
                                   ISNULL((SELECT SUM(pt.sotienthu) FROM PHIEUTHU pt 
                                           JOIN DANGKY dk2 ON pt.madangky = dk2.madangky 
-                                          WHERE dk2.makhoahoc = kh.makhoahoc AND (@nam = 0 OR YEAR(pt.ngaythu) = @nam)), 0) AS tongthucthu
+                                          WHERE dk2.makhoahoc = kh.makhoahoc AND (@nam = 0 OR YEAR(pt.ngaythu) = @nam)
+                                            AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%'
+                                            AND pt.phuongthucthanhtoan <> N'Hoàn tiền học phí'), 0) AS tongthucthu
                            FROM KHOAHOC kh
                            WHERE (@makh = '' OR kh.makhoahoc = @makh)
                            ORDER BY kh.makhoahoc";
@@ -224,7 +252,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             TaiTatCaDuLieu();
         }
 
-      
         private void TaiBieuDoThangNam()
         {
             int nam = DateTime.Now.Year;
@@ -232,7 +259,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
 
             string sql = @"SELECT MONTH(ngaythu) AS Thang, ISNULL(SUM(sotienthu), 0) AS TongTien
                            FROM PHIEUTHU
-                           WHERE YEAR(ngaythu) = @nam
+                           WHERE YEAR(ngaythu) = @nam 
+                             AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'
+                             AND phuongthucthanhtoan <> N'Hoàn tiền học phí'
                            GROUP BY MONTH(ngaythu)
                            ORDER BY Thang";
             DataTable dt = kncsdl.DocDuLieu(sql, new[] { new SqlParameter("@nam", nam) });
@@ -286,7 +315,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
                 new[] { "makhoahoc", "tenkhoahoc", "soluongdk", "tongthucthu" });
         }
 
-       
         private void XuatFileExcel(DataTable dt, string fileName, string tieuDe, string[] headers, string[] columns)
         {
             Response.Clear();

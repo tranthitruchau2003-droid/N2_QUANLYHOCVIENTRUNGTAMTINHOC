@@ -92,6 +92,23 @@
             </div>
         </div>
 
+        <!-- POPUP THÔNG BÁO LOGIN/ĐĂNG KÝ -->
+        <div class="modal fade" id="modalThongBaoLogin" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-warning text-dark py-2">
+                        <h6 class="modal-title fw-bold"><i class="bi bi-exclamation-circle me-2"></i>Thông báo</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <span id="msgThongBaoLogin" class="fw-semibold"></span>
+                    </div>
+                    <div class="modal-footer justify-content-center py-2 bg-light">
+                        <button type="button" class="btn btn-sm btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
        
     </form>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

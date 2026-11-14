@@ -13,7 +13,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-           
             if (!IsPostBack && Session["TenDangNhap"] != null)
             {
                 ChuyenHuongTheoQuyen(Session["Quyen"]?.ToString());
@@ -41,7 +40,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 return;
             }
 
-       
             string ip = Request.UserHostAddress ?? "unknown";
             string cacheKey = "LoginFail_" + u.ToLowerInvariant() + "_" + ip;
             int soLanSai = HttpRuntime.Cache[cacheKey] != null ? (int)HttpRuntime.Cache[cacheKey] : 0;
@@ -53,74 +51,92 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 
             try
             {
+                // 1. Kiểm tra Admin / Nhân viên (so sánh mật khẩu phân biệt hoa thường)
                 DataTable dtAdmin = kncsdl.DocDuLieu(
-                    "SELECT * FROM TAIKHOAN WHERE tendangnhap=@u AND matkhau=@p AND trangthai=1",
-                    new[] { new SqlParameter("@u", u), new SqlParameter("@p", p) });
+                    "SELECT * FROM TAIKHOAN WHERE tendangnhap=@u AND trangthai=1",
+                    new[] { new SqlParameter("@u", u) });
 
                 if (dtAdmin.Rows.Count > 0)
                 {
-                    HttpRuntime.Cache.Remove(cacheKey);
-                    string quyen = MasterPage.ChuanHoaQuyen(dtAdmin.Rows[0]["quyen"]);
-                    if (string.IsNullOrEmpty(quyen)) quyen = "NhanVien";
+                    string mkDB = dtAdmin.Rows[0]["matkhau"]?.ToString() ?? "";
+                    if (string.Equals(mkDB, p, StringComparison.Ordinal))
+                    {
+                        HttpRuntime.Cache.Remove(cacheKey);
+                        string quyen = MasterPage.ChuanHoaQuyen(dtAdmin.Rows[0]["quyen"]);
+                        if (string.IsNullOrEmpty(quyen)) quyen = "NhanVien";
 
-                    Session["TenDangNhap"] = dtAdmin.Rows[0]["tendangnhap"].ToString();
-                    Session["HoTen"] = dtAdmin.Rows[0]["hoten"].ToString();
-                    Session["Quyen"] = quyen;
-                    ChuyenHuongTheoQuyen(quyen);
-                    return;
+                        Session["TenDangNhap"] = dtAdmin.Rows[0]["tendangnhap"].ToString();
+                        Session["HoTen"] = dtAdmin.Rows[0]["hoten"].ToString();
+                        Session["Quyen"] = quyen;
+                        Session.Remove("BatBuocDoiMK");
+                        kncsdl.GhiNhatKy(Session["TenDangNhap"].ToString(), "Đăng nhập hệ thống", $"Đăng nhập quyền {quyen} từ IP {ip}");
+                        ChuyenHuongTheoQuyen(quyen);
+                        return;
+                    }
                 }
-
 
                 // 2. Kiểm tra Giảng viên (Tên đăng nhập là Số điện thoại)
                 DataTable dtGV = kncsdl.DocDuLieu(
-                    "SELECT * FROM GIANGVIEN WHERE LTRIM(RTRIM(dienthoai))=@u AND ISNULL(NULLIF(matkhau, ''), dienthoai)=@p",
-                    new[] { new SqlParameter("@u", u), new SqlParameter("@p", p) });
+                    "SELECT * FROM GIANGVIEN WHERE LTRIM(RTRIM(dienthoai))=@u",
+                    new[] { new SqlParameter("@u", u) });
 
                 if (dtGV.Rows.Count > 0)
                 {
-                    HttpRuntime.Cache.Remove(cacheKey);
-                    string maGV = dtGV.Rows[0]["magiangvien"].ToString();
                     string sdtGV = dtGV.Rows[0]["dienthoai"]?.ToString().Trim() ?? "";
                     string mkDB = dtGV.Rows[0]["matkhau"] != DBNull.Value ? dtGV.Rows[0]["matkhau"].ToString().Trim() : "";
+                    string mkHieuLuc = string.IsNullOrEmpty(mkDB) ? sdtGV : mkDB;
 
-                    // Nếu chưa có mật khẩu riêng hoặc mật khẩu vẫn đang bằng SĐT -> bắt buộc đổi mật khẩu lần đầu
-                    bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || mkDB == sdtGV;
+                    if (string.Equals(mkHieuLuc, p, StringComparison.Ordinal))
+                    {
+                        HttpRuntime.Cache.Remove(cacheKey);
+                        string maGV = dtGV.Rows[0]["magiangvien"].ToString();
+                        bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || string.Equals(mkDB, sdtGV, StringComparison.Ordinal);
 
-                    Session["TenDangNhap"] = maGV;
-                    Session["HoTen"] = dtGV.Rows[0]["hoten"].ToString();
-                    Session["Quyen"] = "GiangVien";
-                    if (canDoiMKLanDau)
-                        Session["BatBuocDoiMK"] = true;
-                    else
-                        Session.Remove("BatBuocDoiMK");
+                        Session["TenDangNhap"] = maGV;
+                        Session["HoTen"] = dtGV.Rows[0]["hoten"].ToString();
+                        Session["Quyen"] = "GiangVien";
+                        if (canDoiMKLanDau)
+                            Session["BatBuocDoiMK"] = true;
+                        else
+                            Session.Remove("BatBuocDoiMK");
 
-                    ChuyenHuongTheoQuyen("GiangVien");
-                    return;
+                        kncsdl.GhiNhatKy(maGV, "Đăng nhập hệ thống", $"Giảng viên đăng nhập từ IP {ip}");
+                        ChuyenHuongTheoQuyen("GiangVien");
+                        return;
+                    }
                 }
 
-
+                // 3. Kiểm tra Học viên (Mã HV, SĐT hoặc Email)
                 DataTable dtHV = kncsdl.DocDuLieu(
-                    "SELECT * FROM HOCVIEN WHERE (mahocvien=@u OR dienthoai=@u OR email=@u) AND ISNULL(NULLIF(matkhau, ''), dienthoai)=@p",
-                    new[] { new SqlParameter("@u", u), new SqlParameter("@p", p) });
+                    "SELECT * FROM HOCVIEN WHERE mahocvien=@u OR LTRIM(RTRIM(dienthoai))=@u OR (@u <> '' AND LOWER(LTRIM(RTRIM(ISNULL(email,''))))=LOWER(@u))",
+                    new[] { new SqlParameter("@u", u) });
 
                 if (dtHV.Rows.Count > 0)
                 {
-                    HttpRuntime.Cache.Remove(cacheKey);
-                    string maHV = dtHV.Rows[0]["mahocvien"].ToString();
-                    if (dtHV.Rows[0]["matkhau"] == DBNull.Value || string.IsNullOrEmpty(dtHV.Rows[0]["matkhau"].ToString()))
-                    {
-                        kncsdl.ThucThiLenh("UPDATE HOCVIEN SET matkhau=@p WHERE mahocvien=@ma",
-                            new[] { new SqlParameter("@p", p), new SqlParameter("@ma", maHV) });
-                    }
+                    string sdtHV = dtHV.Rows[0]["dienthoai"]?.ToString().Trim() ?? "";
+                    string mkDB = dtHV.Rows[0]["matkhau"] != DBNull.Value ? dtHV.Rows[0]["matkhau"].ToString().Trim() : "";
+                    string mkHieuLuc = string.IsNullOrEmpty(mkDB) ? sdtHV : mkDB;
 
-                    Session["TenDangNhap"] = maHV;
-                    Session["HoTen"] = dtHV.Rows[0]["hoten"].ToString();
-                    Session["Quyen"] = "HocVien";
-                    ChuyenHuongTheoQuyen("HocVien");
-                    return;
+                    if (!string.IsNullOrEmpty(mkHieuLuc) && string.Equals(mkHieuLuc, p, StringComparison.Ordinal))
+                    {
+                        HttpRuntime.Cache.Remove(cacheKey);
+                        string maHV = dtHV.Rows[0]["mahocvien"].ToString();
+                        bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || (!string.IsNullOrEmpty(sdtHV) && string.Equals(mkDB, sdtHV, StringComparison.Ordinal));
+
+                        Session["TenDangNhap"] = maHV;
+                        Session["HoTen"] = dtHV.Rows[0]["hoten"].ToString();
+                        Session["Quyen"] = "HocVien";
+                        if (canDoiMKLanDau)
+                            Session["BatBuocDoiMK"] = true;
+                        else
+                            Session.Remove("BatBuocDoiMK");
+
+                        kncsdl.GhiNhatKy(maHV, "Đăng nhập hệ thống", $"Học viên đăng nhập từ IP {ip}");
+                        ChuyenHuongTheoQuyen("HocVien");
+                        return;
+                    }
                 }
 
-            
                 HttpRuntime.Cache.Insert(cacheKey, soLanSai + 1, null, DateTime.Now.AddMinutes(5), Cache.NoSlidingExpiration);
                 HienLoi("Tên đăng nhập hoặc mật khẩu không chính xác!");
             }
@@ -137,16 +153,27 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             string email = txtDKEmail.Text.Trim();
             string matKhau = txtDKMatKhau.Text.Trim();
 
-      
             if (string.IsNullOrEmpty(hoTen) || hoTen.Length > 100 || !Regex.IsMatch(sdt, @"^0\d{9}$") || matKhau.Length < 6)
             {
                 HienAlertDangKy("Vui lòng nhập Họ tên hợp lệ, SĐT đủ 10 số và Mật khẩu tối thiểu 6 ký tự!");
                 return;
             }
 
+            if (matKhau == sdt)
+            {
+                HienAlertDangKy("Mật khẩu đăng ký không được trùng với Số điện thoại!");
+                return;
+            }
+
             if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             {
                 HienAlertDangKy("Định dạng Email không hợp lệ!");
+                return;
+            }
+
+            if (hoTen.IndexOfAny(new[] { '<', '>' }) >= 0 || txtDKDiaChi.Text.IndexOfAny(new[] { '<', '>' }) >= 0)
+            {
+                HienAlertDangKy("Họ tên và Địa chỉ không được chứa ký tự < hoặc >!");
                 return;
             }
 
@@ -165,7 +192,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             try
             {
                 int check = Convert.ToInt32(kncsdl.LayGiaTriDon(
-                    "SELECT COUNT(*) FROM HOCVIEN WHERE dienthoai=@dt OR (@em <> '' AND LOWER(LTRIM(RTRIM(email))) = LOWER(@em))",
+                    "SELECT COUNT(*) FROM HOCVIEN WHERE dienthoai=@dt OR (@em <> '' AND LOWER(LTRIM(RTRIM(ISNULL(email,'')))) = LOWER(@em))",
                     new[] { new SqlParameter("@dt", sdt), new SqlParameter("@em", email) }));
                 if (check > 0)
                 {
@@ -193,12 +220,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 Session["TenDangNhap"] = maHV;
                 Session["HoTen"] = hoTen;
                 Session["Quyen"] = "HocVien";
+                Session.Remove("BatBuocDoiMK");
+                kncsdl.GhiNhatKy(maHV, "Tự đăng ký tài khoản", $"Học viên {hoTen} tự tạo tài khoản");
                 Response.Redirect("~/Views/DangKy/QuanLyDangKy.aspx", false);
                 Context.ApplicationInstance.CompleteRequest();
             }
             catch
             {
-               
                 HienAlertDangKy("Không thể tạo tài khoản lúc này. Vui lòng kiểm tra lại thông tin đã nhập!");
             }
         }
@@ -206,7 +234,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         private void HienAlertDangKy(string msg)
         {
             string safe = HttpUtility.JavaScriptStringEncode(msg);
-            ScriptManager.RegisterStartupScript(this, GetType(), "dk_loi", $"alert('{safe}'); openModal('modalDangKy');", true);
+            // Gọi modal thông báo, khi người dùng tắt thông báo sẽ tự động bật lại form đăng ký
+            string script = $@"
+                document.getElementById('msgThongBaoLogin').innerText = '{safe}';
+                var alertModal = new window.bootstrap.Modal(document.getElementById('modalThongBaoLogin'));
+                alertModal.show();
+                document.getElementById('modalThongBaoLogin').addEventListener('hidden.bs.modal', function () {{
+                    openModal('modalDangKy');
+                }}, {{ once: true }});
+            ";
+            ScriptManager.RegisterStartupScript(this, GetType(), "dk_loi", script, true);
         }
 
         private void HienLoi(string msg)

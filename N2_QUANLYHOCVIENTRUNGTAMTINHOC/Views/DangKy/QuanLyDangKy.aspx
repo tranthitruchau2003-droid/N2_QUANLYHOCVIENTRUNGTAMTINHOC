@@ -20,7 +20,7 @@
 </asp:Content>
 
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
-    <asp:ScriptManager ID="ScriptManager1" runat="server" />
+    
     <asp:Panel ID="pnlTB" runat="server" Visible="false" ClientIDMode="Static"
         CssClass="alert alert-info fw-semibold alert-dismissible fade show shadow"
         style="position: fixed; top: 76px; right: 24px; z-index: 1060; min-width: 320px; max-width: 500px;">
@@ -514,6 +514,12 @@
             }
         }
 
+       
+
+        function boDauTiengViet(str) {
+            return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+        }
+
         function thietLapGoiYDK() {
             var input = document.getElementById('txtTimDK');
             var list = document.getElementById('goiYDK');
@@ -523,10 +529,11 @@
             var items = list.querySelectorAll('.goi-y-item');
 
             function locGoiY() {
-                var kw = input.value.trim().toLowerCase();
+                var kw = boDauTiengViet(input.value.trim());
                 var co = false;
                 items.forEach(function (item) {
-                    if (kw !== '' && item.innerText.toLowerCase().indexOf(kw) !== -1) {
+                    var txt = boDauTiengViet(item.innerText);
+                    if (kw !== '' && txt.indexOf(kw) !== -1) {
                         item.style.display = 'block';
                         co = true;
                     } else {
@@ -539,9 +546,19 @@
             input.addEventListener('input', function () {
                 if (this.value.trim() === '') {
                     list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_DK', 'txtTimDK');
                     btn.click();
                 } else {
                     locGoiY();
+                }
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_DK', 'txtTimDK');
+                    btn.click();
                 }
             });
 
@@ -554,6 +571,7 @@
                     e.preventDefault();
                     input.value = this.getAttribute('data-value');
                     list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_DK', 'txtTimDK');
                     btn.click();
                 });
             });
@@ -574,6 +592,18 @@
             if (savedScroll !== null) {
                 window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
             }
+
+            var focusId = sessionStorage.getItem('focusSearch_DK');
+            if (focusId) {
+                var el = document.getElementById(focusId);
+                if (el) {
+                    el.focus();
+                    if (typeof el.selectionStart === 'number') {
+                        el.selectionStart = el.selectionEnd = el.value.length;
+                    }
+                }
+                sessionStorage.removeItem('focusSearch_DK');
+            }
         });
 
         window.addEventListener('DOMContentLoaded', function () {
@@ -591,6 +621,7 @@
             }, 5000);
         });
 
-function moModalXemBienLaiHoanHV() { showBootstrapModal('modalXemBienLaiHoanHV'); }
+        function moModalXemBienLaiHoanHV() { showBootstrapModal('modalXemBienLaiHoanHV'); }
     </script>
 </asp:Content>
+   

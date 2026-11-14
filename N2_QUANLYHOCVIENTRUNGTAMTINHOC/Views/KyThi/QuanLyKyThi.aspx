@@ -315,6 +315,10 @@
             new window.bootstrap.Modal(document.getElementById('modalXoaTG')).show();
         }
 
+      function boDauTiengViet(str) {
+            return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+        }
+
         function thietLapTimKiem(inputId, listId, btnId) {
             var input = document.getElementById(inputId);
             var list = document.getElementById(listId);
@@ -324,10 +328,10 @@
             var items = list.querySelectorAll('.goi-y-item');
 
             function locGoiY() {
-                var kw = input.value.trim().toLowerCase();
+                var kw = boDauTiengViet(input.value.trim());
                 var coKetQua = false;
                 items.forEach(function (item) {
-                    var text = item.innerText.toLowerCase();
+                    var text = boDauTiengViet(item.innerText);
                     if (kw !== '' && text.indexOf(kw) !== -1) {
                         item.style.display = 'block';
                         coKetQua = true;
@@ -348,6 +352,15 @@
                 }
             });
 
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    list.style.display = 'none';
+                    sessionStorage.setItem('focusSearchId', inputId);
+                    btn.click();
+                }
+            });
+
             input.addEventListener('focus', function () {
                 if (this.value.trim() !== '') locGoiY();
             });
@@ -357,6 +370,7 @@
                     e.preventDefault();
                     input.value = this.getAttribute('data-value');
                     list.style.display = 'none';
+                    sessionStorage.setItem('focusSearchId', inputId);
                     btn.click();
                 });
             });
@@ -368,19 +382,26 @@
             });
         }
 
+        window.addEventListener('load', function () {
+            var focusId = sessionStorage.getItem('focusSearchId');
+            if (focusId) {
+                var el = document.getElementById(focusId);
+                if (el) {
+                    el.focus();
+                    if (typeof el.selectionStart === 'number') {
+                        el.selectionStart = el.selectionEnd = el.value.length;
+                    }
+                }
+                sessionStorage.removeItem('focusSearchId');
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', function () {
             if (window.jQuery && jQuery.fn.select2) {
                 jQuery('.select2-search').select2({
                     theme: 'bootstrap-5',
                     width: '100%'
                 });
-            }
-
-            var focusId = sessionStorage.getItem('focusSearchId');
-            if (focusId) {
-                var el = document.getElementById(focusId);
-                if (el) el.focus();
-                sessionStorage.removeItem('focusSearchId');
             }
 
             setTimeout(function () {

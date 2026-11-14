@@ -1,9 +1,11 @@
 ﻿using N2_QUANLYHOCVIENTRUNGTAMTINHOC.DAL;
 using System;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 using System.Web;
 using System.Web.UI;
+using System.Web.UI.WebControls;
 
 namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 {
@@ -23,7 +25,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             return "";
         }
 
-
         protected void Page_Init(object sender, EventArgs e)
         {
             Response.Cache.SetCacheability(HttpCacheability.NoCache);
@@ -31,8 +32,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 
             if (Session["TenDangNhap"] == null)
             {
-                Response.Redirect("~/Login.aspx", false);
-                Context.ApplicationInstance.CompleteRequest();
+                Response.Redirect("~/Login.aspx", true);
                 return;
             }
 
@@ -40,13 +40,24 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             if (string.IsNullOrEmpty(quyen))
             {
                 Session.Clear();
-                Response.Redirect("~/Login.aspx", false);
-                Context.ApplicationInstance.CompleteRequest();
+                Response.Redirect("~/Login.aspx", true);
                 return;
             }
 
             Session["Quyen"] = quyen;
-            KiemTraQuyenTruyCapTrang(quyen);
+
+            if (Session["BatBuocDoiMK"] != null && (bool)Session["BatBuocDoiMK"])
+            {
+                ContentPlaceHolder mainContent = (ContentPlaceHolder)FindControl("MainContent");
+                if (mainContent != null)
+                {
+                    mainContent.Controls.Clear();
+                }
+            }
+            else
+            {
+                KiemTraQuyenTruyCapTrang(quyen);
+            }
         }
 
         private void KiemTraQuyenTruyCapTrang(string quyen)
@@ -59,8 +70,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             {
                 if (path.Contains("/caidathethong.aspx"))
                 {
-                    Response.Redirect("~/Dashboard.aspx", false);
-                    Context.ApplicationInstance.CompleteRequest();
+                    Response.Redirect("~/Dashboard.aspx", true);
                 }
             }
             else if (quyen == "GiangVien")
@@ -68,8 +78,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 bool choPhepGV = path.Contains("/quanlylophoc.aspx") || path.Contains("/quanlykythi.aspx");
                 if (!choPhepGV)
                 {
-                    Response.Redirect("~/Views/LopHoc/QuanLyLopHoc.aspx", false);
-                    Context.ApplicationInstance.CompleteRequest();
+                    Response.Redirect("~/Views/LopHoc/QuanLyLopHoc.aspx", true);
                 }
             }
             else if (quyen == "HocVien")
@@ -80,8 +89,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                                  path.Contains("/quanlychungchi.aspx");
                 if (!choPhepHV)
                 {
-                    Response.Redirect("~/Views/DangKy/QuanLyDangKy.aspx", false);
-                    Context.ApplicationInstance.CompleteRequest();
+                    Response.Redirect("~/Views/DangKy/QuanLyDangKy.aspx", true);
                 }
             }
         }
@@ -99,12 +107,20 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 string hoTenAnToan = HttpUtility.HtmlEncode(Session["HoTen"]?.ToString() ?? "");
                 string quyenAnToan = HttpUtility.HtmlEncode(quyen);
                 litNguoiDung.Text = string.Format("{0} ({1})", hoTenAnToan, quyenAnToan);
+
+                // Hiển thị thông báo thành công sau khi đổi mật khẩu và chuyển trang thành công
+                if (Session["TB_ThanhCong"] != null)
+                {
+                    string msg = Session["TB_ThanhCong"].ToString();
+                    Session.Remove("TB_ThanhCong");
+                    ThongBaoPopup(msg);
+                }
             }
 
             if (Session["BatBuocDoiMK"] != null && (bool)Session["BatBuocDoiMK"])
             {
                 ScriptManager.RegisterStartupScript(this.Page, this.Page.GetType(), "force_change_pw",
-                    "document.addEventListener('DOMContentLoaded', function () { moModalDoiMKBatBuoc(); });", true);
+                    "setTimeout(function() { moModalDoiMKBatBuoc(); }, 200);", true);
             }
         }
 
@@ -150,7 +166,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             }
             else
             {
-
                 liDashboard.Visible = liHocVien.Visible = liKhoaHoc.Visible = liGiangVien.Visible =
                 liLopHoc.Visible = liDangKy.Visible = liPhieuThu.Visible = liKyThi.Visible =
                 liChungChi.Visible = liBaoCao.Visible = liCaiDat.Visible = false;
@@ -159,6 +174,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 
         protected void btnDangXuat_Click(object sender, EventArgs e)
         {
+            string user = Session["TenDangNhap"]?.ToString();
+            if (!string.IsNullOrEmpty(user))
+                kncsdl.GhiNhatKy(user, "Đăng xuất", "Người dùng đăng xuất khỏi hệ thống");
+
             Session.Clear();
             Session.Abandon();
             if (Request.Cookies["ASP.NET_SessionId"] != null)
@@ -167,10 +186,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 myCookie.Expires = DateTime.Now.AddDays(-1);
                 Response.Cookies.Add(myCookie);
             }
-            Response.Redirect("~/Login.aspx", false);
-            Context.ApplicationInstance.CompleteRequest();
+            Response.Redirect("~/Login.aspx", true);
         }
-
 
         protected void btnLuuMatKhau_Click(object sender, EventArgs e)
         {
@@ -182,8 +199,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 
             if (string.IsNullOrEmpty(user))
             {
-                Response.Redirect("~/Login.aspx", false);
-                Context.ApplicationInstance.CompleteRequest();
+                Response.Redirect("~/Login.aspx", true);
                 return;
             }
 
@@ -199,13 +215,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 return;
             }
 
-            if (mkMoi != mkXN)
+            if (mkMoi.Length > 50)
+            {
+                ThongBaoPopup("Mật khẩu mới không được vượt quá 50 ký tự!");
+                return;
+            }
+
+            if (!string.Equals(mkMoi, mkXN, StringComparison.Ordinal))
             {
                 ThongBaoPopup("Mật khẩu mới và xác nhận mật khẩu không khớp!");
                 return;
             }
 
-            if (mkMoi == mkCu)
+            if (string.Equals(mkMoi, mkCu, StringComparison.Ordinal))
             {
                 ThongBaoPopup("Mật khẩu mới phải khác mật khẩu hiện tại!");
                 return;
@@ -216,27 +238,41 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 int kq = 0;
                 if (quyen == "GiangVien")
                 {
-                    kq = kncsdl.ThucThiLenh("UPDATE GIANGVIEN SET matkhau=@mkm WHERE magiangvien=@u AND ISNULL(NULLIF(matkhau, ''), dienthoai)=@mkc",
-                        new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
+                    DataTable dt = kncsdl.DocDuLieu("SELECT ISNULL(NULLIF(matkhau, ''), dienthoai) AS mk FROM GIANGVIEN WHERE magiangvien=@u",
+                        new[] { new SqlParameter("@u", user) });
+                    if (dt.Rows.Count > 0 && string.Equals(dt.Rows[0]["mk"].ToString().Trim(), mkCu, StringComparison.Ordinal))
+                    {
+                        kq = kncsdl.ThucThiLenh("UPDATE GIANGVIEN SET matkhau=@mkm WHERE magiangvien=@u",
+                            new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user) });
+                    }
                 }
                 else if (quyen == "HocVien")
                 {
-                    kq = kncsdl.ThucThiLenh("UPDATE HOCVIEN SET matkhau=@mkm WHERE mahocvien=@u AND ISNULL(NULLIF(matkhau, ''), dienthoai)=@mkc",
-                        new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
+                    DataTable dt = kncsdl.DocDuLieu("SELECT ISNULL(NULLIF(matkhau, ''), dienthoai) AS mk FROM HOCVIEN WHERE mahocvien=@u",
+                        new[] { new SqlParameter("@u", user) });
+                    if (dt.Rows.Count > 0 && string.Equals(dt.Rows[0]["mk"].ToString().Trim(), mkCu, StringComparison.Ordinal))
+                    {
+                        kq = kncsdl.ThucThiLenh("UPDATE HOCVIEN SET matkhau=@mkm WHERE mahocvien=@u",
+                            new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user) });
+                    }
                 }
                 else
                 {
-
-                    kq = kncsdl.ThucThiLenh("UPDATE TAIKHOAN SET matkhau=@mkm WHERE tendangnhap=@u AND matkhau=@mkc AND trangthai=1",
-                        new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user), new SqlParameter("@mkc", mkCu) });
+                    DataTable dt = kncsdl.DocDuLieu("SELECT matkhau FROM TAIKHOAN WHERE tendangnhap=@u AND trangthai=1",
+                        new[] { new SqlParameter("@u", user) });
+                    if (dt.Rows.Count > 0 && string.Equals(dt.Rows[0]["matkhau"].ToString().Trim(), mkCu, StringComparison.Ordinal))
+                    {
+                        kq = kncsdl.ThucThiLenh("UPDATE TAIKHOAN SET matkhau=@mkm WHERE tendangnhap=@u",
+                            new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user) });
+                    }
                 }
 
                 if (kq > 0)
                 {
                     Session.Remove("BatBuocDoiMK");
-                    string safeMsg = HttpUtility.JavaScriptStringEncode("Đổi mật khẩu thành công! Bạn đã có thể sử dụng hệ thống.");
-                    ScriptManager.RegisterStartupScript(this.Page, this.Page.GetType(), "mk_ok",
-                        $"alert('{safeMsg}'); window.location.href = window.location.href;", true);
+                    kncsdl.GhiNhatKy(user, "Đổi mật khẩu", "Người dùng cập nhật mật khẩu mới");
+                    Session["TB_ThanhCong"] = "Đổi mật khẩu thành công! Bạn đã có thể sử dụng hệ thống.";
+                    Response.Redirect(Request.RawUrl, true); // Chuyển hướng server-side sạch sẽ, load lại toàn bộ dữ liệu lớp học chính xác tuyệt đối
                 }
                 else
                 {
@@ -252,7 +288,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         private void ThongBaoPopup(string msg)
         {
             string safeMsg = HttpUtility.JavaScriptStringEncode(msg);
-            ScriptManager.RegisterStartupScript(this.Page, this.Page.GetType(), "mk_msg", $"alert('{safeMsg}');", true);
+            string script = $@"
+                document.getElementById('msgThongBaoChung').innerText = '{safeMsg}';
+                new window.bootstrap.Modal(document.getElementById('modalThongBaoChung')).show();
+            ";
+            ScriptManager.RegisterStartupScript(this.Page, this.Page.GetType(), "mk_msg", script, true);
         }
     }
 }

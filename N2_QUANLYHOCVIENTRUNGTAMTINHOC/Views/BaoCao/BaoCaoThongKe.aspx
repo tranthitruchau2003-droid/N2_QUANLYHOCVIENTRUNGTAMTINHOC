@@ -51,7 +51,8 @@
                         <asp:ListItem Text="-- Tất cả trạng thái --" Value="" />
                         <asp:ListItem Text="Đã đóng đủ học phí" Value="DaDongDu" />
                         <asp:ListItem Text="Còn nợ một phần" Value="ConNoMotPhan" />
-                        <asp:ListItem Text="Chưa đóng đồng nào (0 đ)" Value="ChuaDong" />
+                        <asp:ListItem Text="Chưa đóng học phí" Value="ChuaDong" />
+                        <asp:ListItem Text="Đã hủy lớp (0 đ)" Value="DaHuyLop" />
                         <asp:ListItem Text="Chưa hoàn tiền (Hủy lớp)" Value="ChuaHoanTien" />
                         <asp:ListItem Text="Chờ hoàn tiền (Đã gửi STK)" Value="ChoHoanTien" />
                         <asp:ListItem Text="Đã hoàn tiền học phí" Value="DaHoanTien" />
@@ -60,8 +61,15 @@
                 <div class="col-md-3">
                     <label class="small fw-bold">Tìm nhanh học viên</label>
                     <div class="d-flex gap-1">
-                        <asp:TextBox ID="txtTimHVLoc" runat="server" ClientIDMode="Static" TextMode="Search" CssClass="form-control form-control-sm"
-                            placeholder="Mã HV, Họ tên, SĐT..." autocomplete="off" onclick="this.select();" />
+                        <div class="position-relative flex-grow-1">
+                            <asp:TextBox ID="txtTimHVLoc" runat="server" ClientIDMode="Static" TextMode="Search" CssClass="form-control form-control-sm"
+                                placeholder="Mã HV, Họ tên, SĐT..." autocomplete="off" onclick="this.select();" />
+                            <!-- Khung gợi ý xổ xuống ngay dưới ô tìm kiếm -->
+                            <div id="goiYTimKiem" class="list-group shadow position-absolute w-100"
+                                style="top: 100%; left: 0; z-index: 1050; max-height: 150px; overflow-y: auto; display: none;">
+                                <asp:Literal ID="litGoiY" runat="server" />
+                            </div>
+                        </div>
                         <asp:Button ID="btnLocHV" runat="server" ClientIDMode="Static" Text="Lọc" CssClass="btn btn-sm btn-primary-gradient" OnClick="BoLocHocVien_Changed" />
                     </div>
                 </div>
@@ -161,32 +169,93 @@
 
     <script>
         // @ts-nocheck
+        // Lưu vị trí cuộn trang và ID ô đang tìm kiếm để khôi phục focus sau khi postback
         window.addEventListener('beforeunload', function () {
             sessionStorage.setItem('scrollPos_BaoCao', window.scrollY);
+            var activeEl = document.activeElement;
+            if (activeEl && activeEl.id) {
+                sessionStorage.setItem('focusSearchBC', activeEl.id);
+            }
         });
 
         window.addEventListener('load', function () {
             var savedScroll = sessionStorage.getItem('scrollPos_BaoCao');
             if (savedScroll !== null) {
                 window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
+                sessionStorage.removeItem('scrollPos_BaoCao');
+            }
+
+            var focusId = sessionStorage.getItem('focusSearchBC');
+            if (focusId) {
+                var el = document.getElementById(focusId);
+                if (el) {
+                    el.focus();
+                    if (typeof el.selectionStart === 'number') {
+                        el.selectionStart = el.selectionEnd = el.value.length;
+                    }
+                }
+                sessionStorage.removeItem('focusSearchBC');
             }
         });
 
         window.addEventListener('DOMContentLoaded', function () {
-            var focusId = sessionStorage.getItem('focusSearchBC');
-            if (focusId) {
-                var el = document.getElementById(focusId);
-                if (el) el.focus();
-                sessionStorage.removeItem('focusSearchBC');
-            }
-
             var txtTimHVLoc = document.getElementById('txtTimHVLoc');
             var btnLocHV = document.getElementById('btnLocHV');
+            var listGoiY = document.getElementById('goiYTimKiem');
+
             if (txtTimHVLoc && btnLocHV) {
+                var items = listGoiY ? listGoiY.querySelectorAll('.goi-y-item') : [];
+
+                function locGoiY() {
+                    var kw = txtTimHVLoc.value.trim().toLowerCase();
+                    var co = false;
+                    items.forEach(function (item) {
+                        if (kw !== '' && item.innerText.toLowerCase().indexOf(kw) !== -1) {
+                            item.style.display = 'block';
+                            co = true;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    if (listGoiY) listGoiY.style.display = co ? 'block' : 'none';
+                }
+
+                // Khi gõ phím: Xóa hết chữ thì tự động lọc lại bảng, gõ có chữ thì hiển thị gợi ý
                 txtTimHVLoc.addEventListener('input', function () {
+                    sessionStorage.setItem('focusSearchBC', 'txtTimHVLoc');
                     if (this.value.trim() === '') {
+                        if (listGoiY) listGoiY.style.display = 'none';
+                        btnLocHV.click();
+                    } else {
+                        locGoiY();
+                    }
+                });
+
+                // Hỗ trợ bấm phím Enter để tìm kiếm ngay lập tức
+                txtTimHVLoc.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (listGoiY) listGoiY.style.display = 'none';
                         sessionStorage.setItem('focusSearchBC', 'txtTimHVLoc');
                         btnLocHV.click();
+                    }
+                });
+
+                // Khi click chọn một dòng gợi ý
+                items.forEach(function (item) {
+                    item.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        txtTimHVLoc.value = this.getAttribute('data-value');
+                        if (listGoiY) listGoiY.style.display = 'none';
+                        sessionStorage.setItem('focusSearchBC', 'txtTimHVLoc');
+                        btnLocHV.click();
+                    });
+                });
+
+                // Ẩn bảng gợi ý khi bấm ra ngoài
+                document.addEventListener('click', function (e) {
+                    if (!txtTimHVLoc.contains(e.target) && listGoiY && !listGoiY.contains(e.target)) {
+                        listGoiY.style.display = 'none';
                     }
                 });
             }

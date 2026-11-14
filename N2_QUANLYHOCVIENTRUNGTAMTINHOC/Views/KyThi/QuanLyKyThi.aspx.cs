@@ -121,9 +121,14 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             string sql = @"SELECT DISTINCT hv.mahocvien, hv.mahocvien + ' - ' + hv.hoten AS HienThi
                            FROM HOCVIEN hv
                            JOIN DANGKY dk ON hv.mahocvien = dk.mahocvien
+                           JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
                            JOIN KYTHI kt ON dk.makhoahoc = kt.makhoahoc
                            LEFT JOIN LOPHOC l ON dk.malop = l.malop
                            WHERE kt.makythi = @kt
+                             AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%'
+                             AND ISNULL(dk.trangthaithanhtoan, N'') NOT IN (N'Chờ hoàn tiền', N'Đã hoàn tiền')
+                             AND ISNULL((SELECT SUM(pt.sotienthu) FROM PHIEUTHU pt WHERE pt.madangky = dk.madangky AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0) >= kh.hocphi
+                             AND (SELECT COUNT(*) FROM DIEMDANH dd WHERE dd.mahocvien = hv.mahocvien AND dd.malop = dk.malop AND dd.trangthai IN (N'Vắng phép', N'Vắng không phép')) < 3
                              AND (@isGV = 0 OR l.magiangvien = @user)
                            ORDER BY HienThi";
             SqlParameter[] p = {
@@ -138,7 +143,56 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             ddlHocVien.DataBind();
         }
 
-       
+        private bool KiemTraDuDieuKienDuThi(string maHV, string maKT, out string lyDo)
+        {
+            lyDo = "";
+            DataTable dt = kncsdl.DocDuLieu(@"SELECT TOP 1 dk.madangky, dk.malop, dk.trangthailop, dk.trangthaithanhtoan, kh.hocphi,
+                                                     ISNULL((SELECT SUM(pt.sotienthu) FROM PHIEUTHU pt WHERE pt.madangky = dk.madangky AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0) AS dadong
+                                              FROM DANGKY dk
+                                              JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
+                                              JOIN KYTHI kt ON dk.makhoahoc = kt.makhoahoc
+                                              WHERE dk.mahocvien = @hv AND kt.makythi = @kt
+                                              ORDER BY dk.madangky DESC",
+                new[] { new SqlParameter("@hv", maHV), new SqlParameter("@kt", maKT) });
+
+            if (dt.Rows.Count == 0)
+            {
+                lyDo = "Học viên chưa đăng ký khóa học của kỳ thi này!";
+                return false;
+            }
+
+            DataRow r = dt.Rows[0];
+            string ttLop = r["trangthailop"]?.ToString() ?? "";
+            string ttTT = r["trangthaithanhtoan"]?.ToString() ?? "";
+            if (ttLop.Contains("Hủy lớp") || ttTT == "Chờ hoàn tiền" || ttTT == "Đã hoàn tiền")
+            {
+                lyDo = "Học viên thuộc lớp đã hủy hoặc đã hoàn tiền học phí, không đủ điều kiện dự thi!";
+                return false;
+            }
+
+            decimal hocPhi = Convert.ToDecimal(r["hocphi"]);
+            decimal daDong = Convert.ToDecimal(r["dadong"]);
+            if (daDong < hocPhi)
+            {
+                lyDo = $"Học viên chưa đóng đủ học phí ({daDong:N0}/{hocPhi:N0} đ), không đủ điều kiện dự thi!";
+                return false;
+            }
+
+            string maLop = r["malop"]?.ToString() ?? "";
+            if (!string.IsNullOrEmpty(maLop))
+            {
+                int soVang = Convert.ToInt32(kncsdl.LayGiaTriDon(
+                    "SELECT COUNT(*) FROM DIEMDANH WHERE mahocvien=@hv AND malop=@l AND trangthai IN (N'Vắng phép', N'Vắng không phép')",
+                    new[] { new SqlParameter("@hv", maHV), new SqlParameter("@l", maLop) }));
+                if (soVang >= 3)
+                {
+                    lyDo = $"Học viên đã nghỉ {soVang} buổi (>= 3 buổi), bị CẤM THI!";
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private double TinhDiemCC(string maHV, string maKT)
         {
             if (string.IsNullOrEmpty(maHV) || string.IsNullOrEmpty(maKT)) return 10;
@@ -165,7 +219,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             return diemCC;
         }
 
-      
         private bool KiemTraQuyenGiangVienTrenBanGhi(string maHV, string maKT)
         {
             if (LaQuanTriHoacNV) return true;
@@ -250,10 +303,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
         {
             string tuKhoa = TuKhoaKT;
             string sql = @"SELECT kt.*, kh.tenkhoahoc 
-                           FROM KYTHI kt 
-                           JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc
-                           WHERE (@kw = '' OR kt.makythi LIKE @kw OR kh.tenkhoahoc LIKE @kw OR kt.nienkhoa LIKE @kw)
-                           ORDER BY kt.makythi DESC";
+                       FROM KYTHI kt 
+                       JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc
+                       WHERE (@kw = '' OR kt.makythi COLLATE Latin1_General_CI_AI LIKE @kw 
+                                       OR kh.tenkhoahoc COLLATE Latin1_General_CI_AI LIKE @kw 
+                                       OR kt.nienkhoa COLLATE Latin1_General_CI_AI LIKE @kw)
+                       ORDER BY kt.makythi DESC";
             SqlParameter[] p = { new SqlParameter("@kw", string.IsNullOrEmpty(tuKhoa) ? "" : "%" + tuKhoa + "%") };
             gvKyThi.DataSource = kncsdl.DocDuLieu(sql, p);
             gvKyThi.DataBind();
@@ -286,18 +341,21 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             else
             {
                 string sql = @"SELECT tg.matg, hv.hoten, kh.tenkhoahoc, tg.makythi, kt.ngaythi, tg.diem, tg.ketqua
-                               FROM THAM_GIA tg 
-                               JOIN HOCVIEN hv ON tg.mahocvien = hv.mahocvien
-                               JOIN KYTHI kt ON tg.makythi = kt.makythi
-                               JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc
-                               WHERE (@kw = '' OR tg.matg LIKE @kw OR hv.hoten LIKE @kw OR tg.makythi LIKE @kw OR kh.tenkhoahoc LIKE @kw)
-                                 AND (@kq = '' OR tg.ketqua = @kq)
-                                 AND (@isGV = 0 OR EXISTS (
-                                     SELECT 1 FROM DANGKY dk 
-                                     JOIN LOPHOC l ON dk.malop = l.malop 
-                                     WHERE dk.mahocvien = tg.mahocvien AND l.makhoahoc = kt.makhoahoc AND l.magiangvien = @user
-                                 ))
-                               ORDER BY tg.matg DESC";
+                       FROM THAM_GIA tg 
+                       JOIN HOCVIEN hv ON tg.mahocvien = hv.mahocvien
+                       JOIN KYTHI kt ON tg.makythi = kt.makythi
+                       JOIN KHOAHOC kh ON kt.makhoahoc = kh.makhoahoc
+                       WHERE (@kw = '' OR tg.matg COLLATE Latin1_General_CI_AI LIKE @kw 
+                                       OR hv.hoten COLLATE Latin1_General_CI_AI LIKE @kw 
+                                       OR tg.makythi COLLATE Latin1_General_CI_AI LIKE @kw 
+                                       OR kh.tenkhoahoc COLLATE Latin1_General_CI_AI LIKE @kw)
+                         AND (@kq = '' OR tg.ketqua = @kq)
+                         AND (@isGV = 0 OR EXISTS (
+                             SELECT 1 FROM DANGKY dk 
+                             JOIN LOPHOC l ON dk.malop = l.malop 
+                             WHERE dk.mahocvien = tg.mahocvien AND l.makhoahoc = kt.makhoahoc AND l.magiangvien = @user
+                         ))
+                       ORDER BY tg.matg DESC";
                 SqlParameter[] p = {
                     new SqlParameter("@kw", string.IsNullOrEmpty(tuKhoa) ? "" : "%" + tuKhoa + "%"),
                     new SqlParameter("@kq", ketQua ?? ""),
@@ -309,7 +367,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             }
         }
 
-    
         private void TaiGoiYTimKiem()
         {
             if (LaQuanTriHoacNV)
@@ -394,7 +451,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             try
             {
                 string nienKhoa = $"{ddlDotThi.SelectedValue} - {ddlNamThi.SelectedValue}";
-              
+
                 int trung = Convert.ToInt32(kncsdl.LayGiaTriDon(
                     "SELECT COUNT(*) FROM KYTHI WHERE makhoahoc=@kh AND nienkhoa=@nk",
                     new[] { new SqlParameter("@kh", ddlKhoaHoc.SelectedValue), new SqlParameter("@nk", nienKhoa) }));
@@ -414,6 +471,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     new SqlParameter("@kh", ddlKhoaHoc.SelectedValue)
                 };
                 kncsdl.ThucThiLenh(sql, p);
+                kncsdl.GhiNhatKy(MaNguoiDung, "Tạo kỳ thi", $"Mã KT: {maMoi} ({nienKhoa})");
                 HienThongBao("Đã tạo kỳ thi mới thành công!");
                 gvKyThi.PageIndex = 0;
                 TaiDuLieu();
@@ -444,7 +502,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     return;
                 }
 
-             
                 string khCu = dtCu.Rows[0]["makhoahoc"].ToString();
                 if (khCu != ddlKhoaHoc.SelectedValue)
                 {
@@ -464,6 +521,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     new SqlParameter("@kh", ddlKhoaHoc.SelectedValue)
                 };
                 kncsdl.ThucThiLenh(sql, p);
+                kncsdl.GhiNhatKy(MaNguoiDung, "Cập nhật kỳ thi", $"Mã KT: {maKT}");
                 HienThongBao("Cập nhật kỳ thi thành công!");
                 TaiDuLieu();
                 TaiHocVienTheoKyThi();
@@ -528,6 +586,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                         return;
                     }
                     kncsdl.ThucThiLenh("DELETE FROM KYTHI WHERE makythi=@ma", new[] { new SqlParameter("@ma", ma) });
+                    kncsdl.GhiNhatKy(MaNguoiDung, "Xóa kỳ thi", $"Mã KT: {ma}");
                     HienThongBao("Đã xóa kỳ thi thành công.");
                     if (gvKyThi.Rows.Count == 1 && gvKyThi.PageIndex > 0) gvKyThi.PageIndex--;
                     TaiDuLieu();
@@ -564,7 +623,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             TaiDanhSachThamGia();
         }
 
-       
         protected void btnThemTG_Click(object sender, EventArgs e)
         {
             if (LaHocVien) return;
@@ -580,6 +638,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             if (!KiemTraQuyenGiangVienTrenBanGhi(maHV, maKT))
             {
                 HienThongBao("Bạn chỉ được phép nhập điểm cho học viên thuộc lớp mình phụ trách!", true);
+                return;
+            }
+
+            string lyDoKhongDuDK;
+            if (!KiemTraDuDieuKienDuThi(maHV, maKT, out lyDoKhongDuDK))
+            {
+                HienThongBao(lyDoKhongDuDK, true);
                 return;
             }
 
@@ -620,6 +685,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     new SqlParameter("@kq", ketQua)
                 };
                 kncsdl.ThucThiLenh(sql, p);
+                kncsdl.GhiNhatKy(MaNguoiDung, "Nhập điểm thi", $"Mã TG: {txtMaTG.Text.Trim()} - HV {maHV} - ĐTB: {diemTB:0.0} ({ketQua})");
                 HienThongBao($"Thêm điểm thành công (CC: {diemCC:0.##} | Thi: {diemThi:0.##} -> ĐTB: {diemTB:0.0} - {ketQua})!");
                 gvThamGia.PageIndex = 0;
                 TaiDuLieu();
@@ -628,7 +694,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             catch { HienThongBao("Không thể thêm điểm lúc này. Vui lòng kiểm tra lại!", true); }
         }
 
-    
         protected void btnCapNhatTG_Click(object sender, EventArgs e)
         {
             if (LaHocVien) return;
@@ -665,6 +730,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                 double diemTB = TinhDiemTrungBinh(diemCC, diemThi);
                 string ketQua = diemTB >= 5.0 ? "Đạt" : "Không đạt";
 
+                int coCC = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI WHERE matg=@ma", new[] { new SqlParameter("@ma", maTG) }));
+                if (coCC > 0 && ketQua == "Không đạt")
+                {
+                    HienThongBao("Không thể sửa điểm xuống 'Không đạt' vì học viên này đã được cấp chứng chỉ!", true);
+                    return;
+                }
+
                 string sql = @"UPDATE THAM_GIA 
                                SET diemchuyencan=@cc, diemquatrinh=@thi, diem=@diem, ketqua=@kq 
                                WHERE matg=@ma";
@@ -676,6 +748,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     new SqlParameter("@ma", maTG)
                 };
                 kncsdl.ThucThiLenh(sql, p);
+                kncsdl.GhiNhatKy(MaNguoiDung, "Sửa điểm thi", $"Mã TG: {maTG} - ĐTB mới: {diemTB:0.0} ({ketQua})");
                 HienThongBao($"Cập nhật điểm thành công (CC: {diemCC:0.##} | Thi: {diemThi:0.##} -> ĐTB: {diemTB:0.0} - {ketQua})!");
                 TaiDuLieu();
                 LamMoiFormTG();
@@ -723,7 +796,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     double diemCC = TinhDiemCC(maHV, maKT);
                     txtDiemCC.Text = diemCC.ToString("0.##", CultureInfo.InvariantCulture);
 
-                 
                     double diemThiGoc = LayDiemThiGoc(r["diemquatrinh"], r["diem"], diemCC);
                     txtDiem.Text = diemThiGoc.ToString("0.##", CultureInfo.InvariantCulture);
 
@@ -732,7 +804,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             }
         }
 
-     
         protected void btnXoaTGChinhThuc_Click(object sender, EventArgs e)
         {
             if (LaHocVien) return;
@@ -762,6 +833,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                     }
 
                     kncsdl.ThucThiLenh("DELETE FROM THAM_GIA WHERE matg=@ma", new[] { new SqlParameter("@ma", ma) });
+                    kncsdl.GhiNhatKy(MaNguoiDung, "Xóa điểm thi", $"Mã TG: {ma}");
                     HienThongBao("Đã xóa bản ghi điểm thi thành công.");
                     if (gvThamGia.Rows.Count == 1 && gvThamGia.PageIndex > 0) gvThamGia.PageIndex--;
                     TaiDuLieu();
@@ -787,10 +859,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             string sql = @"SELECT DISTINCT hv.mahocvien, hv.hoten, tg.diem AS DiemTBCSDL, tg.diemquatrinh AS DiemThiGocCSDL
                            FROM HOCVIEN hv
                            JOIN DANGKY dk ON hv.mahocvien = dk.mahocvien
+                           JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
                            JOIN KYTHI kt ON dk.makhoahoc = kt.makhoahoc
                            LEFT JOIN LOPHOC l ON dk.malop = l.malop
                            LEFT JOIN THAM_GIA tg ON tg.mahocvien = hv.mahocvien AND tg.makythi = kt.makythi
                            WHERE kt.makythi = @kt
+                             AND ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%'
+                             AND ISNULL(dk.trangthaithanhtoan, N'') NOT IN (N'Chờ hoàn tiền', N'Đã hoàn tiền')
+                             AND ISNULL((SELECT SUM(pt.sotienthu) FROM PHIEUTHU pt WHERE pt.madangky = dk.madangky AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0) >= kh.hocphi
+                             AND (SELECT COUNT(*) FROM DIEMDANH dd WHERE dd.mahocvien = hv.mahocvien AND dd.malop = dk.malop AND dd.trangthai IN (N'Vắng phép', N'Vắng không phép')) < 3
                              AND (@isGV = 0 OR l.magiangvien = @user)
                            ORDER BY hv.hoten";
             SqlParameter[] p = {
@@ -825,7 +902,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             ScriptManager.RegisterStartupScript(this, GetType(), "showHL", "showModalNhapHangLoat();", true);
         }
 
-      
         protected void btnLuuHangLoat_Click(object sender, EventArgs e)
         {
             if (LaHocVien) return;
@@ -840,6 +916,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
             {
                 string maHV = gvNhapHangLoat.DataKeys[row.RowIndex].Value.ToString();
                 if (!KiemTraQuyenGiangVienTrenBanGhi(maHV, maKT)) continue;
+
+                string lyDo;
+                if (!KiemTraDuDieuKienDuThi(maHV, maKT, out lyDo))
+                {
+                    soLoi++;
+                    continue;
+                }
 
                 TextBox txtThi = (TextBox)row.FindControl("txtDiemThiHL");
                 if (txtThi == null) continue;
@@ -863,6 +946,14 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 
                 if (existingMaTG != null && existingMaTG != DBNull.Value)
                 {
+                    string maTG = existingMaTG.ToString();
+                    int coCC = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI WHERE matg=@ma", new[] { new SqlParameter("@ma", maTG) }));
+                    if (coCC > 0 && ketQua == "Không đạt")
+                    {
+                        soLoi++;
+                        continue;
+                    }
+
                     kncsdl.ThucThiLenh(
                         "UPDATE THAM_GIA SET diemchuyencan=@cc, diemquatrinh=@thi, diem=@diem, ketqua=@kq WHERE matg=@ma",
                         new[] {
@@ -870,7 +961,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                             new SqlParameter("@thi", diemThi),
                             new SqlParameter("@diem", diemTB),
                             new SqlParameter("@kq", ketQua),
-                            new SqlParameter("@ma", existingMaTG.ToString())
+                            new SqlParameter("@ma", maTG)
                         });
                 }
                 else
@@ -891,8 +982,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                 daLuu++;
             }
 
+            kncsdl.GhiNhatKy(MaNguoiDung, "Nhập điểm hàng loạt", $"Kỳ thi {maKT}: Đã lưu {daLuu} học viên");
+
             if (soLoi > 0)
-                HienThongBao($"Đã lưu {daLuu} học viên; bỏ qua {soLoi} dòng do điểm không hợp lệ (ngoài khoảng 0-10)!", true);
+                HienThongBao($"Đã lưu {daLuu} học viên; bỏ qua {soLoi} dòng do không đủ điều kiện thi hoặc điểm không hợp lệ!", true);
             else
                 HienThongBao($"Đã lưu điểm hàng loạt chính xác cho {daLuu} học viên!");
 

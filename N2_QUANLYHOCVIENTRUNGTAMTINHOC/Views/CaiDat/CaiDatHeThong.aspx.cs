@@ -20,8 +20,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.CaiDat
         {
             if (MasterPage.ChuanHoaQuyen(Session["Quyen"]) != "Admin")
             {
-                Response.Redirect("~/Dashboard.aspx", false);
-                Context.ApplicationInstance.CompleteRequest();
+                Response.Redirect("~/Dashboard.aspx", true);
                 return;
             }
 
@@ -56,16 +55,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.CaiDat
 
         private void DonDepVaTaiNhatKy()
         {
-            // Khi dữ liệu nhật ký vượt quá 1 tuần (7 ngày), tự động xóa các bản ghi cũ hơn nửa tuần (84 giờ = 3.5 ngày)
-            int coQua1Tuan = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM NHATKY_HETHONG WHERE thoigian < DATEADD(DAY, -7, GETDATE())"));
-            if (coQua1Tuan > 0)
-            {
-                kncsdl.ThucThiLenh("DELETE FROM NHATKY_HETHONG WHERE thoigian < DATEADD(HOUR, -84, GETDATE())");
-            }
+            kncsdl.ThucThiLenh("DELETE FROM NHATKY_HETHONG WHERE thoigian < DATEADD(DAY, -30, GETDATE())");
 
             if (XemCaTuan)
             {
-                // Hiển thị toàn bộ nhật ký trong vòng 7 ngày (cả tuần)
                 DataTable dtTuan = kncsdl.DocDuLieu(@"SELECT * FROM NHATKY_HETHONG 
                                                       WHERE thoigian >= DATEADD(DAY, -7, GETDATE()) 
                                                       ORDER BY thoigian DESC, manhatky DESC");
@@ -119,17 +112,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.CaiDat
                 return;
             }
 
+            string folder = Server.MapPath("~/App_Data/Backup");
+            string safeFileName = Path.GetFileName(ddlFileBak.SelectedValue);
+            string filePath = Path.Combine(folder, safeFileName);
+            string dbName = new SqlConnectionStringBuilder(kncsdl.ChuoiKetNoi).InitialCatalog;
+
             try
             {
-                string folder = Server.MapPath("~/App_Data/Backup");
-                string safeFileName = Path.GetFileName(ddlFileBak.SelectedValue);
-                string filePath = Path.Combine(folder, safeFileName);
-                string dbName = new SqlConnectionStringBuilder(kncsdl.ChuoiKetNoi).InitialCatalog;
-
                 string sql = $@"USE master;
                                 ALTER DATABASE [{dbName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                                RESTORE DATABASE [{dbName}] FROM DISK = @path WITH REPLACE;
-                                ALTER DATABASE [{dbName}] SET MULTI_USER;";
+                                RESTORE DATABASE [{dbName}] FROM DISK = @path WITH REPLACE;";
                 kncsdl.ThucThiLenh(sql, new[] { new SqlParameter("@path", filePath) });
 
                 kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Phục hồi CSDL", safeFileName);
@@ -138,7 +130,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.CaiDat
             }
             catch
             {
-                HienTB("Lỗi khi phục hồi CSDL. Vui lòng thử lại!", true);
+                HienTB("Lỗi khi phục hồi CSDL. Vui lòng kiểm tra file sao lưu và thử lại!", true);
+            }
+            finally
+            {
+                try
+                {
+                    kncsdl.ThucThiLenh($"USE master; ALTER DATABASE [{dbName}] SET MULTI_USER;");
+                }
+                catch { }
             }
         }
 

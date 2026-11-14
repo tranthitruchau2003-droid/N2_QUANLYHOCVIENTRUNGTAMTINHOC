@@ -28,7 +28,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 string maDKUrl = Request.QueryString["madk"]?.Trim() ?? "";
                 TuKhoaDK = maDKUrl;
                 txtTimDK.Text = maDKUrl;
+                // M7: Chặn thay đổi ngày đăng ký từ Client
                 txtNgayDK.Text = DateTime.Now.ToString("yyyy-MM-dd");
+                txtNgayDK.ReadOnly = true;
+
                 CauHinhTheoQuyen();
                 TaiDanhMuc();
                 CapNhatHocPhiTheoKhoa(ddlKhoaHoc.SelectedValue);
@@ -42,29 +45,42 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             }
             else
             {
-                TuKhoaDK = "";
-                txtTimDK.Text = "";
-                txtNgayDK.Text = DateTime.Now.ToString("yyyy-MM-dd");
                 CauHinhTheoQuyen();
-                TaiDanhMuc();
-                CapNhatHocPhiTheoKhoa(ddlKhoaHoc.SelectedValue);
-                TaiDuLieu();
+                txtNgayDK.Text = DateTime.Now.ToString("yyyy-MM-dd");
             }
+        }
+
+        private bool LaHocVien()
+        {
+            return MasterPage.ChuanHoaQuyen(Session["Quyen"]) == "HocVien";
+        }
+
+        private bool LaQuanTriHoacNV()
+        {
+            string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+            return q == "Admin" || q == "NhanVien";
+        }
+
+        private bool KiemTraQuyenTrenDangKy(string maDK)
+        {
+            if (LaQuanTriHoacNV()) return true;
+            if (!LaHocVien()) return false;
+            string user = Session["TenDangNhap"]?.ToString() ?? "";
+            int c = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY WHERE madangky=@dk AND mahocvien=@hv",
+                new[] { new SqlParameter("@dk", maDK), new SqlParameter("@hv", user) }));
+            return c > 0;
         }
 
         private void CauHinhTheoQuyen()
         {
-            string quyen = Session["Quyen"]?.ToString() ?? "";
-            bool isHV = quyen.Equals("HocVien", StringComparison.OrdinalIgnoreCase);
-            pnlXuLyLopThieu.Visible = !isHV;
+            pnlXuLyLopThieu.Visible = !LaHocVien();
         }
 
         private void TaiDanhMuc()
         {
-            string quyen = Session["Quyen"]?.ToString() ?? "";
             string user = Session["TenDangNhap"]?.ToString() ?? "";
 
-            if (quyen.Equals("HocVien", StringComparison.OrdinalIgnoreCase))
+            if (LaHocVien())
             {
                 ddlHocVien.DataSource = kncsdl.DocDuLieu("SELECT mahocvien, mahocvien + ' - ' + hoten AS HienThi FROM HOCVIEN WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", user) });
                 ddlHocVien.Enabled = false;
@@ -78,17 +94,21 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             ddlHocVien.DataValueField = "mahocvien";
             ddlHocVien.DataBind();
 
-            DataTable dtKH = kncsdl.DocDuLieu("SELECT makhoahoc, tenkhoahoc FROM KHOAHOC ORDER BY tenkhoahoc");
+            // M6: Lọc "Đang mở"
+            DataTable dtKH = kncsdl.DocDuLieu("SELECT makhoahoc, tenkhoahoc FROM KHOAHOC WHERE trangthaikhoahoc = N'Đang mở' ORDER BY tenkhoahoc");
             ddlKhoaHoc.DataSource = dtKH;
             ddlKhoaHoc.DataTextField = "tenkhoahoc";
             ddlKhoaHoc.DataValueField = "makhoahoc";
             ddlKhoaHoc.DataBind();
 
+            string locKhoaCu = ddlLocKhoaMo.SelectedValue;
             ddlLocKhoaMo.DataSource = dtKH;
             ddlLocKhoaMo.DataTextField = "tenkhoahoc";
             ddlLocKhoaMo.DataValueField = "makhoahoc";
             ddlLocKhoaMo.DataBind();
             ddlLocKhoaMo.Items.Insert(0, new ListItem("-- Tất cả Khóa học --", ""));
+            if (!string.IsNullOrEmpty(locKhoaCu) && ddlLocKhoaMo.Items.FindByValue(locKhoaCu) != null)
+                ddlLocKhoaMo.SelectedValue = locKhoaCu;
 
             TaiLopTheoKhoa(ddlKhoaHoc.SelectedValue);
         }
@@ -99,6 +119,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                                   l.tenlop + N' (KG: ' + ISNULL(FORMAT(l.ngaykhaigiang, 'dd/MM/yyyy'), N'Chưa xếp') + N' - Sĩ số: ' + CAST((SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) AS NVARCHAR(10)) + N'/10)' AS HienThi
                            FROM LOPHOC l 
                            WHERE (@kh = '' OR l.makhoahoc = @kh)
+                             AND ISNULL(l.dahuy, 0) = 0
                              AND (l.ngaykhaigiang IS NULL OR l.ngaykhaigiang > CAST(GETDATE() AS DATE))
                              AND (SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) < 10
                            ORDER BY l.ngaykhaigiang ASC";
@@ -128,7 +149,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                                        ISNULL(STUFF((SELECT '; ' + lh.cahoc + ' - ' + lh.thu + ' (' + lh.giohoc + ', P.' + lh.phonghoc + ')'
                                                      FROM LICHHOC lh WHERE lh.malop = l.malop FOR XML PATH('')), 1, 2, ''), N'Đang cập nhật lịch') AS thoikhoabieu,
                                        (SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) AS siso,
+                                       CAST(ISNULL(l.dahuy, 0) AS BIT) AS dahuy,
                                        CASE 
+                                           WHEN ISNULL(l.dahuy, 0) = 1 THEN N'Đã hủy lớp (thiếu sĩ số)'
                                            WHEN l.ngaykhaigiang IS NOT NULL AND l.ngaykhaigiang <= CAST(GETDATE() AS DATE) THEN N'Đã khai giảng (Đóng ĐK)'
                                            WHEN (SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) >= 10 THEN N'Đã mở lớp (Đủ 10/10 HV)'
                                            WHEN EXISTS (SELECT 1 FROM DANGKY dk WHERE dk.malop = l.malop AND dk.trangthailop LIKE N'%đặc cách%') THEN N'Đã mở lớp (Đặc cách)'
@@ -148,13 +171,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                     DateTime batDau = Convert.ToDateTime(r["ngaykhaigiang"]).Date;
                     DateTime ketThuc = TinhNgayKetThucLop(batDau, r["thoigianhoc"]?.ToString() ?? "");
                     r["thoigianlop"] = $"{batDau:dd/MM/yyyy} - {ketThuc:dd/MM/yyyy}";
-                    // Ngay ngày khai giảng (<= hôm nay) sẽ tự động đóng đăng ký
-                    r["dadongdk"] = batDau <= DateTime.Today;
+                    r["dadongdk"] = batDau <= DateTime.Today || Convert.ToBoolean(r["dahuy"]);
                 }
                 else
                 {
                     r["thoigianlop"] = "Chưa xác định";
-                    r["dadongdk"] = false;
+                    r["dadongdk"] = Convert.ToBoolean(r["dahuy"]);
                 }
             }
 
@@ -162,16 +184,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             gvLopMo.DataBind();
 
             string sqlThieu = @"SELECT l.malop, l.tenlop + N' (' + CAST(COUNT(dk.madangky) AS NVARCHAR(10)) + N'/10 HV)' AS HienThi
-                                FROM LOPHOC l LEFT JOIN DANGKY dk ON l.malop = dk.malop GROUP BY l.malop, l.tenlop HAVING COUNT(dk.madangky) > 0 AND COUNT(dk.madangky) < 10";
+                                FROM LOPHOC l LEFT JOIN DANGKY dk ON l.malop = dk.malop WHERE ISNULL(l.dahuy, 0) = 0 GROUP BY l.malop, l.tenlop HAVING COUNT(dk.madangky) > 0 AND COUNT(dk.madangky) < 10";
             ddlLopThieu.DataSource = kncsdl.DocDuLieu(sqlThieu);
             ddlLopThieu.DataTextField = "HienThi"; ddlLopThieu.DataValueField = "malop"; ddlLopThieu.DataBind();
 
             string sqlDich = @"SELECT l.malop, l.tenlop + N' (' + CAST(COUNT(dk.madangky) AS NVARCHAR(10)) + N'/10 HV)' AS HienThi
-                               FROM LOPHOC l LEFT JOIN DANGKY dk ON l.malop = dk.malop GROUP BY l.malop, l.tenlop HAVING COUNT(dk.madangky) < 10";
+                               FROM LOPHOC l LEFT JOIN DANGKY dk ON l.malop = dk.malop WHERE ISNULL(l.dahuy, 0) = 0 GROUP BY l.malop, l.tenlop HAVING COUNT(dk.madangky) < 10";
             ddlLopDich.DataSource = kncsdl.DocDuLieu(sqlDich);
             ddlLopDich.DataTextField = "HienThi"; ddlLopDich.DataValueField = "malop"; ddlLopDich.DataBind();
 
-            string quyen = Session["Quyen"]?.ToString() ?? "";
             string user = Session["TenDangNhap"]?.ToString() ?? "";
             string kw = TuKhoaDK;
 
@@ -191,38 +212,57 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                              LEFT JOIN GIANGVIEN gv ON l.magiangvien = gv.magiangvien
                              LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
                              WHERE (@isHV = 0 OR dk.mahocvien = @user)
-                               AND (@kw = '' OR dk.madangky LIKE @kw OR hv.hoten LIKE @kw OR kh.tenkhoahoc LIKE @kw OR ISNULL(l.tenlop, '') LIKE @kw OR ISNULL(dk.trangthailop, '') LIKE @kw)
                              GROUP BY dk.madangky, hv.hoten, kh.tenkhoahoc, kh.hocphi, l.tenlop, gv.hoten, dk.trangthailop, dk.trangthaithanhtoan
                              ORDER BY dk.madangky DESC";
             SqlParameter[] pDK = {
-                new SqlParameter("@isHV", quyen.Equals("HocVien", StringComparison.OrdinalIgnoreCase) ? 1 : 0),
-                new SqlParameter("@user", user),
-                new SqlParameter("@kw", string.IsNullOrEmpty(kw) ? "" : "%" + kw + "%")
+                new SqlParameter("@isHV", LaHocVien() ? 1 : 0),
+                new SqlParameter("@user", user)
             };
-            gvDangKy.DataSource = kncsdl.DocDuLieu(sqlDK, pDK);
+            DataTable dtDK = kncsdl.DocDuLieu(sqlDK, pDK);
+
+            if (!string.IsNullOrWhiteSpace(kw))
+            {
+                string kwKhongDau = kncsdl.BoDauTiengViet(kw.Trim());
+                DataTable dtLoc = dtDK.Clone();
+                foreach (DataRow r in dtDK.Rows)
+                {
+                    string gopChuoi = $"{r["madangky"]} {r["hoten"]} {r["tenkhoahoc"]} {r["tenlop"]} {r["trangthailop"]}";
+                    if (kncsdl.BoDauTiengViet(gopChuoi).Contains(kwKhongDau))
+                    {
+                        dtLoc.ImportRow(r);
+                    }
+                }
+                dtDK = dtLoc;
+            }
+
+            gvDangKy.DataSource = dtDK;
             gvDangKy.DataBind();
 
-            TaiGoiYTimKiemDK(quyen.Equals("HocVien", StringComparison.OrdinalIgnoreCase), user);
+            TaiGoiYTimKiemDK(LaHocVien(), user);
         }
 
         private DateTime TinhNgayKetThucLop(DateTime ngayBatDau, string thoiGianHoc)
         {
             if (string.IsNullOrWhiteSpace(thoiGianHoc)) return ngayBatDau.AddMonths(2);
 
-            var mThang = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+)\s*tháng", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var mThang = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tháng", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (mThang.Success)
             {
-                int thang;
-                if (int.TryParse(mThang.Groups[1].Value, out thang) && thang > 0)
-                    return ngayBatDau.AddMonths(thang);
+                decimal thang;
+                if (decimal.TryParse(mThang.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out thang) && thang > 0)
+                {
+                    int thangNguyen = (int)Math.Floor(thang);
+                    int ngayLe = (int)Math.Round((thang - thangNguyen) * 30m);
+                    return ngayBatDau.AddMonths(thangNguyen).AddDays(ngayLe);
+                }
             }
 
-            var mTuan = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+)\s*tuần", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var mTuan = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tuần", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (mTuan.Success)
             {
-                int tuan;
-                if (int.TryParse(mTuan.Groups[1].Value, out tuan) && tuan > 0)
-                    return ngayBatDau.AddDays(tuan * 7);
+                decimal tuan;
+                if (decimal.TryParse(mTuan.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out tuan) && tuan > 0)
+                    return ngayBatDau.AddDays((int)Math.Round(tuan * 7m));
             }
 
             var mBuoi = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+)\s*buổi", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
@@ -268,12 +308,32 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         protected void btnDangKy_Click(object sender, EventArgs e)
         {
             string maLop = ddlLopHoc.SelectedValue;
-            string maHV = ddlHocVien.SelectedValue;
-            string maKH = ddlKhoaHoc.SelectedValue;
-            if (string.IsNullOrEmpty(maLop)) { HienTB("Vui lòng chọn Lớp học phần (chưa khai giảng và còn chỗ)!", true); return; }
+            string maHV = LaHocVien() ? (Session["TenDangNhap"]?.ToString() ?? "") : ddlHocVien.SelectedValue;
+            if (string.IsNullOrEmpty(maLop))
+            {
+                HienTB("Vui lòng chọn Lớp học phần (chưa khai giảng và còn chỗ)!", true);
+                return;
+            }
 
-            // Kiểm tra thời hạn đăng ký: phải đăng ký trước ngày khai giảng
-            object kgObj = kncsdl.LayGiaTriDon("SELECT ngaykhaigiang FROM LOPHOC WHERE malop=@l", new[] { new SqlParameter("@l", maLop) });
+            DataTable dtLopChon = kncsdl.DocDuLieu("SELECT makhoahoc, ISNULL(dahuy, 0) AS dahuy, ngaykhaigiang FROM LOPHOC WHERE malop=@l",
+                new[] { new SqlParameter("@l", maLop) });
+            if (dtLopChon.Rows.Count == 0)
+            {
+                HienTB("Lớp học không tồn tại!", true);
+                TaiDanhMuc();
+                TaiDuLieu();
+                return;
+            }
+            if (Convert.ToBoolean(dtLopChon.Rows[0]["dahuy"]))
+            {
+                HienTB($"Lớp {maLop} đã bị hủy do thiếu sĩ số, không thể đăng ký!", true);
+                TaiDanhMuc();
+                TaiDuLieu();
+                return;
+            }
+            string maKH = dtLopChon.Rows[0]["makhoahoc"].ToString();
+
+            object kgObj = dtLopChon.Rows[0]["ngaykhaigiang"];
             if (kgObj != null && kgObj != DBNull.Value && Convert.ToDateTime(kgObj).Date <= DateTime.Today)
             {
                 HienTB($"Lớp {maLop} đã khai giảng ngày {Convert.ToDateTime(kgObj):dd/MM/yyyy}, đã đóng cổng đăng ký!", true);
@@ -282,29 +342,68 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 return;
             }
 
-            int siSoHienTai = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY WHERE malop=@l", new[] { new SqlParameter("@l", maLop) }));
-            if (siSoHienTai >= SI_SO_CHUAN) { HienTB("Lớp học này đã đủ 10/10 học viên! Vui lòng chọn lớp khác.", true); return; }
+            // M6: Chặn đăng ký khóa Tạm ngưng
+            string trangThaiKH = kncsdl.LayGiaTriDon("SELECT trangthaikhoahoc FROM KHOAHOC WHERE makhoahoc=@kh", new[] { new SqlParameter("@kh", maKH) })?.ToString() ?? "";
+            if (trangThaiKH == "Tạm ngưng")
+            {
+                HienTB("Khóa học này đang tạm ngưng, không thể đăng ký thêm!", true);
+                return;
+            }
 
-            int daDK = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY WHERE mahocvien=@hv AND malop=@l", new[] { new SqlParameter("@hv", maHV), new SqlParameter("@l", maLop) }));
-            if (daDK > 0) { HienTB("Học viên đã đăng ký lớp học này rồi!", true); return; }
+            int trungKhoa = Convert.ToInt32(kncsdl.LayGiaTriDon(
+                "SELECT COUNT(*) FROM DANGKY WHERE mahocvien=@hv AND makhoahoc=@kh AND ISNULL(trangthailop, N'') NOT LIKE N'%Hủy lớp%'",
+                new[] { new SqlParameter("@hv", maHV), new SqlParameter("@kh", maKH) }));
+            if (trungKhoa > 0)
+            {
+                HienTB("Học viên đã đăng ký khóa học này rồi! Nếu muốn đổi lớp, hãy dùng chức năng Đổi Lớp.", true);
+                return;
+            }
 
             if (KiemTraTrungLichVaGoiY(maHV, maLop, maKH)) return;
 
-            int count = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY")) + 1;
-            string maDK = "DK" + count.ToString("D2");
-            while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY WHERE madangky=@m", new[] { new SqlParameter("@m", maDK) })) > 0)
-                maDK = "DK" + (++count).ToString("D2");
+            // M2: Sử dụng Transaction để ngăn vượt quá sĩ số
+            using (SqlConnection conn = new SqlConnection(kncsdl.ChuoiKetNoi))
+            {
+                conn.Open();
+                SqlTransaction tran = conn.BeginTransaction(IsolationLevel.Serializable);
+                try
+                {
+                    int siSoHienTai = Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM DANGKY WITH (UPDLOCK) WHERE malop='" + maLop + "'", conn, tran).ExecuteScalar());
+                    if (siSoHienTai >= SI_SO_CHUAN)
+                    {
+                        tran.Rollback();
+                        HienTB("Lớp học này đã đủ 10/10 học viên! Vui lòng chọn lớp khác.", true);
+                        return;
+                    }
 
-            string sql = @"INSERT INTO DANGKY(madangky, ngaydangky, sotiendong, trangthaithanhtoan, mahocvien, makhoahoc, malop, trangthailop)
-                           VALUES(@ma, @ngay, 0, N'Chưa thanh toán', @hv, @kh, @lop, N'Chờ mở lớp')";
-            kncsdl.ThucThiLenh(sql, new[] {
-                new SqlParameter("@ma", maDK),
-                new SqlParameter("@ngay", string.IsNullOrEmpty(txtNgayDK.Text) ? DateTime.Now.ToString("yyyy-MM-dd") : txtNgayDK.Text),
-                new SqlParameter("@hv", maHV), new SqlParameter("@kh", maKH), new SqlParameter("@lop", maLop)
-            });
-            CapNhatTrangThaiSiSoLop(maLop);
-            HienTB($"Đăng ký lớp {maLop} thành công (Sĩ số: {siSoHienTai + 1}/10)! Hãy bấm nút 'Đóng HP' ở bảng bên phải để quét mã QR chuyển khoản.");
-            txtMaDK.Text = "";
+                    int count = Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM DANGKY WITH (UPDLOCK)", conn, tran).ExecuteScalar()) + 1;
+                    string maDK = "DK" + count.ToString("D2");
+                    while (Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM DANGKY WHERE madangky='" + maDK + "'", conn, tran).ExecuteScalar()) > 0)
+                        maDK = "DK" + (++count).ToString("D2");
+
+                    string sql = @"INSERT INTO DANGKY(madangky, ngaydangky, sotiendong, trangthaithanhtoan, mahocvien, makhoahoc, malop, trangthailop)
+                                   VALUES(@ma, GETDATE(), 0, N'Chưa thanh toán', @hv, @kh, @lop, N'Chờ mở lớp')";
+                    SqlCommand cmdInsert = new SqlCommand(sql, conn, tran);
+                    cmdInsert.Parameters.AddWithValue("@ma", maDK);
+                    cmdInsert.Parameters.AddWithValue("@hv", maHV);
+                    cmdInsert.Parameters.AddWithValue("@kh", maKH);
+                    cmdInsert.Parameters.AddWithValue("@lop", maLop);
+                    cmdInsert.ExecuteNonQuery();
+
+                    tran.Commit();
+
+                    CapNhatTrangThaiSiSoLop(maLop);
+                    kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Đăng ký học phần", $"Hồ sơ {maDK}: HV {maHV} đăng ký lớp {maLop}");
+                    HienTB($"Đăng ký lớp {maLop} thành công (Sĩ số: {siSoHienTai + 1}/10)! Hãy bấm nút 'Đóng HP' ở bảng bên phải để quét mã QR chuyển khoản.");
+                    txtMaDK.Text = "";
+                }
+                catch
+                {
+                    tran.Rollback();
+                    HienTB("Có lỗi trong quá trình xử lý đăng ký, vui lòng thử lại!", true);
+                }
+            }
+
             gvDangKy.PageIndex = 0;
             TaiDanhMuc();
             CapNhatHocPhiTheoKhoa(ddlKhoaHoc.SelectedValue);
@@ -316,24 +415,89 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         {
             string maDK = txtMaDK.Text.Trim();
             string maLopMoi = ddlLopHoc.SelectedValue;
-            if (string.IsNullOrEmpty(maDK) || string.IsNullOrEmpty(maLopMoi)) { HienTB("Vui lòng chọn nút Đổi lớp ở danh sách bên phải!", true); return; }
+            if (string.IsNullOrEmpty(maDK) || string.IsNullOrEmpty(maLopMoi))
+            {
+                HienTB("Vui lòng chọn nút Đổi lớp ở danh sách bên phải!", true);
+                return;
+            }
+
+            if (!KiemTraQuyenTrenDangKy(maDK))
+            {
+                HienTB("Bạn không có quyền thao tác trên hồ sơ đăng ký này!", true);
+                return;
+            }
+
+            DataTable dtLopMoi = kncsdl.DocDuLieu("SELECT makhoahoc, ISNULL(dahuy, 0) AS dahuy, ngaykhaigiang FROM LOPHOC WHERE malop=@l",
+                new[] { new SqlParameter("@l", maLopMoi) });
+            if (dtLopMoi.Rows.Count == 0 || Convert.ToBoolean(dtLopMoi.Rows[0]["dahuy"]))
+            {
+                HienTB("Lớp mới không tồn tại hoặc đã bị hủy, vui lòng chọn lớp khác!", true);
+                TaiDanhMuc();
+                TaiDuLieu();
+                return;
+            }
+
+            // M8: Chặn đổi nếu lớp mới đã khai giảng
+            object kgObjMoi = dtLopMoi.Rows[0]["ngaykhaigiang"];
+            if (kgObjMoi != null && kgObjMoi != DBNull.Value && Convert.ToDateTime(kgObjMoi).Date <= DateTime.Today)
+            {
+                HienTB($"Lớp mới {maLopMoi} đã khai giảng, không thể đổi sang!", true);
+                return;
+            }
+
+            string maKHLopMoi = dtLopMoi.Rows[0]["makhoahoc"].ToString();
 
             int siSo = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY WHERE malop=@l", new[] { new SqlParameter("@l", maLopMoi) }));
-            if (siSo >= SI_SO_CHUAN) { HienTB("Lớp mới đã đủ 10/10 học viên, vui lòng chọn lớp khác!", true); return; }
+            if (siSo >= SI_SO_CHUAN)
+            {
+                HienTB("Lớp mới đã đủ 10/10 học viên, vui lòng chọn lớp khác!", true);
+                return;
+            }
 
-            DataTable dtDK = kncsdl.DocDuLieu("SELECT mahocvien, makhoahoc, malop FROM DANGKY WHERE madangky=@ma", new[] { new SqlParameter("@ma", maDK) });
+            DataTable dtDK = kncsdl.DocDuLieu(@"SELECT dk.mahocvien, dk.makhoahoc, dk.malop, ISNULL(dk.trangthailop, N'') AS trangthailop, 
+                                                       l.ngaykhaigiang AS khcu
+                                                FROM DANGKY dk LEFT JOIN LOPHOC l ON dk.malop = l.malop 
+                                                WHERE dk.madangky=@ma",
+                new[] { new SqlParameter("@ma", maDK) });
             if (dtDK.Rows.Count == 0) return;
+
+            if (dtDK.Rows[0]["trangthailop"].ToString().Contains("Hủy lớp"))
+            {
+                HienTB("Hồ sơ thuộc lớp đã hủy không thể đổi lớp trực tiếp!", true);
+                return;
+            }
+
+            // M8: Chặn đổi nếu lớp cũ đã bắt đầu học
+            object khCu = dtDK.Rows[0]["khcu"];
+            if (khCu != null && khCu != DBNull.Value && Convert.ToDateTime(khCu).Date <= DateTime.Today)
+            {
+                HienTB("Không thể đổi lớp vì lớp học cũ đã bắt đầu (khai giảng)!", true);
+                return;
+            }
+
+            if (dtDK.Rows[0]["malop"]?.ToString() == maLopMoi)
+            {
+                HienTB("Học viên đang nằm trong lớp này, không cần chuyển!", true);
+                return;
+            }
+
+            if (dtDK.Rows[0]["makhoahoc"].ToString() != maKHLopMoi)
+            {
+                HienTB("Chỉ được phép đổi sang lớp khác thuộc CÙNG KHÓA HỌC!", true);
+                return;
+            }
 
             string maHV = dtDK.Rows[0]["mahocvien"].ToString();
             string lopCu = dtDK.Rows[0]["malop"]?.ToString();
 
-            if (KiemTraTrungLichVaGoiY(maHV, maLopMoi, ddlKhoaHoc.SelectedValue, maDK)) return;
+            if (KiemTraTrungLichVaGoiY(maHV, maLopMoi, maKHLopMoi, maDK)) return;
 
-            kncsdl.ThucThiLenh("UPDATE DANGKY SET malop=@lop, makhoahoc=@kh WHERE madangky=@ma",
-                new[] { new SqlParameter("@lop", maLopMoi), new SqlParameter("@kh", ddlKhoaHoc.SelectedValue), new SqlParameter("@ma", maDK) });
+            kncsdl.ThucThiLenh("UPDATE DANGKY SET malop=@lop WHERE madangky=@ma",
+                new[] { new SqlParameter("@lop", maLopMoi), new SqlParameter("@ma", maDK) });
 
             CapNhatTrangThaiSiSoLop(lopCu);
             CapNhatTrangThaiSiSoLop(maLopMoi);
+            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Đổi lớp học", $"Hồ sơ {maDK} chuyển từ {lopCu} sang {maLopMoi}");
             HienTB($"Đã chuyển đăng ký {maDK} sang lớp {maLopMoi} thành công!");
             TaiDanhMuc();
             TaiDuLieu();
@@ -347,11 +511,18 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 string maLopChon = parts[0];
                 string maKHChon = parts[1];
 
-           
                 object kgObj = kncsdl.LayGiaTriDon("SELECT ngaykhaigiang FROM LOPHOC WHERE malop=@l", new[] { new SqlParameter("@l", maLopChon) });
                 if (kgObj != null && kgObj != DBNull.Value && Convert.ToDateTime(kgObj).Date <= DateTime.Today)
                 {
                     HienTB($"Lớp {maLopChon} đã đến ngày khai giảng ({Convert.ToDateTime(kgObj):dd/MM/yyyy}) nên đã đóng đăng ký!", true);
+                    TaiDuLieu();
+                    return;
+                }
+
+                object huyObj = kncsdl.LayGiaTriDon("SELECT ISNULL(dahuy, 0) FROM LOPHOC WHERE malop=@l", new[] { new SqlParameter("@l", maLopChon) });
+                if (huyObj != null && huyObj != DBNull.Value && Convert.ToBoolean(huyObj))
+                {
+                    HienTB($"Lớp {maLopChon} đã bị hủy do thiếu sĩ số nên không thể đăng ký!", true);
                     TaiDuLieu();
                     return;
                 }
@@ -363,7 +534,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                     ddlLopHoc.SelectedValue = maLopChon;
                 CapNhatHocPhiTheoKhoa(maKHChon);
 
-             
+                txtMaDK.Text = "";
                 upPhieuDangKy.Update();
                 HienTB($"Đã chọn lớp {maLopChon}. Hãy bấm 'Xác nhận Đăng ký' ở khung bên trái!");
             }
@@ -373,7 +544,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         {
             if (e.CommandName == "ChonDK")
             {
-                DataTable dt = kncsdl.DocDuLieu("SELECT * FROM DANGKY WHERE madangky=@m", new[] { new SqlParameter("@m", e.CommandArgument.ToString()) });
+                string maDK = e.CommandArgument.ToString();
+                if (!KiemTraQuyenTrenDangKy(maDK)) return;
+
+                DataTable dt = kncsdl.DocDuLieu("SELECT * FROM DANGKY WHERE madangky=@m", new[] { new SqlParameter("@m", maDK) });
                 if (dt.Rows.Count > 0)
                 {
                     DataRow r = dt.Rows[0];
@@ -385,6 +559,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                     CapNhatHocPhiTheoKhoa(r["makhoahoc"].ToString());
                     if (r["malop"] != DBNull.Value && ddlLopHoc.Items.FindByValue(r["malop"].ToString()) != null)
                         ddlLopHoc.SelectedValue = r["malop"].ToString();
+                    upPhieuDangKy.Update();
                 }
             }
             else if (e.CommandName == "DongHocPhi")
@@ -392,6 +567,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 pnlTB.Visible = false;
                 string[] parts = e.CommandArgument.ToString().Split('|');
                 string maDK = parts[0];
+
+                if (!KiemTraQuyenTrenDangKy(maDK))
+                {
+                    HienTB("Bạn không có quyền thao tác trên hồ sơ này!", true);
+                    return;
+                }
+
+                string ttLop = kncsdl.LayGiaTriDon("SELECT ISNULL(trangthailop, N'') FROM DANGKY WHERE madangky=@dk", new[] { new SqlParameter("@dk", maDK) })?.ToString() ?? "";
+                if (ttLop.Contains("Hủy lớp"))
+                {
+                    HienTB("Hồ sơ này thuộc lớp đã hủy, không thể đóng thêm học phí!", true);
+                    return;
+                }
 
                 object conNoObj = kncsdl.LayGiaTriDon(@"SELECT (kh.hocphi - ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0))
                                                        FROM DANGKY dk JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
@@ -410,12 +598,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             }
             else if (e.CommandName == "MoYeuCauHoanTien")
             {
-                MoPopupNhapThongTinHoanTien(e.CommandArgument.ToString());
+                string maDK = e.CommandArgument.ToString();
+                if (!KiemTraQuyenTrenDangKy(maDK))
+                {
+                    HienTB("Bạn không có quyền yêu cầu hoàn tiền cho hồ sơ này!", true);
+                    return;
+                }
+                MoPopupNhapThongTinHoanTien(maDK);
             }
-
             else if (e.CommandName == "XemBienLaiHoanHV")
             {
                 string maDK = e.CommandArgument.ToString();
+                if (!KiemTraQuyenTrenDangKy(maDK)) return;
+
                 DataTable dt = kncsdl.DocDuLieu(@"SELECT TOP 1 ngaythu, ABS(sotienthu) AS sotienhoan, noidungthu 
                                                   FROM PHIEUTHU 
                                                   WHERE madangky = @dk AND (phuongthucthanhtoan = N'Hoàn tiền học phí' OR sotienthu < 0)
@@ -451,6 +646,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         {
             string maDK = hfMaDKHuy.Value;
             if (string.IsNullOrEmpty(maDK)) return;
+
+            if (!KiemTraQuyenTrenDangKy(maDK))
+            {
+                HienTB("Bạn không có quyền hủy đăng ký của học viên khác!", true);
+                return;
+            }
+
             if (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM PHIEUTHU WHERE madangky=@m", new[] { new SqlParameter("@m", maDK) })) > 0)
             {
                 HienTB("Đăng ký này đã phát sinh Phiếu thu (hoặc đang chờ duyệt biên lai), không thể xóa!", true);
@@ -459,6 +661,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             string lopCu = kncsdl.LayGiaTriDon("SELECT malop FROM DANGKY WHERE madangky=@m", new[] { new SqlParameter("@m", maDK) })?.ToString();
             kncsdl.ThucThiLenh("DELETE FROM DANGKY WHERE madangky=@m", new[] { new SqlParameter("@m", maDK) });
             CapNhatTrangThaiSiSoLop(lopCu);
+            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Hủy đăng ký học phần", $"Xóa hồ sơ đăng ký {maDK}");
             HienTB("Đã hủy đăng ký học phần thành công!");
             if (gvDangKy.Rows.Count == 1 && gvDangKy.PageIndex > 0) gvDangKy.PageIndex--;
             TaiDanhMuc();
@@ -469,6 +672,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         {
             string maDK = hfMaDKThanhToan.Value;
             if (string.IsNullOrEmpty(maDK)) return;
+
+            if (!KiemTraQuyenTrenDangKy(maDK))
+            {
+                HienTB("Bạn không có quyền gửi biên lai cho hồ sơ này!", true);
+                return;
+            }
+
+            string ttLop = kncsdl.LayGiaTriDon("SELECT ISNULL(trangthailop, N'') FROM DANGKY WHERE madangky=@dk", new[] { new SqlParameter("@dk", maDK) })?.ToString() ?? "";
+            if (ttLop.Contains("Hủy lớp"))
+            {
+                HienTB("Hồ sơ thuộc lớp đã hủy, không thể đóng học phí!", true);
+                return;
+            }
 
             if (!fuMinhChungCK.HasFile)
             {
@@ -534,6 +750,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                     cmdDK.ExecuteNonQuery();
 
                     tran.Commit();
+                    kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Gửi biên lai QR", $"Hồ sơ {maDK}: {conNo:N0}đ");
                     HienTB($"Đã gửi ảnh biên lai chuyển khoản ({conNo:N0} đ) cho hồ sơ {maDK}! Vui lòng chờ Nhân viên/Kế toán xác nhận ở mục Phiếu thu.");
                     TaiDuLieu();
                 }
@@ -547,6 +764,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
 
         protected void btnGhepLop_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV())
+            {
+                HienTB("Bạn không có quyền thực hiện ghép lớp!", true);
+                return;
+            }
+
             string lopThieu = ddlLopThieu.SelectedValue;
             string lopDich = ddlLopDich.SelectedValue;
 
@@ -561,6 +784,21 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 return;
             }
 
+            object huyDich = kncsdl.LayGiaTriDon("SELECT ISNULL(dahuy, 0) FROM LOPHOC WHERE malop=@l", new[] { new SqlParameter("@l", lopDich) });
+            if (huyDich != null && huyDich != DBNull.Value && Convert.ToBoolean(huyDich))
+            {
+                HienTB("Lớp đích đã bị hủy, vui lòng chọn lớp khác!", true);
+                return;
+            }
+
+            string maKHThieu = kncsdl.LayGiaTriDon("SELECT makhoahoc FROM LOPHOC WHERE malop=@l", new[] { new SqlParameter("@l", lopThieu) })?.ToString();
+            string maKHDich = kncsdl.LayGiaTriDon("SELECT makhoahoc FROM LOPHOC WHERE malop=@l", new[] { new SqlParameter("@l", lopDich) })?.ToString();
+            if (maKHThieu != maKHDich)
+            {
+                HienTB("Không thể ghép! Lớp thiếu và Lớp đích phải thuộc CÙNG MỘT KHÓA HỌC.", true);
+                return;
+            }
+
             int ssThieu = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY WHERE malop=@l", new[] { new SqlParameter("@l", lopThieu) }));
             int ssDich = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY WHERE malop=@l", new[] { new SqlParameter("@l", lopDich) }));
 
@@ -570,12 +808,23 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 return;
             }
 
-            string maKHDich = kncsdl.LayGiaTriDon("SELECT makhoahoc FROM LOPHOC WHERE malop=@l", new[] { new SqlParameter("@l", lopDich) })?.ToString();
-            kncsdl.ThucThiLenh("UPDATE DANGKY SET malop=@dich, makhoahoc=@kh WHERE malop=@thieu",
-                new[] { new SqlParameter("@dich", lopDich), new SqlParameter("@kh", maKHDich), new SqlParameter("@thieu", lopThieu) });
+            DataTable dtHVThieu = kncsdl.DocDuLieu("SELECT dk.mahocvien, hv.hoten FROM DANGKY dk JOIN HOCVIEN hv ON dk.mahocvien = hv.mahocvien WHERE dk.malop=@l",
+                new[] { new SqlParameter("@l", lopThieu) });
+            foreach (DataRow rHV in dtHVThieu.Rows)
+            {
+                if (KiemTraTrungLichVaGoiY(rHV["mahocvien"].ToString(), lopDich, maKHDich))
+                {
+                    HienTB($"Không thể ghép! Học viên {rHV["hoten"]} ({rHV["mahocvien"]}) bị trùng lịch học với lớp đích {lopDich}.", true);
+                    return;
+                }
+            }
+
+            kncsdl.ThucThiLenh("UPDATE DANGKY SET malop=@dich WHERE malop=@thieu",
+                new[] { new SqlParameter("@dich", lopDich), new SqlParameter("@thieu", lopThieu) });
 
             CapNhatTrangThaiSiSoLop(lopThieu);
             CapNhatTrangThaiSiSoLop(lopDich);
+            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Ghép lớp thiếu sĩ số", $"Ghép {ssThieu} HV từ {lopThieu} sang {lopDich}");
             HienTB($"Đã ghép toàn bộ {ssThieu} học viên từ lớp {lopThieu} sang lớp {lopDich} thành công!");
             TaiDanhMuc();
             TaiDuLieu();
@@ -583,6 +832,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
 
         protected void btnMoDacCach_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV())
+            {
+                HienTB("Bạn không có quyền duyệt mở lớp đặc cách!", true);
+                return;
+            }
+
             string lopThieu = ddlLopThieu.SelectedValue;
             if (string.IsNullOrEmpty(lopThieu))
             {
@@ -592,12 +847,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
 
             kncsdl.ThucThiLenh("UPDATE DANGKY SET trangthailop=N'Đã mở lớp (Đặc cách)' WHERE malop=@l",
                 new[] { new SqlParameter("@l", lopThieu) });
+            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Mở lớp đặc cách", $"Duyệt mở lớp đặc cách {lopThieu}");
             HienTB($"Đã duyệt mở lớp đặc cách cho lớp {lopThieu}!");
             TaiDuLieu();
         }
 
         protected void btnHuyLopThieu_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV())
+            {
+                HienTB("Bạn không có quyền hủy lớp học!", true);
+                return;
+            }
+
             string lopThieu = ddlLopThieu.SelectedValue;
             if (string.IsNullOrEmpty(lopThieu))
             {
@@ -609,8 +871,30 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             string trangThaiHuy = $"Hủy lớp ({tenLopHuy})";
             if (trangThaiHuy.Length > 200) trangThaiHuy = trangThaiHuy.Substring(0, 199) + ")";
 
-            kncsdl.ThucThiLenh("UPDATE DANGKY SET malop=NULL, trangthailop=@tt WHERE malop=@l",
-                new[] { new SqlParameter("@tt", trangThaiHuy), new SqlParameter("@l", lopThieu) });
+            using (SqlConnection conn = new SqlConnection(kncsdl.ChuoiKetNoi))
+            {
+                conn.Open();
+                SqlTransaction tran = conn.BeginTransaction();
+                try
+                {
+                    SqlCommand cmdDK = new SqlCommand("UPDATE DANGKY SET malop=NULL, trangthailop=@tt WHERE malop=@l", conn, tran);
+                    cmdDK.Parameters.AddWithValue("@tt", trangThaiHuy);
+                    cmdDK.Parameters.AddWithValue("@l", lopThieu);
+                    cmdDK.ExecuteNonQuery();
+
+                    SqlCommand cmdLop = new SqlCommand("UPDATE LOPHOC SET dahuy = 1 WHERE malop=@l", conn, tran);
+                    cmdLop.Parameters.AddWithValue("@l", lopThieu);
+                    cmdLop.ExecuteNonQuery();
+
+                    tran.Commit();
+                }
+                catch
+                {
+                    tran.Rollback();
+                    HienTB("Có lỗi xảy ra khi hủy lớp. Vui lòng thử lại!", true);
+                    return;
+                }
+            }
             kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Hủy lớp thiếu sĩ số", $"Hủy lớp {lopThieu} ({tenLopHuy})");
             HienTB($"Đã hủy lớp '{tenLopHuy}' và lưu thông tin bảo lưu học phí!");
             TaiDanhMuc();
@@ -619,6 +903,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
 
         private void MoPopupNhapThongTinHoanTien(string maDK)
         {
+            if (!KiemTraQuyenTrenDangKy(maDK)) return;
+
             DataTable dt = kncsdl.DocDuLieu(@"SELECT dk.madangky, dk.trangthailop, hv.hoten,
                                                      ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) AS dadong
                                               FROM DANGKY dk
@@ -635,6 +921,14 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 return;
             }
 
+            // M1: Server chặn yêu cầu hoàn tiền nếu lớp KHÔNG BỊ HỦY
+            string ttHienTai = dt.Rows[0]["trangthailop"]?.ToString() ?? "";
+            if (!ttHienTai.Contains("Hủy lớp"))
+            {
+                HienTB("Hồ sơ này không thuộc lớp bị hủy, không thể yêu cầu hoàn tiền!", true);
+                return;
+            }
+
             hfMaDKHoanTien.Value = maDK;
             litHTMaDK.Text = HttpUtility.HtmlEncode($"{maDK} - {dt.Rows[0]["hoten"]}");
             litHTSoTien.Text = daDong.ToString("N0") + " VNĐ";
@@ -642,7 +936,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             txtNganHangHT.Text = "";
             txtSoTKHT.Text = "";
 
-            // Nếu đã nhập STK trước đó thì tách ra điền sẵn để học viên dễ sửa lại
             string ttCu = dt.Rows[0]["trangthailop"]?.ToString() ?? "";
             int s1 = ttCu.IndexOf('[');
             int s2 = ttCu.IndexOf(']');
@@ -672,6 +965,22 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             string maDK = hfMaDKHoanTien.Value;
             if (string.IsNullOrEmpty(maDK)) return;
 
+            if (!KiemTraQuyenTrenDangKy(maDK))
+            {
+                HienTB("Bạn không có quyền gửi thông tin hoàn tiền cho hồ sơ này!", true);
+                return;
+            }
+
+            string ttCu = kncsdl.LayGiaTriDon("SELECT ISNULL(trangthailop, N'Hủy lớp') FROM DANGKY WHERE madangky=@dk",
+                new[] { new SqlParameter("@dk", maDK) })?.ToString() ?? "Hủy lớp";
+
+            // M1: Kiểm tra thêm ở server
+            if (!ttCu.Contains("Hủy lớp"))
+            {
+                HienTB("Hồ sơ này không thuộc lớp bị hủy, không thể lưu STK hoàn tiền!", true);
+                return;
+            }
+
             string hinhThuc = ddlHinhThucHoan.SelectedValue;
             string thongTinNhan = "";
 
@@ -681,9 +990,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             }
             else
             {
-                string nh = txtNganHangHT.Text.Trim();
-                string stk = txtSoTKHT.Text.Trim();
-                string chuTK = txtChuTKHT.Text.Trim().ToUpper();
+                string nh = txtNganHangHT.Text.Trim().Replace("-", " ");
+                string stk = txtSoTKHT.Text.Trim().Replace("-", "");
+                string chuTK = txtChuTKHT.Text.Trim().ToUpper().Replace("-", " ");
 
                 if (string.IsNullOrEmpty(nh) || string.IsNullOrEmpty(stk) || string.IsNullOrEmpty(chuTK))
                 {
@@ -694,12 +1003,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 thongTinNhan = $"{nh}-{stk}-{chuTK}";
             }
 
-            string ttCu = kncsdl.LayGiaTriDon("SELECT ISNULL(trangthailop, N'Hủy lớp') FROM DANGKY WHERE madangky=@dk",
-                new[] { new SqlParameter("@dk", maDK) })?.ToString() ?? "Hủy lớp";
-
             int idxDash = ttCu.IndexOf(" - ");
             string prefixLop = idxDash > 0 ? ttCu.Substring(0, idxDash) : ttCu;
             string ttMoi = $"{prefixLop} - Chờ hoàn [{thongTinNhan}]";
+            if (ttMoi.Length > 200) ttMoi = ttMoi.Substring(0, 199) + "]";
 
             kncsdl.ThucThiLenh("UPDATE DANGKY SET trangthailop=@tt, trangthaithanhtoan=N'Chờ hoàn tiền' WHERE madangky=@dk",
                 new[] { new SqlParameter("@tt", ttMoi), new SqlParameter("@dk", maDK) });
@@ -711,7 +1018,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             TaiDuLieu();
         }
 
-        // Sắp xếp đẩy các yêu cầu "Chờ hoàn" lên đầu danh sách
         private void TaiDanhSachLopBiHuy()
         {
             string sql = @"SELECT dk.madangky, hv.mahocvien, hv.hoten, hv.dienthoai, kh.tenkhoahoc,
@@ -747,12 +1053,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
 
         protected void btnXemLopHuyHoanTien_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV())
+            {
+                HienTB("Bạn không có quyền truy cập danh sách hoàn tiền!", true);
+                return;
+            }
             TaiDanhSachLopBiHuy();
             ScriptManager.RegisterStartupScript(this, GetType(), "modal_lophuy", "moModalLopBiHuy();", true);
         }
 
         protected void gvLopBiHuy_RowCommand(object sender, GridViewCommandEventArgs e)
         {
+            if (!LaQuanTriHoacNV()) return;
+
             if (e.CommandName == "MoYeuCauHoanTien")
             {
                 MoPopupNhapThongTinHoanTien(e.CommandArgument.ToString());
@@ -786,7 +1099,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 litAdminHTSTK.Text = HttpUtility.HtmlEncode(thongTinSTK);
                 litAdminHTSoTien.Text = daDong.ToString("N0") + " VNĐ";
 
-                // Tách Ngân hàng & STK để sinh mã VietQR chuyển trả cho học viên
                 if (thongTinSTK.Contains("Tiền mặt"))
                 {
                     pnlQRHoanTienBox.Visible = false;
@@ -806,9 +1118,14 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             }
         }
 
-        // ADMIN GỬI ẢNH CHỤP BIÊN LAI HOÀN TIỀN & BẤM XÁC NHẬN ĐÃ HOÀN TIỀN
         protected void btnXacNhanHoanTienAdmin_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV())
+            {
+                HienTB("Chỉ Quản trị viên hoặc Nhân viên kế toán mới có quyền xác nhận hoàn tiền!", true);
+                return;
+            }
+
             string maDK = hfMaDKAdminHoanTien.Value;
             if (string.IsNullOrEmpty(maDK)) return;
 
@@ -843,6 +1160,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             if (daDong <= 0)
             {
                 HienTB("Hồ sơ này đã được hoàn tiền trước đó!", true);
+                return;
+            }
+
+            // C3: Chặn nếu hồ sơ còn biên lai chưa duyệt
+            int dangCho = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM PHIEUTHU WHERE madangky=@dk AND noidungthu LIKE N'Chờ xác nhận%'",
+                new[] { new SqlParameter("@dk", maDK) }));
+            if (dangCho > 0)
+            {
+                HienTB("Hồ sơ này đang có biên lai quét QR đóng học phí chờ duyệt! Vui lòng từ chối biên lai đó trước khi hoàn tiền.", true);
                 return;
             }
 
@@ -935,32 +1261,61 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             litTB.Text = HttpUtility.HtmlEncode(msg);
         }
 
+        // M4: Đã bổ sung lọc thêm khoảng thời gian lớp học để không bắt trùng khi lớp cũ đã kết thúc.
         private bool KiemTraTrungLichVaGoiY(string maHV, string maLopMoi, string maKH, string maDKBoQua = "")
         {
-            DataTable dtLichMoi = kncsdl.DocDuLieu("SELECT cahoc, thu, giohoc FROM LICHHOC WHERE malop=@l", new[] { new SqlParameter("@l", maLopMoi) });
-            if (dtLichMoi.Rows.Count == 0) return false;
+            DataTable dtLichMoi = kncsdl.DocDuLieu("SELECT l.ngaykhaigiang, kh.thoigianhoc, lh.cahoc, lh.thu FROM LICHHOC lh JOIN LOPHOC l ON lh.malop=l.malop JOIN KHOAHOC kh ON l.makhoahoc=kh.makhoahoc WHERE l.malop=@l", new[] { new SqlParameter("@l", maLopMoi) });
+            if (dtLichMoi.Rows.Count == 0 || dtLichMoi.Rows[0]["ngaykhaigiang"] == DBNull.Value) return false;
 
+            DateTime kgMoi = Convert.ToDateTime(dtLichMoi.Rows[0]["ngaykhaigiang"]).Date;
+            DateTime ktMoi = TinhNgayKetThucLop(kgMoi, dtLichMoi.Rows[0]["thoigianhoc"].ToString());
             string caMoi = dtLichMoi.Rows[0]["cahoc"].ToString().Trim();
             string thuMoi = dtLichMoi.Rows[0]["thu"].ToString().Trim();
-            DataTable dtTrung = kncsdl.DocDuLieu(@"SELECT l.tenlop FROM DANGKY dk JOIN LOPHOC l ON dk.malop = l.malop JOIN LICHHOC lh ON l.malop = lh.malop 
-                                                   WHERE dk.mahocvien = @hv AND (@madk = '' OR dk.madangky <> @madk) AND lh.cahoc = @ca AND lh.thu = @thu",
-                new[] { new SqlParameter("@hv", maHV), new SqlParameter("@madk", maDKBoQua ?? ""), new SqlParameter("@ca", caMoi), new SqlParameter("@thu", thuMoi) });
 
-            if (dtTrung.Rows.Count == 0) return false;
+            // Lấy tất cả lịch của học viên đang học (trong đó lớp chưa kết thúc)
+            DataTable dtTrung = kncsdl.DocDuLieu(@"SELECT l.malop, l.tenlop, lh.cahoc, lh.thu, l.ngaykhaigiang, kh.thoigianhoc 
+                                                   FROM DANGKY dk 
+                                                   JOIN LOPHOC l ON dk.malop = l.malop 
+                                                   JOIN KHOAHOC kh ON l.makhoahoc = kh.makhoahoc
+                                                   JOIN LICHHOC lh ON l.malop = lh.malop 
+                                                   WHERE dk.mahocvien = @hv AND (@madk = '' OR dk.madangky <> @madk) 
+                                                     AND ISNULL(l.dahuy, 0) = 0 AND l.ngaykhaigiang IS NOT NULL",
+                new[] { new SqlParameter("@hv", maHV), new SqlParameter("@madk", maDKBoQua ?? "") });
 
-            string lopBiTrung = dtTrung.Rows[0]["tenlop"].ToString();
-            DataTable dtGoiY1 = kncsdl.DocDuLieu(@"SELECT l.malop, l.tenlop, lh.cahoc, lh.thu, lh.giohoc FROM LOPHOC l JOIN LICHHOC lh ON l.malop = lh.malop 
-                                                   WHERE l.makhoahoc = @kh AND l.malop <> @lopmoi AND NOT (lh.cahoc = @ca AND lh.thu = @thu) AND (SELECT COUNT(*) FROM DANGKY d WHERE d.malop = l.malop) < 10",
-                new[] { new SqlParameter("@kh", maKH), new SqlParameter("@lopmoi", maLopMoi), new SqlParameter("@ca", caMoi), new SqlParameter("@thu", thuMoi) });
-
-            if (dtGoiY1.Rows.Count > 0)
+            string[] dsThuMoi = { "2", "3", "4", "5", "6", "7", "CN" };
+            foreach (DataRow rTrung in dtTrung.Rows)
             {
-                DataRow r = dtGoiY1.Rows[0];
-                HienTB($"TRÙNG LỊCH ({caMoi} - {thuMoi}) với '{lopBiTrung}'! GỢI Ý: Chọn lớp '{r["tenlop"]}' ({r["malop"]}) vào {r["cahoc"]} - {r["thu"]} không bị trùng!", true);
-                return true;
+                DateTime kgCu = Convert.ToDateTime(rTrung["ngaykhaigiang"]).Date;
+                DateTime ktCu = TinhNgayKetThucLop(kgCu, rTrung["thoigianhoc"].ToString());
+                // Không xét trùng nếu lớp đã học xong trước khi lớp mới bắt đầu, hoặc ngược lại
+                if (ktCu < kgMoi || ktMoi < kgCu) continue;
+
+                if (!string.Equals(rTrung["cahoc"].ToString().Trim(), caMoi, StringComparison.OrdinalIgnoreCase)) continue;
+
+                string thuCu = rTrung["thu"].ToString().ToUpper();
+                foreach (string t in dsThuMoi)
+                {
+                    if (thuMoi.ToUpper().Contains(t) && thuCu.Contains(t))
+                    {
+                        string lopBiTrung = rTrung["tenlop"].ToString();
+
+                        // Đã phát hiện trùng -> tìm lớp trống để gợi ý
+                        DataTable dtGoiY1 = kncsdl.DocDuLieu(@"SELECT l.malop, l.tenlop, lh.cahoc, lh.thu, lh.giohoc FROM LOPHOC l JOIN LICHHOC lh ON l.malop = lh.malop 
+                                                               WHERE ISNULL(l.dahuy, 0) = 0 AND l.makhoahoc = @kh AND l.malop <> @lopmoi AND NOT (lh.cahoc = @ca AND lh.thu = @thu) AND (SELECT COUNT(*) FROM DANGKY d WHERE d.malop = l.malop) < 10",
+                            new[] { new SqlParameter("@kh", maKH), new SqlParameter("@lopmoi", maLopMoi), new SqlParameter("@ca", caMoi), new SqlParameter("@thu", thuMoi) });
+
+                        if (dtGoiY1.Rows.Count > 0)
+                        {
+                            DataRow rGY = dtGoiY1.Rows[0];
+                            HienTB($"TRÙNG LỊCH ({caMoi} - {thuMoi}) với '{lopBiTrung}'! GỢI Ý: Chọn lớp '{rGY["tenlop"]}' ({rGY["malop"]}) vào {rGY["cahoc"]} - {rGY["thu"]} không bị trùng!", true);
+                            return true;
+                        }
+                        HienTB($"TRÙNG LỊCH HỌC ({caMoi} - {thuMoi}) với lớp '{lopBiTrung}'! Khóa học này không còn lớp nào khác giờ trống chỗ.", true);
+                        return true;
+                    }
+                }
             }
-            HienTB($"TRÙNG LỊCH HỌC ({caMoi} - {thuMoi}) với lớp '{lopBiTrung}'! Khóa học này không còn lớp nào khác giờ trống chỗ.", true);
-            return true;
+            return false;
         }
     }
 }

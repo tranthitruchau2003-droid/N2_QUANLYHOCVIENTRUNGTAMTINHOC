@@ -89,7 +89,7 @@
                     <div class="d-flex flex-wrap gap-2 mt-3">
                         <asp:Button ID="btnThemLop" runat="server" Text="Thêm Lớp & Lịch" CssClass="btn btn-sm btn-orange flex-grow-1" OnClick="btnThemLop_Click" />
                         <asp:Button ID="btnSuaLop" runat="server" Text="Cập nhật Lớp & Đổi Lịch" CssClass="btn btn-sm btn-primary-gradient flex-grow-1" OnClick="btnSuaLop_Click" />
-                        <asp:Button ID="btnLamMoi" runat="server" Text="Làm mới" CssClass="btn btn-sm btn-secondary flex-grow-1" OnClick="btnLamMoi_Click" />
+                        <asp:Button ID="btnLamMoi" runat="server" Text="Làm mới" CssClass="btn btn-sm btn-secondary flex-grow-1" OnClick="btnLamMoi_Click" CausesValidation="false" />
                     </div>
                 </div>
             </div>
@@ -109,7 +109,7 @@
                                 <asp:Literal ID="litGoiYLop" runat="server" />
                             </div>
                         </div>
-                        <asp:Button ID="btnTimLop" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTimLop_Click" />
+                        <asp:Button ID="btnTimLop" runat="server" ClientIDMode="Static" Text="Tìm" CssClass="btn btn-sm btn-primary-gradient" OnClick="btnTimLop_Click" CausesValidation="false" />
                     </asp:Panel>
                 </div>
                 <div class="card-body p-0">
@@ -131,6 +131,7 @@
                                 <ItemTemplate>
                                     <div class="d-flex gap-1">
                                         <asp:LinkButton ID="btnChon" runat="server" CommandName="ChonLop" CommandArgument='<%# Eval("malop") %>'
+                                            CausesValidation="false"
                                             Visible='<%# Session["Quyen"] != null && (Session["Quyen"].ToString() == "Admin" || Session["Quyen"].ToString() == "NhanVien") %>'
                                             CssClass="btn btn-sm btn-outline-primary" title="Sửa Lớp & Đổi Lịch học"><i class="bi bi-pencil"></i></asp:LinkButton>
                                         
@@ -139,6 +140,7 @@
                                             onclick="hienThiModalXoaLop('<%# Eval("malop") %>'); return false;"><i class="bi bi-trash"></i></button>
                                         
                                         <asp:LinkButton ID="btnDiemDanh" runat="server" CommandName="DiemDanh" CommandArgument='<%# Eval("malop") + "|" + Eval("tenlop") %>'
+                                            CausesValidation="false"
                                             Visible='<%# Session["Quyen"] != null && Session["Quyen"].ToString() != "HocVien" %>'
                                             CssClass="btn btn-sm btn-success fw-semibold text-nowrap"><i class="bi bi-person-check-fill me-1"></i> Điểm danh</asp:LinkButton>
                                     </div>
@@ -212,13 +214,13 @@
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <asp:Button ID="btnLuuDoiLichTKB" runat="server" Text="Lưu Lịch mới" CssClass="btn btn-sm btn-primary-gradient fw-bold" OnClick="btnLuuDoiLichTKB_Click" />
+                    <asp:Button ID="btnLuuDoiLichTKB" runat="server" Text="Lưu Lịch mới" CssClass="btn btn-sm btn-primary-gradient fw-bold" OnClick="btnLuuDoiLichTKB_Click" CausesValidation="false" />
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- POPUP ĐIỂM DANH -->
+    <!-- POPUP ĐIỂM DANH & XUẤT FILE ĐIỀU KIỆN THI -->
     <div class="modal fade" id="modalDiemDanh" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -234,9 +236,12 @@
                                 AutoPostBack="true" OnTextChanged="txtNgayDiemDanh_TextChanged" />
                             <asp:HiddenField ID="hfMaLopDiemDanh" runat="server" />
                         </div>
-                        <span class="small text-muted fw-semibold">
-                            <i class="bi bi-info-circle me-1 text-warning"></i>Nghỉ 2 buổi: Cảnh báo | Nghỉ &ge; 3 buổi: Cấm thi
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="small text-muted fw-semibold me-2">
+                                <i class="bi bi-info-circle me-1 text-warning"></i>Nghỉ 2 buổi: Cảnh báo | Nghỉ &ge; 3 buổi: Cấm thi
+                            </span>
+                            <asp:Button ID="btnXuatDSHocVienDuThi" runat="server" Text="Xuất DS Dự thi/Cấm thi" CssClass="btn btn-sm btn-outline-secondary fw-bold" OnClick="btnXuatDSHocVienDuThi_Click" CausesValidation="false" />
+                        </div>
                     </div>
                     <div class="table-responsive" style="max-height: 400px;">
                         <asp:GridView ID="gvHocVienLop" runat="server" CssClass="table table-bordered table-hover mb-0" AutoGenerateColumns="false" DataKeyNames="mahocvien" EmptyDataText="Chưa có học viên.">
@@ -246,6 +251,7 @@
                                     <ItemTemplate>
                                         <span class="fw-semibold"><%# Eval("hoten") %></span>
                                         <asp:Literal ID="litCanhBao" runat="server" Text='<%# Eval("CanhBao") %>' />
+                                        <asp:Literal ID="litHocPhi" runat="server" Text='<%# Eval("CanhBaoHocPhi") %>' />
                                     </ItemTemplate>
                                 </asp:TemplateField>
                                 <asp:TemplateField HeaderText="Trạng thái Điểm danh (Chuyên cần)" ItemStyle-Width="340">
@@ -269,7 +275,7 @@
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <asp:Button ID="btnLuuDiemDanh" runat="server" Text="Lưu kết quả Điểm danh" CssClass="btn btn-success fw-bold" OnClick="btnLuuDiemDanh_Click" />
+                    <asp:Button ID="btnLuuDiemDanh" runat="server" Text="Lưu kết quả Điểm danh" CssClass="btn btn-success fw-bold" OnClick="btnLuuDiemDanh_Click" CausesValidation="false" />
                 </div>
             </div>
         </div>
@@ -289,7 +295,7 @@
                 </div>
                 <div class="modal-footer justify-content-center border-0 pb-4">
                     <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
-                    <asp:LinkButton ID="btnXoaChinhThuc" runat="server" ClientIDMode="Static" CssClass="btn btn-danger px-4 d-none" OnClick="btnXoaChinhThuc_Click">Đồng ý</asp:LinkButton>
+                    <asp:LinkButton ID="btnXoaChinhThuc" runat="server" ClientIDMode="Static" CssClass="btn btn-danger px-4 d-none" OnClick="btnXoaChinhThuc_Click" CausesValidation="false">Đồng ý</asp:LinkButton>
                     <button type="button" class="btn btn-danger px-4" onclick="document.getElementById('btnXoaChinhThuc').click();">
                         <i class="bi bi-check-lg me-1"></i> Đồng ý
                     </button>
@@ -303,10 +309,16 @@
     <script>
         // @ts-nocheck
         function showModalDiemDanh() {
-            window.addEventListener('load', function () {
-                var myModal = new window.bootstrap.Modal(document.getElementById('modalDiemDanh'));
-                myModal.show();
-            });
+            var check = function () {
+                var el = document.getElementById('modalDiemDanh');
+                if (el && window.bootstrap) {
+                    var modal = window.bootstrap.Modal.getOrCreateInstance(el);
+                    modal.show();
+                } else {
+                    setTimeout(check, 50);
+                }
+            };
+            check();
         }
 
         function moModalDoiLich(maLop, tenLop, caHoc, thuHoc, gioHoc, phongHoc) {
@@ -318,7 +330,7 @@
             document.getElementById('ddlPhongHocTKB').value = phongHoc;
             var el = document.getElementById('modalDoiLichTKB');
             if (el && window.bootstrap) {
-                new window.bootstrap.Modal(el).show();
+                window.bootstrap.Modal.getOrCreateInstance(el).show();
             }
         }
 
@@ -327,8 +339,12 @@
             document.getElementById('maLopCanXoa').innerText = maLop;
             var el = document.getElementById('modalXoaLop');
             if (el && window.bootstrap) {
-                new window.bootstrap.Modal(el).show();
+                window.bootstrap.Modal.getOrCreateInstance(el).show();
             }
+        }
+
+       function boDauTiengViet(str) {
+            return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
         }
 
         function thietLapGoiYLop() {
@@ -340,10 +356,11 @@
             var items = list.querySelectorAll('.goi-y-item');
 
             function locGoiY() {
-                var kw = input.value.trim().toLowerCase();
+                var kw = boDauTiengViet(input.value.trim());
                 var co = false;
                 items.forEach(function (item) {
-                    if (kw !== '' && item.innerText.toLowerCase().indexOf(kw) !== -1) {
+                    var txt = boDauTiengViet(item.innerText);
+                    if (kw !== '' && txt.indexOf(kw) !== -1) {
                         item.style.display = 'block';
                         co = true;
                     } else {
@@ -356,9 +373,19 @@
             input.addEventListener('input', function () {
                 if (this.value.trim() === '') {
                     list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_Lop', 'txtTimLop');
                     btn.click();
                 } else {
                     locGoiY();
+                }
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_Lop', 'txtTimLop');
+                    btn.click();
                 }
             });
 
@@ -371,6 +398,7 @@
                     e.preventDefault();
                     input.value = this.getAttribute('data-value');
                     list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_Lop', 'txtTimLop');
                     btn.click();
                 });
             });
@@ -390,6 +418,18 @@
             var savedScroll = sessionStorage.getItem('scrollPos_LopHoc');
             if (savedScroll !== null) {
                 window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
+            }
+
+            var focusId = sessionStorage.getItem('focusSearch_Lop');
+            if (focusId) {
+                var el = document.getElementById(focusId);
+                if (el) {
+                    el.focus();
+                    if (typeof el.selectionStart === 'number') {
+                        el.selectionStart = el.selectionEnd = el.value.length;
+                    }
+                }
+                sessionStorage.removeItem('focusSearch_Lop');
             }
         });
 

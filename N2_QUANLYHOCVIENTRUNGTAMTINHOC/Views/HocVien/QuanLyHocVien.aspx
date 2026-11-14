@@ -81,7 +81,7 @@
                     <span class="text-nowrap"><i class="bi bi-table me-2"></i>Danh sách Học viên</span>
                     <div class="d-flex gap-2 w-100 justify-content-end">
                         <div class="position-relative flex-grow-1" style="max-width: 250px;">
-                            <asp:TextBox ID="txtTimKiem" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm"
+                            <asp:TextBox ID="txtTimKiem" runat="server" ClientIDMode="Static" TextMode="Search" CssClass="form-control form-control-sm"
                                 placeholder="Mã, tên hoặc SĐT..." autocomplete="off" onfocus="this.select();" />
                             <!-- KHUNG GỢI Ý TÙY CHỈNH THAY CHO DATALIST -->
                             <div id="goiYHV" class="list-group shadow position-absolute w-100"
@@ -157,7 +157,10 @@
             }
         }
 
-        // XỬ LÝ KHUNG GỢI Ý TÌM KIẾM
+       function boDauTiengViet(str) {
+            return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+        }
+
         function thietLapTimKiem(inputId, listId, btnId) {
             var input = document.getElementById(inputId);
             var list = document.getElementById(listId);
@@ -167,10 +170,10 @@
             var items = list.querySelectorAll('.goi-y-item');
 
             function locGoiY() {
-                var kw = input.value.trim().toLowerCase();
+                var kw = boDauTiengViet(input.value.trim());
                 var coKetQua = false;
                 items.forEach(function (item) {
-                    var text = item.innerText.toLowerCase();
+                    var text = boDauTiengViet(item.innerText);
                     if (kw !== '' && text.indexOf(kw) !== -1) {
                         item.style.display = 'block';
                         coKetQua = true;
@@ -184,9 +187,19 @@
             input.addEventListener('input', function () {
                 if (this.value.trim() === '') {
                     list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_HV', 'txtTimKiem');
                     btn.click();
                 } else {
                     locGoiY();
+                }
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_HV', 'txtTimKiem');
+                    btn.click();
                 }
             });
 
@@ -199,6 +212,7 @@
                     e.preventDefault();
                     input.value = this.getAttribute('data-value');
                     list.style.display = 'none';
+                    sessionStorage.setItem('focusSearch_HV', 'txtTimKiem');
                     btn.click();
                 });
             });
@@ -210,10 +224,23 @@
             });
         }
 
+        window.addEventListener('load', function () {
+            var focusId = sessionStorage.getItem('focusSearch_HV');
+            if (focusId) {
+                var el = document.getElementById(focusId);
+                if (el) {
+                    el.focus();
+                    if (typeof el.selectionStart === 'number') {
+                        el.selectionStart = el.selectionEnd = el.value.length;
+                    }
+                }
+                sessionStorage.removeItem('focusSearch_HV');
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', function () {
             thietLapTimKiem('txtTimKiem', 'goiYHV', 'btnTim');
 
-            // Tự động tắt thông báo sau 5 giây
             setTimeout(function () {
                 var tb = document.getElementById('pnlThongBao');
                 if (tb && tb.style.display !== 'none') {

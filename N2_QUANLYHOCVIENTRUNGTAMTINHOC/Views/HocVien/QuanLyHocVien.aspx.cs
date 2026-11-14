@@ -34,7 +34,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
 
         private void TaiDanhSach(string tuKhoa = "")
         {
-            string sql = "SELECT * FROM HOCVIEN WHERE (@kw = '' OR mahocvien LIKE @kw OR hoten LIKE @kw OR dienthoai LIKE @kw) ORDER BY mahocvien DESC";
+            string sql = "SELECT * FROM HOCVIEN WHERE (@kw = '' OR mahocvien COLLATE Latin1_General_CI_AI LIKE @kw OR hoten COLLATE Latin1_General_CI_AI LIKE @kw OR dienthoai COLLATE Latin1_General_CI_AI LIKE @kw) ORDER BY mahocvien DESC";
             SqlParameter[] p = { new SqlParameter("@kw", string.IsNullOrEmpty(tuKhoa) ? "" : "%" + tuKhoa + "%") };
             gvHocVien.DataSource = kncsdl.DocDuLieu(sql, p);
             gvHocVien.DataBind();
@@ -42,12 +42,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
 
         private void TaiGoiYTimKiem()
         {
-            DataTable dt = kncsdl.DocDuLieu("SELECT mahocvien, hoten, dienthoai FROM HOCVIEN");
+            DataTable dt = kncsdl.DocDuLieu("SELECT mahocvien, hoten, dienthoai FROM HOCVIEN ORDER BY mahocvien DESC");
             StringBuilder sb = new StringBuilder();
             foreach (DataRow r in dt.Rows)
             {
                 sb.AppendFormat("<button type=\"button\" class=\"list-group-item list-group-item-action py-2 px-2 small goi-y-item\" data-value=\"{0}\"><strong>{0}</strong> - {1} - {2}</button>",
-                    r["mahocvien"], r["hoten"], r["dienthoai"]);
+                    System.Web.HttpUtility.HtmlAttributeEncode(Convert.ToString(r["mahocvien"])), System.Web.HttpUtility.HtmlEncode(Convert.ToString(r["hoten"])), System.Web.HttpUtility.HtmlEncode(Convert.ToString(r["dienthoai"])));
             }
             litGoiY.Text = sb.ToString();
         }
@@ -58,7 +58,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
             pnlThongBao.CssClass = laLoi
                 ? "alert alert-danger text-danger fw-semibold alert-dismissible fade show shadow"
                 : "alert alert-success text-success fw-semibold alert-dismissible fade show shadow";
-            litThongBao.Text = msg;
+            litThongBao.Text = System.Web.HttpUtility.HtmlEncode(msg);
         }
 
         private bool KiemTraDuLieu()
@@ -104,7 +104,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                 string sdt = txtDienThoai.Text.Trim();
                 string email = txtEmail.Text.Trim();
 
-                // 1. Kiểm tra trùng Số điện thoại
                 int trungSDT = Convert.ToInt32(kncsdl.LayGiaTriDon(
                     "SELECT COUNT(*) FROM HOCVIEN WHERE dienthoai=@dt",
                     new[] { new SqlParameter("@dt", sdt) }));
@@ -115,11 +114,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                     return;
                 }
 
-                // 2. Kiểm tra trùng Email (nếu có nhập)
                 if (!string.IsNullOrEmpty(email))
                 {
                     int trungEmail = Convert.ToInt32(kncsdl.LayGiaTriDon(
-                        "SELECT COUNT(*) FROM HOCVIEN WHERE email=@em",
+                        "SELECT COUNT(*) FROM HOCVIEN WHERE LOWER(LTRIM(RTRIM(ISNULL(email,''))))=LOWER(@em)",
                         new[] { new SqlParameter("@em", email) }));
                     if (trungEmail > 0)
                     {
@@ -129,7 +127,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                     }
                 }
 
-                // Cập nhật lại mã mới nhất phòng trường hợp có người khác vừa thêm xong
                 SinhMaHVMoi();
 
                 string sql = @"INSERT INTO HOCVIEN(mahocvien, hoten, ngaysinh, gioitinh, dienthoai, email, diachi)
@@ -140,7 +137,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                     new SqlParameter("@ns", string.IsNullOrEmpty(txtNgaySinh.Text) ? (object)DBNull.Value : txtNgaySinh.Text),
                     new SqlParameter("@gt", ddlGioiTinh.SelectedValue),
                     new SqlParameter("@dt", sdt),
-                    new SqlParameter("@em", email),
+                    new SqlParameter("@em", string.IsNullOrEmpty(email) ? (object)DBNull.Value : email),
                     new SqlParameter("@dc", txtDiaChi.Text.Trim())
                 };
                 kncsdl.ThucThiLenh(sql, p);
@@ -151,7 +148,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                 TaiGoiYTimKiem();
                 LamMoiForm();
             }
-            catch (Exception ex) { HienThongBao("Lỗi khi thêm: " + ex.Message, true); }
+            catch { HienThongBao("Không thể thêm học viên lúc này. Vui lòng kiểm tra lại thông tin!", true); }
         }
 
         protected void btnCapNhat_Click(object sender, EventArgs e)
@@ -163,14 +160,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                 int checkExist = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM HOCVIEN WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", txtMaHV.Text.Trim()) }));
                 if (checkExist == 0)
                 {
-                    HienThongBao("Sinh viên này chưa có trong danh sách. Hãy bấm Thêm mới", true);
+                    HienThongBao("Học viên này chưa có trong danh sách. Hãy bấm Thêm mới!", true);
                     return;
                 }
 
                 string sdt = txtDienThoai.Text.Trim();
                 string email = txtEmail.Text.Trim();
 
-                // Kiểm tra trùng SĐT với học viên khác
                 int trungSDT = Convert.ToInt32(kncsdl.LayGiaTriDon(
                     "SELECT COUNT(*) FROM HOCVIEN WHERE dienthoai=@dt AND mahocvien<>@ma",
                     new[] { new SqlParameter("@dt", sdt), new SqlParameter("@ma", txtMaHV.Text.Trim()) }));
@@ -181,11 +177,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                     return;
                 }
 
-                // Kiểm tra trùng Email với học viên khác (nếu có nhập)
                 if (!string.IsNullOrEmpty(email))
                 {
                     int trungEmail = Convert.ToInt32(kncsdl.LayGiaTriDon(
-                        "SELECT COUNT(*) FROM HOCVIEN WHERE email=@em AND mahocvien<>@ma",
+                        "SELECT COUNT(*) FROM HOCVIEN WHERE LOWER(LTRIM(RTRIM(ISNULL(email,''))))=LOWER(@em) AND mahocvien<>@ma",
                         new[] { new SqlParameter("@em", email), new SqlParameter("@ma", txtMaHV.Text.Trim()) }));
                     if (trungEmail > 0)
                     {
@@ -202,8 +197,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                     new SqlParameter("@ten", txtHoTen.Text.Trim()),
                     new SqlParameter("@ns", string.IsNullOrEmpty(txtNgaySinh.Text) ? (object)DBNull.Value : txtNgaySinh.Text),
                     new SqlParameter("@gt", ddlGioiTinh.SelectedValue),
-                    new SqlParameter("@dt", txtDienThoai.Text.Trim()),
-                    new SqlParameter("@em", txtEmail.Text.Trim()),
+                    new SqlParameter("@dt", sdt),
+                    new SqlParameter("@em", string.IsNullOrEmpty(email) ? (object)DBNull.Value : email),
                     new SqlParameter("@dc", txtDiaChi.Text.Trim())
                 };
                 kncsdl.ThucThiLenh(sql, p);
@@ -214,7 +209,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                 TaiGoiYTimKiem();
                 LamMoiForm();
             }
-            catch (Exception ex) { HienThongBao("Lỗi cập nhật: " + ex.Message, true); }
+            catch { HienThongBao("Không thể cập nhật thông tin học viên!", true); }
         }
 
         protected void gvHocVien_RowCommand(object sender, GridViewCommandEventArgs e)
@@ -248,9 +243,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                 {
                     int countDK = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DANGKY WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", ma) }));
                     int countTG = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM THAM_GIA WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", ma) }));
-                    if (countDK > 0 || countTG > 0)
+                    int countDD = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM DIEMDANH WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", ma) }));
+                    if (countDK > 0 || countTG > 0 || countDD > 0)
                     {
-                        HienThongBao("Không thể xóa học viên này vì đã có dữ liệu Đăng ký khóa học hoặc Tham gia kỳ thi!", true);
+                        HienThongBao("Không thể xóa học viên này vì đã có dữ liệu Đăng ký khóa học, Điểm danh hoặc Kỳ thi!", true);
                         return;
                     }
                     kncsdl.ThucThiLenh("DELETE FROM HOCVIEN WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", ma) });
@@ -260,9 +256,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
                     TaiGoiYTimKiem();
                     LamMoiForm();
                 }
-                catch (Exception ex)
+                catch
                 {
-                    HienThongBao("Lỗi khi xóa: " + ex.Message, true);
+                    HienThongBao("Không thể xóa học viên này do đang ràng buộc dữ liệu!", true);
                 }
             }
         }
@@ -270,7 +266,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
         private void LamMoiForm()
         {
             txtHoTen.Text = txtNgaySinh.Text = txtDienThoai.Text = txtEmail.Text = txtDiaChi.Text = "";
-            SinhMaHVMoi(); // Gọi lại để tạo mã mới sẵn sàng cho lần nhập sau
+            SinhMaHVMoi();
         }
 
         protected void btnLamMoi_Click(object sender, EventArgs e)

@@ -13,6 +13,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 {
     public partial class QuanLyPhieuThu : System.Web.UI.Page
     {
+        private bool LaQuanTriHoacNV
+        {
+            get
+            {
+                string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+                return q == "Admin" || q == "NhanVien";
+            }
+        }
+
         private string TuKhoaHienTai
         {
             get { return ViewState["TuKhoaTimPT"]?.ToString() ?? ""; }
@@ -51,7 +60,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             txtMaPT.Text = maPT;
         }
 
-        // PT-01 & PT-02: Tách hàm nạp ddlDangKy riêng và chỉ hiển thị hồ sơ còn nợ (hoặc hồ sơ của phiếu đang sửa)
         private void TaiDropdownDangKy(string giuMaDK = "")
         {
             string sqlDK = @"SELECT dk.madangky, 
@@ -60,8 +68,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                              JOIN HOCVIEN hv ON dk.mahocvien = hv.mahocvien 
                              JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
                              LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
-                             GROUP BY dk.madangky, hv.hoten, kh.hocphi
-                             HAVING (kh.hocphi - ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) > 0
+                             WHERE (ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%' AND ISNULL(dk.trangthaithanhtoan, N'') NOT IN (N'Chờ hoàn tiền', N'Đã hoàn tiền'))
+                                OR dk.madangky = @giu
+                             GROUP BY dk.madangky, hv.hoten, kh.hocphi, dk.trangthailop, dk.trangthaithanhtoan
+                             HAVING ((ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%' AND ISNULL(dk.trangthaithanhtoan, N'') NOT IN (N'Chờ hoàn tiền', N'Đã hoàn tiền'))
+                                     AND (kh.hocphi - ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) > 0)
                                  OR dk.madangky = @giu
                              ORDER BY dk.madangky DESC";
             ddlDangKy.DataSource = kncsdl.DocDuLieu(sqlDK, new[] { new SqlParameter("@giu", giuMaDK ?? "") });
@@ -73,11 +84,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
         private void TaiDanhSachPhieuThu()
         {
             string kw = TuKhoaHienTai;
-            // Ưu tiên đưa các phiếu 'Chờ xác nhận%' lên đầu danh sách để nhân viên thấy và duyệt ngay
             string sqlPT = @"SELECT pt.*, hv.hoten FROM PHIEUTHU pt 
                              JOIN DANGKY dk ON pt.madangky=dk.madangky 
                              JOIN HOCVIEN hv ON dk.mahocvien=hv.mahocvien
-                             WHERE (@kw = '' OR pt.maphieuthu LIKE @kw OR hv.hoten LIKE @kw OR pt.noidungthu LIKE @kw OR dk.madangky LIKE @kw)
+                             WHERE (@kw = '' OR pt.maphieuthu COLLATE Latin1_General_CI_AI LIKE @kw 
+                                             OR hv.hoten COLLATE Latin1_General_CI_AI LIKE @kw 
+                                             OR pt.noidungthu COLLATE Latin1_General_CI_AI LIKE @kw 
+                                             OR dk.madangky COLLATE Latin1_General_CI_AI LIKE @kw)
                              ORDER BY CASE WHEN ISNULL(pt.noidungthu, N'') LIKE N'Chờ xác nhận%' THEN 0 ELSE 1 END, pt.ngaythu DESC, pt.maphieuthu DESC";
             gvPhieuThu.DataSource = kncsdl.DocDuLieu(sqlPT, new[] { new SqlParameter("@kw", string.IsNullOrEmpty(kw) ? "" : "%" + kw + "%") });
             gvPhieuThu.DataBind();
@@ -101,12 +114,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             litGoiYPT.Text = sb.ToString();
         }
 
-        // PT-03: Hàm dùng chung tính lại tổng tiền đã đóng (chỉ tính phiếu đã duyệt) và cập nhật trạng thái thanh toán của DANGKY
         private void DongBoCongNoDangKy(string maDK, SqlConnection conn, SqlTransaction tran)
         {
             string sql = @"UPDATE DANGKY 
-                           SET sotiendong = ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky = @dk AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0),
+                           SET sotiendong = CASE 
+                                   WHEN ISNULL(trangthaithanhtoan, N'') = N'Đã hoàn tiền' OR ISNULL(trangthailop, N'') LIKE N'%Đã hoàn tiền%' THEN 0
+                                   ELSE ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky = @dk AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0)
+                               END,
                                trangthaithanhtoan = CASE 
+                                   WHEN ISNULL(trangthaithanhtoan, N'') IN (N'Chờ hoàn tiền', N'Đã hoàn tiền') OR ISNULL(trangthailop, N'') LIKE N'%Chờ hoàn%' OR ISNULL(trangthailop, N'') LIKE N'%Đã hoàn tiền%' THEN trangthaithanhtoan
                                    WHEN EXISTS (SELECT 1 FROM PHIEUTHU WHERE madangky = @dk AND ISNULL(noidungthu, N'') LIKE N'Chờ xác nhận%') THEN N'Chờ xác nhận'
                                    WHEN ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky = @dk AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0) <= 0 THEN N'Chưa thanh toán'
                                    WHEN ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky = @dk AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0) >= (SELECT hocphi FROM KHOAHOC WHERE makhoahoc = DANGKY.makhoahoc) THEN N'Đã hoàn tất'
@@ -151,6 +167,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 
         protected void btnLapPhieu_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV) return;
+
             if (string.IsNullOrEmpty(ddlDangKy.SelectedValue))
             {
                 HienThongBao("Không có hồ sơ đăng ký nào đang nợ học phí!", true);
@@ -162,7 +180,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 
             string maDK = ddlDangKy.SelectedValue;
 
-            // PT-02: Kiểm tra không cho thu vượt quá số tiền còn nợ
+            string ttLop = kncsdl.LayGiaTriDon("SELECT ISNULL(trangthailop, N'') FROM DANGKY WHERE madangky=@dk", new[] { new SqlParameter("@dk", maDK) })?.ToString() ?? "";
+            if (ttLop.Contains("Hủy lớp"))
+            {
+                HienThongBao("Hồ sơ này thuộc lớp đã hủy, không thể lập phiếu thu học phí!", true);
+                return;
+            }
+
             object conNoObj = kncsdl.LayGiaTriDon(@"SELECT (kh.hocphi - ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky=@dk AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0))
                                                    FROM DANGKY dk JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc WHERE dk.madangky=@dk",
                 new[] { new SqlParameter("@dk", maDK) });
@@ -210,11 +234,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 
         protected void btnSua_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV) return;
+
             string maPT = txtMaPT.Text.Trim();
-            DataTable dtCu = kncsdl.DocDuLieu("SELECT sotienthu, madangky FROM PHIEUTHU WHERE maphieuthu=@ma", new[] { new SqlParameter("@ma", maPT) });
+            DataTable dtCu = kncsdl.DocDuLieu("SELECT sotienthu, madangky, phuongthucthanhtoan FROM PHIEUTHU WHERE maphieuthu=@ma", new[] { new SqlParameter("@ma", maPT) });
             if (dtCu.Rows.Count == 0)
             {
                 HienThongBao("Phiếu thu này chưa có trong danh sách. Hãy bấm Lập phiếu!", true);
+                return;
+            }
+
+            if (Convert.ToDecimal(dtCu.Rows[0]["sotienthu"]) < 0 || dtCu.Rows[0]["phuongthucthanhtoan"].ToString() == "Hoàn tiền học phí")
+            {
+                HienThongBao("Không được phép sửa phiếu chi hoàn tiền học phí!", true);
                 return;
             }
 
@@ -223,6 +255,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 
             string maDKCu = dtCu.Rows[0]["madangky"].ToString();
             string maDKMoi = ddlDangKy.SelectedValue;
+
+            object conNoObj = kncsdl.LayGiaTriDon(@"SELECT (kh.hocphi - ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky=@dk AND maphieuthu<>@pt AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0))
+                                                   FROM DANGKY dk JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc WHERE dk.madangky=@dk",
+                new[] { new SqlParameter("@dk", maDKMoi), new SqlParameter("@pt", maPT) });
+            decimal conNoToiDa = conNoObj != null ? Convert.ToDecimal(conNoObj) : 0;
+            if (soTienMoi > conNoToiDa)
+            {
+                HienThongBao($"Số tiền sửa ({soTienMoi:N0} đ) không được vượt quá công nợ tối đa ({conNoToiDa:N0} đ)!", true);
+                return;
+            }
 
             using (SqlConnection conn = new SqlConnection(kncsdl.ChuoiKetNoi))
             {
@@ -312,7 +354,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                         ? "<span class='badge bg-warning text-dark'>Chờ xác nhận ảnh</span>"
                         : "<span class='badge bg-success'>Đã đóng học phí</span>";
 
-                    // Trích xuất tên file ảnh từ chuỗi "(Ảnh: BienLai_...)"
                     var match = Regex.Match(nd, @"Ảnh:\s*([^\)]+)");
                     string fileName = match.Success ? match.Groups[1].Value.Trim() : "";
                     string imgUrl = !string.IsNullOrEmpty(fileName) ? ResolveUrl("~/Uploads/BienLai/" + fileName) : "";
@@ -328,9 +369,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             }
         }
 
-        // BẤM XÁC NHẬN ẢNH THANH TOÁN -> ĐỔI TRẠNG THÁI THÀNH "ĐÃ ĐÓNG" VÀ CỘNG TIỀN VÀO CÔNG NỢ
         protected void btnXacNhanDaDong_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV) return;
+
             string maPT = hfMaPTDuyet.Value;
             if (string.IsNullOrEmpty(maPT)) return;
 
@@ -340,6 +382,24 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             string maDK = dt.Rows[0]["madangky"].ToString();
             decimal soTien = Convert.ToDecimal(dt.Rows[0]["sotienthu"]);
             string ndCu = dt.Rows[0]["noidungthu"].ToString();
+
+            if (!ndCu.StartsWith("Chờ xác nhận"))
+            {
+                HienThongBao("Phiếu thu này đã được xử lý từ trước!", true);
+                return;
+            }
+
+            object conNoObj = kncsdl.LayGiaTriDon(@"SELECT (kh.hocphi - ISNULL((SELECT SUM(sotienthu) FROM PHIEUTHU WHERE madangky=@dk AND maphieuthu<>@pt AND ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'), 0))
+                                                   FROM DANGKY dk JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc WHERE dk.madangky=@dk",
+                new[] { new SqlParameter("@dk", maDK), new SqlParameter("@pt", maPT) });
+            decimal conNoToiDa = conNoObj != null ? Convert.ToDecimal(conNoObj) : 0;
+
+            if (soTien > conNoToiDa)
+            {
+                HienThongBao($"Duyệt phiếu sẽ làm tổng số tiền thu vượt quá học phí khóa học (Còn nợ: {conNoToiDa:N0} đ). Vui lòng từ chối biên lai hoặc sửa lại số tiền!", true);
+                return;
+            }
+
             string ndMoi = ndCu.Replace("Chờ xác nhận CK QR", "Đã xác nhận CK QR");
             if (ndMoi == ndCu) ndMoi = "Đã xác nhận thanh toán - " + ndCu;
 
@@ -371,9 +431,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
             }
         }
 
-        // TỪ CHỐI ẢNH BIÊN LAI KHÔNG HỢP LỆ -> XÓA PHIẾU CHỜ VÀ TRẢ HỒ SƠ VỀ CHƯA THANH TOÁN
         protected void btnTuChoiBienLai_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV) return;
+
             string maPT = hfMaPTDuyet.Value;
             if (string.IsNullOrEmpty(maPT)) return;
 
@@ -410,11 +471,19 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 
         protected void btnXoaChinhThuc_Click(object sender, EventArgs e)
         {
+            if (!LaQuanTriHoacNV) return;
+
             string maPT = hfMaPTXoa.Value;
             if (!string.IsNullOrEmpty(maPT))
             {
-                DataTable dt = kncsdl.DocDuLieu("SELECT sotienthu, madangky FROM PHIEUTHU WHERE maphieuthu=@ma", new[] { new SqlParameter("@ma", maPT) });
+                DataTable dt = kncsdl.DocDuLieu("SELECT sotienthu, madangky, phuongthucthanhtoan FROM PHIEUTHU WHERE maphieuthu=@ma", new[] { new SqlParameter("@ma", maPT) });
                 if (dt.Rows.Count == 0) return;
+
+                if (Convert.ToDecimal(dt.Rows[0]["sotienthu"]) < 0 || dt.Rows[0]["phuongthucthanhtoan"].ToString() == "Hoàn tiền học phí")
+                {
+                    HienThongBao("Không được phép xóa phiếu chi hoàn tiền học phí!", true);
+                    return;
+                }
 
                 string maDK = dt.Rows[0]["madangky"].ToString();
 
