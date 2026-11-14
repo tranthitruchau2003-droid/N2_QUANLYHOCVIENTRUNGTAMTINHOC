@@ -177,6 +177,33 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         protected global::System.Web.UI.WebControls.LinkButton btnDangXuat;
 
         /// <summary>
+        /// upLoiDoiMK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.UpdatePanel upLoiDoiMK;
+
+        /// <summary>
+        /// pnlLoiDoiMK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlLoiDoiMK;
+
+        /// <summary>
+        /// litLoiDoiMK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litLoiDoiMK;
+
+        /// <summary>
         /// txtMKCu control.
         /// </summary>
         /// <remarks>

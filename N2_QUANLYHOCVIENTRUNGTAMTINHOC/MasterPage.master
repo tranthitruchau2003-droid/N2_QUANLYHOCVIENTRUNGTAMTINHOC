@@ -9,7 +9,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="/Content/css/theme.css" rel="stylesheet" />
     <style>
-        /* Tô nền cam chữ trắng khi di chuột (hover), khi bấm vào hoặc khi đang ở trang hiện hành */
         .sidebar .sidebar-nav li a:hover,
         .sidebar .sidebar-nav li a:focus,
         .sidebar .sidebar-nav li a.active-orange,
@@ -26,6 +25,10 @@
         .sidebar .sidebar-nav li a.active-orange i,
         .sidebar .sidebar-nav li.active-orange > a i {
             color: #ffffff !important;
+        }
+        input::-ms-reveal,
+        input::-ms-clear {
+            display: none !important;
         }
     </style>
     <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
@@ -132,28 +135,64 @@
                         <div id="alertBatBuocDoiMK" class="alert alert-warning py-2 small fw-semibold d-none">
                             <i class="bi bi-shield-exclamation me-1"></i> Đây là lần đăng nhập đầu tiên. Vui lòng đổi mật khẩu mới (khác SĐT, tối thiểu 6 ký tự) để tiếp tục!
                         </div>
+                        <%-- Chỉ vùng báo lỗi nằm trong UpdatePanel: bấm "Cập nhật" gửi bằng AJAX,
+                             pop-up KHÔNG bị tải lại/đóng, các ô nhập vẫn giữ nguyên giá trị --%>
+                        <asp:UpdatePanel ID="upLoiDoiMK" runat="server" UpdateMode="Conditional">
+                            <ContentTemplate>
+                                <asp:Panel ID="pnlLoiDoiMK" runat="server" ClientIDMode="Static"
+                                    CssClass="alert alert-danger py-2 small fw-semibold mb-2 d-none">
+                                    <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                    <span id="spanLoiDoiMK"><asp:Literal ID="litLoiDoiMK" runat="server" /></span>
+                                </asp:Panel>
+                            </ContentTemplate>
+                            <Triggers>
+                                <asp:AsyncPostBackTrigger ControlID="btnLuuMatKhau" EventName="Click" />
+                            </Triggers>
+                        </asp:UpdatePanel>
+
                         <div class="mb-2">
                             <label class="small fw-bold">Mật khẩu hiện tại (SĐT nếu đăng nhập lần đầu) (*)</label>
-                            <asp:TextBox ID="txtMKCu" runat="server" TextMode="Password" CssClass="form-control" />
+                            <div class="input-group">
+                                <asp:TextBox ID="txtMKCu" runat="server" ClientIDMode="Static" TextMode="Password"
+                                    CssClass="form-control" autocomplete="new-password" oninput="anLoiDoiMK();" />
+                                <button type="button" class="btn btn-outline-secondary" tabindex="-1" onclick="toggleHienMatKhau('txtMKCu', this)" title="Hiện/Ẩn mật khẩu">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                         </div>
+
                         <div class="mb-2">
                             <label class="small fw-bold">Mật khẩu mới (*)</label>
-                            <asp:TextBox ID="txtMKMoi" runat="server" TextMode="Password" CssClass="form-control" />
+                            <div class="input-group">
+                                <asp:TextBox ID="txtMKMoi" runat="server" ClientIDMode="Static" TextMode="Password"
+                                    CssClass="form-control" autocomplete="new-password" oninput="anLoiDoiMK();" />
+                                <button type="button" class="btn btn-outline-secondary" tabindex="-1" onclick="toggleHienMatKhau('txtMKMoi', this)" title="Hiện/Ẩn mật khẩu">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                         </div>
+
                         <div class="mb-2">
                             <label class="small fw-bold">Xác nhận mật khẩu mới (*)</label>
-                            <asp:TextBox ID="txtMKXacNhan" runat="server" TextMode="Password" CssClass="form-control" />
+                            <div class="input-group">
+                                <asp:TextBox ID="txtMKXacNhan" runat="server" ClientIDMode="Static" TextMode="Password"
+                                    CssClass="form-control" autocomplete="new-password" oninput="anLoiDoiMK();" />
+                                <button type="button" class="btn btn-outline-secondary" tabindex="-1" onclick="toggleHienMatKhau('txtMKXacNhan', this)" title="Hiện/Ẩn mật khẩu">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" id="btnHuyDoiMK" data-bs-dismiss="modal">Hủy</button>
-                        <asp:Button ID="btnLuuMatKhau" runat="server" Text="Cập nhật Mật khẩu" CssClass="btn btn-primary-gradient fw-bold" OnClick="btnLuuMatKhau_Click" />
+                        <asp:Button ID="btnLuuMatKhau" runat="server" Text="Cập nhật Mật khẩu" CssClass="btn btn-primary-gradient fw-bold"
+                            OnClientClick="if (!kiemTraFormDoiMK()) return false;" OnClick="btnLuuMatKhau_Click" CausesValidation="false" UseSubmitBehavior="false" />
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- MODAL HƯỚNG DẪN SỬ DỤNG HIỂN THỊ THEO ĐÚNG PHÂN QUYỀN ĐANG ĐĂNG NHẬP -->
+        <!-- MODAL HƯỚNG DẪN SỬ DỤNG -->
         <%
             string qHelp = N2_QUANLYHOCVIENTRUNGTAMTINHOC.MasterPage.ChuanHoaQuyen(Session["Quyen"]);
             bool isHelpAdmin = qHelp == "Admin";
@@ -170,125 +209,17 @@
                     </div>
                     <div class="modal-body p-4">
                         <% if (isHelpAdmin) { %>
-                        <!-- 1. CHỈ HIỂN THỊ CHO ADMIN -->
-                        <div class="mb-3">
-                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-shield-lock-fill me-2"></i>Phân quyền: Quản trị viên Hệ thống (Admin)</span>
-                        </div>
-                        <div class="border rounded p-3 bg-light">
-                            <h6 class="fw-bold text-primary mb-3">Toàn quyền quản trị hệ thống, nhân sự, tài chính, đào tạo và sao lưu dữ liệu:</h6>
-                            <div class="row g-3 small">
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-white rounded border h-100">
-                                        <strong class="text-dark d-block mb-2"><i class="bi bi-easel2 me-1 text-primary"></i>1. Quản lý Lớp học & Thời khóa biểu:</strong>
-                                        <ul class="mb-0 ps-3">
-                                            <li><span class="badge bg-warning text-dark">Thêm Lớp & Lịch</span> / <span class="badge bg-primary">Cập nhật Lớp & Đổi Lịch</span>: Mở lớp mới, thiết lập ngày khai giảng (hệ thống tự tính ngày kết thúc) và gán Ca, Thứ, Giờ, Phòng Lab.</li>
-                                            <li><strong>Bấm trực tiếp vào ô lớp trên Bảng Thời Khóa Biểu</strong>: Đổi nhanh lịch học và cảnh báo <span class="badge bg-danger">TRÙNG LỊCH HỌC!</span>.</li>
-                                            <li><span class="badge bg-outline-danger text-danger border border-danger"><i class="bi bi-trash"></i> Xóa</span>: Chỉ Admin có quyền xóa lớp (chỉ xóa được lớp chưa có học viên đăng ký).</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-white rounded border h-100">
-                                        <strong class="text-dark d-block mb-2"><i class="bi bi-card-checklist me-1 text-primary"></i>2. Xử lý Lớp thiếu (&lt; 10 HV) & Hoàn tiền hủy lớp:</strong>
-                                        <ul class="mb-0 ps-3">
-                                            <li><span class="badge bg-primary">Ghép toàn bộ HV sang Lớp đích</span>: Chuyển học viên từ lớp thiếu sang lớp cùng khóa còn chỗ.</li>
-                                            <li><span class="badge bg-success">Duyệt mở lớp đặc cách</span> / <span class="badge bg-outline-danger text-danger border border-danger">Hủy lớp & Bảo lưu học phí</span>: Duyệt mở hoặc hủy lớp (lưu kèm tên lớp bị hủy).</li>
-                                            <li><span class="badge bg-warning text-dark">Danh sách Lớp bị hủy & Hoàn tiền</span>: Xem danh sách ưu tiên các hồ sơ chờ hoàn, bấm <span class="badge bg-danger">Tạo QR & Hoàn tiền</span> để quét mã chuyển trả theo STK học viên đã gửi và tải ảnh biên lai xác nhận.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-white rounded border h-100">
-                                        <strong class="text-dark d-block mb-2"><i class="bi bi-receipt-cutoff me-1 text-primary"></i>3. Quản lý Phiếu thu, Kỳ thi & Chứng chỉ:</strong>
-                                        <ul class="mb-0 ps-3">
-                                            <li><span class="badge bg-warning text-dark"><i class="bi bi-image"></i> Duyệt ảnh</span>: Kiểm tra ảnh biên lai chuyển khoản QR của học viên rồi bấm <strong>Xác nhận Đã đóng Học phí</strong> (hoặc <strong>Từ chối</strong>).</li>
-                                            <li><span class="badge bg-warning text-dark">Tạo Kỳ thi</span>, chấm điểm (20% CC + 80% Thi) và cấp/in chứng chỉ tự động cho học viên Đạt.</li>
-                                            <li><strong>Báo cáo & Thống kê:</strong> Lọc theo 6 trạng thái học phí (gồm <em>Chưa hoàn tiền</em>, <em>Chờ hoàn tiền</em>, <em>Đã hoàn tiền</em>), bấm tên học viên để chuyển nhanh sang trang Thu tiền hoặc Hoàn tiền và <span class="badge bg-success">Xuất Excel</span>.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 bg-white rounded border h-100">
-                                        <strong class="text-dark d-block mb-2"><i class="bi bi-database-fill-gear me-1 text-primary"></i>4. Cài đặt & Sao lưu CSDL (Chỉ Admin thấy):</strong>
-                                        <ul class="mb-0 ps-3">
-                                            <li><span class="badge bg-primary">THỰC HIỆN SAO LƯU NGAY (.BAK)</span> & <span class="badge bg-warning text-dark">PHỤC HỒI CƠ SỞ DỮ LIỆU</span>: Tạo bản sao lưu an toàn và khôi phục dữ liệu khi cần.</li>
-                                            <li><span class="badge bg-outline-primary text-primary border border-primary">Xem thêm (Cả tuần)</span>: Xem nhật ký thao tác hệ thống trong 7 ngày; hệ thống tự động dọn bớt nhật ký cũ quá nửa tuần (3.5 ngày) khi vượt quá 1 tuần.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                        <div class="mb-3"><span class="badge bg-primary fs-6 px-3 py-2">Phân quyền: Quản trị viên Hệ thống (Admin)</span></div>
+                        <div class="border rounded p-3 bg-light text-small">Quản lý toàn bộ hệ thống đào tạo, nhân sự, tài chính và sao lưu dữ liệu.</div>
                         <% } else if (isHelpNV) { %>
-                        <!-- 2. CHỈ HIỂN THỊ CHO NHÂN VIÊN GIÁO VỤ -->
-                        <div class="mb-3">
-                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-person-badge-fill me-2"></i>Phân quyền: Nhân viên Giáo vụ</span>
-                        </div>
-                        <div class="border rounded p-3 bg-light">
-                            <h6 class="fw-bold text-primary mb-3">Nghiệp vụ Quản lý Danh mục, Xếp lớp, Thu học phí QR, Hoàn tiền & Tổ chức Thi:</h6>
-                            <ul class="small lh-lg mb-0">
-                                <li><strong>Quản lý Học viên, Giảng viên, Khóa học:</strong> Thêm mới, cập nhật thông tin và tra cứu danh mục đào tạo.</li>
-                                <li><strong>Mở lớp & Xếp Thời khóa biểu:</strong> Sử dụng <span class="badge bg-warning text-dark">Thêm Lớp & Lịch</span>, <span class="badge bg-primary">Cập nhật Lớp & Đổi Lịch</span> hoặc bấm trực tiếp vào lớp trên Bảng Thời Khóa Biểu để đổi lịch (không có nút Xóa lớp và không truy cập mục Cài đặt CSDL của Admin).</li>
-                                <li><strong>Đăng ký Học phần & Xử lý Lớp thiếu (&lt; 10 HV):</strong>
-                                    <ul>
-                                        <li>Ghi danh cho học viên trước ngày khai giảng (đến ngày khai giảng hệ thống tự đóng đăng ký).</li>
-                                        <li>Xử lý lớp thiếu sĩ số bằng các nút: <span class="badge bg-primary">Ghép toàn bộ HV sang Lớp đích</span>, <span class="badge bg-success">Duyệt mở lớp đặc cách</span>, <span class="badge bg-outline-danger text-danger border border-danger">Hủy lớp & Bảo lưu học phí</span>.</li>
-                                        <li>Bấm <span class="badge bg-warning text-dark">Danh sách Lớp bị hủy & Hoàn tiền</span> -&gt; <span class="badge bg-danger">Tạo QR & Hoàn tiền</span> để quét QR chuyển trả cho học viên và tải ảnh biên lai xác nhận.</li>
-                                    </ul>
-                                </li>
-                                <li><strong>Quản lý Phiếu thu & Duyệt biên lai QR:</strong> Lập phiếu thu tiền mặt/chuyển khoản hoặc bấm <span class="badge bg-warning text-dark"><i class="bi bi-image"></i> Duyệt ảnh</span> để kiểm tra ảnh chuyển khoản của học viên và bấm <strong>Xác nhận Đã đóng Học phí</strong>.</li>
-                                <li><strong>Kỳ thi, Chứng chỉ & Báo cáo:</strong> Tạo kỳ thi, nhập điểm, cấp/in chứng chỉ và lọc danh sách nợ/hoàn tiền để xuất Excel.</li>
-                            </ul>
-                        </div>
-
+                        <div class="mb-3"><span class="badge bg-primary fs-6 px-3 py-2">Phân quyền: Nhân viên Giáo vụ</span></div>
+                        <div class="border rounded p-3 bg-light text-small">Nghiệp vụ xếp lớp, thu học phí QR, hoàn tiền và tổ chức thi.</div>
                         <% } else if (isHelpGV) { %>
-                        <!-- 3. CHỈ HIỂN THỊ CHO GIẢNG VIÊN -->
-                        <div class="mb-3">
-                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-easel2-fill me-2"></i>Phân quyền: Giảng viên</span>
-                        </div>
-                        <div class="border rounded p-3 bg-light">
-                            <h6 class="fw-bold text-primary mb-3">Nghiệp vụ Giảng dạy, Điểm danh Chuyên cần & Nhập điểm Lớp phụ trách:</h6>
-                            <ul class="small lh-lg mb-0">
-                                <li><strong>Xem Lịch giảng dạy & Thời khóa biểu:</strong> Tại mục <em>Lớp học & Lịch học</em>, giảng viên chỉ xem được danh sách các lớp, thời gian học (Từ ngày - Đến ngày) và lưới Thời khóa biểu của chính mình phụ trách (không xem Dashboard hay lớp của giảng viên khác).</li>
-                                <li><strong>Điểm danh Học viên (<span class="badge bg-success"><i class="bi bi-person-check-fill"></i> Điểm danh</span>):</strong>
-                                    <ul>
-                                        <li>Chọn Ngày điểm danh -&gt; Đánh dấu: <strong>Có mặt</strong>, <strong>Vắng phép</strong> (-1 điểm CC), hoặc <strong>Vắng không phép</strong> (-2 điểm CC) -&gt; Bấm <span class="badge bg-success">Lưu kết quả Điểm danh</span>.</li>
-                                        <li>Hệ thống tự động cảnh báo <span class="badge bg-warning text-dark">Nghỉ 2 buổi</span> và <span class="badge bg-danger">Cấm thi (Nghỉ &ge; 3 buổi)</span> kèm tỷ lệ % số buổi vắng.</li>
-                                    </ul>
-                                </li>
-                                <li><strong>Nhập Điểm thi Học viên (Mục Kỳ thi & Điểm thi):</strong>
-                                    <ul>
-                                        <li>Giảng viên <strong>không được tạo kỳ thi</strong> và chỉ nhìn thấy các kỳ thi, học viên thuộc lớp mình trực tiếp giảng dạy.</li>
-                                        <li>Điểm <strong>Chuyên cần (20%)</strong> được tính tự động từ kết quả điểm danh. Giảng viên nhập <strong>Điểm thi (80%)</strong> rồi bấm <span class="badge bg-warning text-dark">Thêm mới & Tính ĐTB</span>, <span class="badge bg-primary">Cập nhật Điểm</span>, hoặc bấm <span class="badge bg-success">Nhập điểm hàng loạt</span> để nhập nhanh cho cả lớp.</li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
-
+                        <div class="mb-3"><span class="badge bg-primary fs-6 px-3 py-2">Phân quyền: Giảng viên</span></div>
+                        <div class="border rounded p-3 bg-light text-small">Điểm danh chuyên cần và nhập điểm thi các lớp phụ trách.</div>
                         <% } else { %>
-                        <!-- 4. CHỈ HIỂN THỊ CHO HỌC VIÊN -->
-                        <div class="mb-3">
-                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-mortarboard-fill me-2"></i>Phân quyền: Học viên</span>
-                        </div>
-                        <div class="border rounded p-3 bg-light">
-                            <h6 class="fw-bold text-primary mb-3">Tra cứu Lịch học, Đăng ký Khóa học, Đóng/Hoàn học phí & Xem Kết quả:</h6>
-                            <ul class="small lh-lg mb-0">
-                                <li><strong>Lớp học & Lịch học:</strong> Xem danh sách các lớp đã đăng ký, thời gian học (Từ ngày - Đến ngày) và Bảng Thời khóa biểu trong tuần của cá nhân.</li>
-                                <li><strong>Đăng ký Khóa học & Đóng Học phí QR:</strong>
-                                    <ul>
-                                        <li>Bấm <span class="badge bg-warning text-dark">Chọn lớp này</span> trên bảng lớp đang mở (lưu ý chỉ đăng ký được trước ngày khai giảng và khi lớp chưa đủ 10 HV) -&gt; Bấm <span class="badge bg-warning text-dark">Xác nhận Đăng ký</span>.</li>
-                                        <li>Bấm nút <span class="badge bg-success"><i class="bi bi-qr-code-scan"></i> Đóng HP</span> -&gt; Quét mã QR chuyển khoản đúng số tiền &amp; nội dung -&gt; Tải ảnh chụp màn hình biên lai lên và bấm <span class="badge bg-success">Gửi Ảnh &amp; Xác nhận Đã chuyển khoản</span> (trạng thái sẽ chuyển sang <em>Chờ duyệt biên lai CK</em> cho đến khi kế toán xác nhận).</li>
-                                    </ul>
-                                </li>
-                                <li><strong>Nhận Hoàn tiền khi Lớp bị hủy:</strong>
-                                    <ul>
-                                        <li>Nếu lớp đã đóng tiền bị hủy do không đủ sĩ số, bấm nút <span class="badge bg-warning text-dark"><i class="bi bi-bank"></i> Nhận hoàn tiền</span> (hoặc <span class="badge bg-outline-warning text-dark border border-warning">Sửa STK hoàn</span>) để nhập Ngân hàng, Số tài khoản và Tên chủ tài khoản.</li>
-                                        <li>Sau khi trung tâm chuyển khoản hoàn trả xong, bấm nút <span class="badge bg-outline-success text-success border border-success"><i class="bi bi-image"></i> Ảnh hoàn tiền</span> để xem ảnh biên lai xác nhận của trung tâm.</li>
-                                    </ul>
-                                </li>
-                                <li><strong>Kỳ thi &amp; Chứng chỉ cá nhân:</strong> Tra cứu lịch thi, điểm tổng kết và bấm nút <span class="badge bg-outline-success text-success border border-success"><i class="bi bi-printer"></i></span> tại mục <em>Cấp Chứng chỉ</em> để tải/in chứng chỉ khi đạt kết quả.</li>
-                            </ul>
-                        </div>
+                        <div class="mb-3"><span class="badge bg-primary fs-6 px-3 py-2">Phân quyền: Học viên</span></div>
+                        <div class="border rounded p-3 bg-light text-small">Tra cứu lịch học, đăng ký khóa học, đóng học phí QR và xem chứng chỉ.</div>
                         <% } %>
                     </div>
                     <div class="modal-footer bg-light">
@@ -298,7 +229,7 @@
             </div>
         </div>
 
-        <!-- POPUP THÔNG BÁO CHUNG TỪ MASTERPAGE -->
+        <!-- POPUP THÔNG BÁO CHUNG -->
         <div class="modal fade" id="modalThongBaoChung" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content border-0 shadow">
@@ -323,57 +254,158 @@
         document.addEventListener("DOMContentLoaded", function () {
             var sidebar = document.getElementById('sidebar');
             var isCollapsed = localStorage.getItem('sidebar_collapsed');
-
             if (sidebar && isCollapsed === 'true') {
                 sidebar.classList.add('collapsed');
             }
+        });
 
-            // Tự động tô nền cam + chữ trắng cho mục Menu trái tương ứng với trang đang mở hoặc khi vừa bấm vào
-            var currentPath = window.location.pathname.toLowerCase();
-            var navLinks = document.querySelectorAll('.sidebar .sidebar-nav li a');
-            navLinks.forEach(function (link) {
-                var href = (link.getAttribute('href') || '').toLowerCase();
-                if (href && href !== '#' && currentPath.indexOf(href.replace('~', '')) !== -1) {
-                    link.classList.add('active-orange');
-                    if (link.parentElement) link.parentElement.classList.add('active-orange');
-                }
-
-                link.addEventListener('click', function () {
-                    navLinks.forEach(function (l) {
-                        l.classList.remove('active-orange');
-                        if (l.parentElement) l.parentElement.classList.remove('active-orange');
-                    });
-                    this.classList.add('active-orange');
-                    if (this.parentElement) this.parentElement.classList.add('active-orange');
+        // Khi đóng pop-up Đổi mật khẩu (Hủy / thành công): xóa trắng ô nhập và ẩn lỗi
+        document.addEventListener("DOMContentLoaded", function () {
+            var m = document.getElementById('modalDoiMatKhau');
+            if (!m) return;
+            m.addEventListener('hidden.bs.modal', function () {
+                ['txtMKCu', 'txtMKMoi', 'txtMKXacNhan'].forEach(function (id) {
+                    var e = document.getElementById(id);
+                    if (e) { e.value = ''; e.type = 'password'; }
                 });
+                m.querySelectorAll('.bi-eye-slash').forEach(function (i) {
+                    i.classList.remove('bi-eye-slash');
+                    i.classList.add('bi-eye');
+                });
+                anLoiDoiMK();
             });
         });
 
-function moModalDoiMKBatBuoc() {
-    var check = function () {
-        var el = document.getElementById('modalDoiMatKhau');
-        if (el && window.bootstrap) {
-            var btnClose = document.getElementById('btnCloseDoiMK');
-            var btnHuy = document.getElementById('btnHuyDoiMK');
-            var alertBox = document.getElementById('alertBatBuocDoiMK');
-            var title = document.getElementById('titleDoiMK');
-
-            if (btnClose) btnClose.style.display = 'none';
-            if (btnHuy) btnHuy.style.display = 'none';
-            if (alertBox) alertBox.classList.remove('d-none');
-            if (title) title.innerHTML = '<i class="bi bi-shield-lock-fill me-2"></i>Yêu cầu Đổi Mật khẩu Lần đầu';
-
-            var modal = new window.bootstrap.Modal(el, {
-                backdrop: 'static',
-                keyboard: false
-            });
-            modal.show();
-        } else {
-            setTimeout(check, 100);
+        function toggleHienMatKhau(inputId, btn) {
+            var inp = document.getElementById(inputId);
+            if (!inp) return;
+            var icon = btn.querySelector('i');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                if (icon) {
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                }
+            } else {
+                inp.type = 'password';
+                if (icon) {
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                }
+            }
         }
-    };
-    check();
-}
+
+        function anLoiDoiMK() {
+            var pnl = document.getElementById('pnlLoiDoiMK');
+            if (pnl && !pnl.classList.contains('d-none')) {
+                pnl.classList.add('d-none');
+            }
+        }
+
+        function baoLoiTrongModalDoiMK(msg) {
+            var pnl = document.getElementById('pnlLoiDoiMK');
+            var span = document.getElementById('spanLoiDoiMK');
+            if (pnl && span) {
+                span.innerText = msg;
+                pnl.classList.remove('d-none');
+            }
+        }
+
+        function kiemTraFormDoiMK() {
+            anLoiDoiMK();
+            var mkCu = (document.getElementById('txtMKCu')?.value || '').trim();
+            var mkMoi = (document.getElementById('txtMKMoi')?.value || '').trim();
+            var mkXN = (document.getElementById('txtMKXacNhan')?.value || '').trim();
+
+            if (!mkCu) {
+                baoLoiTrongModalDoiMK('Vui lòng nhập Mật khẩu hiện tại!');
+                document.getElementById('txtMKCu')?.focus();
+                return false;
+            }
+            if (!mkMoi) {
+                baoLoiTrongModalDoiMK('Vui lòng nhập Mật khẩu mới!');
+                document.getElementById('txtMKMoi')?.focus();
+                return false;
+            }
+            if (mkMoi.indexOf(' ') !== -1) {
+                baoLoiTrongModalDoiMK('Mật khẩu mới không được chứa khoảng trắng!');
+                document.getElementById('txtMKMoi')?.focus();
+                return false;
+            }
+            if (mkMoi.length < 6 || mkMoi.length > 50) {
+                baoLoiTrongModalDoiMK('Mật khẩu mới phải từ 6 đến 50 ký tự!');
+                document.getElementById('txtMKMoi')?.focus();
+                return false;
+            }
+            if (mkMoi === mkCu) {
+                baoLoiTrongModalDoiMK('Mật khẩu mới không được trùng với mật khẩu hiện tại!');
+                document.getElementById('txtMKMoi')?.focus();
+                return false;
+            }
+            if (!mkXN) {
+                baoLoiTrongModalDoiMK('Vui lòng nhập Xác nhận mật khẩu mới!');
+                document.getElementById('txtMKXacNhan')?.focus();
+                return false;
+            }
+            if (mkMoi !== mkXN) {
+                baoLoiTrongModalDoiMK('Xác nhận mật khẩu mới không khớp!');
+                document.getElementById('txtMKXacNhan')?.focus();
+                return false;
+            }
+            return true;
+        }
+
+        function moModalDoiMKBatBuoc() {
+            var check = function () {
+                var el = document.getElementById('modalDoiMatKhau');
+                if (el && window.bootstrap) {
+                    var btnClose = document.getElementById('btnCloseDoiMK');
+                    var btnHuy = document.getElementById('btnHuyDoiMK');
+                    var alertBox = document.getElementById('alertBatBuocDoiMK');
+                    var title = document.getElementById('titleDoiMK');
+
+                    if (btnClose) btnClose.style.display = 'none';
+                    if (btnHuy) btnHuy.style.display = 'none';
+                    if (alertBox) alertBox.classList.remove('d-none');
+                    if (title) title.innerHTML = '<i class="bi bi-shield-lock-fill me-2"></i>Yêu cầu Đổi Mật khẩu Lần đầu';
+
+                    var modal = window.bootstrap.Modal.getOrCreateInstance(el, {
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                    modal.show();
+                } else {
+                    setTimeout(check, 100);
+                }
+            };
+            check();
+        }
+
+        function hienThiThongBaoMaster(msg, moLaiDoiMK, batBuoc) {
+            var tryShow = function () {
+                if (!window.bootstrap) {
+                    setTimeout(tryShow, 80);
+                    return;
+                }
+                if (moLaiDoiMK) {
+                    baoLoiTrongModalDoiMK(msg);
+                    if (batBuoc) {
+                        moModalDoiMKBatBuoc();
+                    } else {
+                        var mDoiMK = document.getElementById('modalDoiMatKhau');
+                        if (mDoiMK) window.bootstrap.Modal.getOrCreateInstance(mDoiMK).show();
+                    }
+                } else {
+                    var modalEl = document.getElementById('modalThongBaoChung');
+                    var msgEl = document.getElementById('msgThongBaoChung');
+                    if (modalEl && msgEl) {
+                        msgEl.innerText = msg;
+                        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                    }
+                }
+            };
+            tryShow();
+        }
 
         function toggleSidebar() {
             var sidebar = document.getElementById('sidebar');
@@ -382,27 +414,7 @@ function moModalDoiMKBatBuoc() {
                 var isNowCollapsed = sidebar.classList.contains('collapsed');
                 localStorage.setItem('sidebar_collapsed', String(isNowCollapsed));
             }
-}
-// Sửa triệt để lỗi ấn Enter ở mọi ô tìm kiếm kích nhầm nút Thêm/Đăng ký đầu form
-document.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && e.target && e.target.tagName === 'INPUT') {
-        var inp = e.target;
-        var type = (inp.type || '').toLowerCase();
-        if (type !== 'text' && type !== 'search') return;
-
-        var ph = (inp.placeholder || '').toLowerCase();
-        var id = (inp.id || '').toLowerCase();
-        if (ph.indexOf('tìm') !== -1 || id.indexOf('tim') !== -1 || type === 'search') {
-            e.preventDefault();
-            var container = inp.closest('.d-flex, .input-group, .card-header, .row') || inp.parentElement;
-            if (container) {
-                var btn = container.querySelector('input[type="submit"], button[type="submit"], .btn-primary-gradient');
-                if (btn) btn.click();
-            }
         }
-    }
-});
     </script>
-
 </body>
 </html>
