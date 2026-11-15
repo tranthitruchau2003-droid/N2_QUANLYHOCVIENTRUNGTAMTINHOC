@@ -22,6 +22,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         }
 
         protected void Page_Load(object sender, EventArgs e)
+
         {
             if (!IsPostBack)
             {
@@ -73,7 +74,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
 
         private void CauHinhTheoQuyen()
         {
-            pnlXuLyLopThieu.Visible = !LaHocVien();
+            bool isHV = LaHocVien();
+            pnlXuLyLopThieu.Visible = !isHV;
+            if (pnlHuongDanHV != null) pnlHuongDanHV.Visible = isHV;
         }
 
         private void TaiDanhMuc()
@@ -142,6 +145,18 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 : "0";
         }
 
+        protected void btnLamMoiDK_Click(object sender, EventArgs e)
+        {
+            txtMaDK.Text = "";
+            TuKhoaDK = "";
+            txtTimDK.Text = "";
+            if (ddlKhoaHoc.Items.Count > 0) ddlKhoaHoc.SelectedIndex = 0;
+            TaiLopTheoKhoa(ddlKhoaHoc.SelectedValue);
+            CapNhatHocPhiTheoKhoa(ddlKhoaHoc.SelectedValue);
+            gvDangKy.PageIndex = 0;
+            TaiDuLieu();
+            pnlTB.Visible = false;
+        }
         private void TaiDuLieu()
         {
             string sqlLopMo = @"SELECT l.malop, l.tenlop, l.makhoahoc, kh.tenkhoahoc, kh.hocphi, kh.thoigianhoc, l.ngaykhaigiang,
@@ -725,7 +740,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             string fileName = $"BienLai_{maDK}_{DateTime.Now:yyyyMMdd_HHmmss}{ext}";
             fuMinhChungCK.SaveAs(Path.Combine(folder, fileName));
 
-            int countPT = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM PHIEUTHU")) + 1;
+            object maxPTObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(maphieuthu, 3, 10) AS INT)), 0) FROM PHIEUTHU WHERE maphieuthu LIKE 'PT[0-9]%'");
+            int countPT = Convert.ToInt32(maxPTObj) + 1;
             string maPT = "PT" + countPT.ToString("D2");
             while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM PHIEUTHU WHERE maphieuthu=@m", new[] { new SqlParameter("@m", maPT) })) > 0)
                 maPT = "PT" + (++countPT).ToString("D2");
@@ -1183,7 +1199,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             if (s1 >= 0 && s2 > s1)
                 thongTinSTK = ttCu.Substring(s1 + 1, s2 - s1 - 1);
 
-            int countPT = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM PHIEUTHU")) + 1;
+            object maxPTObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(maphieuthu, 3, 10) AS INT)), 0) FROM PHIEUTHU WHERE maphieuthu LIKE 'PT[0-9]%'");
+            int countPT = Convert.ToInt32(maxPTObj) + 1;
             string maPT = "PT" + countPT.ToString("D2");
             while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM PHIEUTHU WHERE maphieuthu=@m", new[] { new SqlParameter("@m", maPT) })) > 0)
                 maPT = "PT" + (++countPT).ToString("D2");

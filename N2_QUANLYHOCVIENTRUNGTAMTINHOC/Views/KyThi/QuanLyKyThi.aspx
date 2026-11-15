@@ -186,7 +186,13 @@
                                 <asp:BoundField DataField="makythi" HeaderText="Kỳ thi" />
                                 <asp:BoundField DataField="ngaythi" HeaderText="Ngày thi" DataFormatString="{0:dd/MM/yyyy}" />
                                 <asp:BoundField DataField="diem" HeaderText="Điểm số" ItemStyle-CssClass="fw-bold text-primary text-center" />
-                                <asp:BoundField DataField="ketqua" HeaderText="Kết quả" ItemStyle-CssClass="fw-semibold text-center" />
+                                <asp:TemplateField HeaderText="Kết quả" ItemStyle-CssClass="text-center" HeaderStyle-CssClass="text-center">
+                                    <ItemTemplate>
+                                        <span class='<%# Eval("ketqua").ToString() == "Đạt" ? "badge bg-success" : (Eval("ketqua").ToString() == "Không đạt" ? "badge bg-danger" : "text-muted") %>'>
+                                            <%# string.IsNullOrEmpty(Eval("ketqua").ToString()) ? "Chưa có điểm" : Eval("ketqua") %>
+                                        </span>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
                                 <asp:TemplateField HeaderText="Thao tác">
                                     <ItemTemplate>
                                         <div class="d-flex gap-1 justify-content-center">

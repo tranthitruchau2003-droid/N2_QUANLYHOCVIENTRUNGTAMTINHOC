@@ -185,7 +185,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
 
         private void TaiGoiYTimKiem()
         {
-            DataTable dt = kncsdl.DocDuLieu("SELECT mahocvien, hoten, dienthoai FROM HOCVIEN ORDER BY mahocvien DESC");
+            DataTable dt = kncsdl.DocDuLieu(" SELECT TOP 50 mahocvien, hoten, dienthoai FROM HOCVIEN ORDER BY mahocvien DESC");
             StringBuilder sb = new StringBuilder();
             foreach (DataRow r in dt.Rows)
             {
@@ -229,6 +229,23 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
             DataTable dt = LayDuLieuThongKeKhoaHoc();
             gvThongKeKH.DataSource = dt;
             gvThongKeKH.DataBind();
+
+            if (dt.Rows.Count > 0 && gvThongKeKH.FooterRow != null)
+            {
+                int tongDK = 0;
+                decimal tongThu = 0;
+                foreach (DataRow r in dt.Rows)
+                {
+                    tongDK += Convert.ToInt32(r["soluongdk"]);
+                    tongThu += Convert.ToDecimal(r["tongthucthu"]);
+                }
+                gvThongKeKH.FooterRow.CssClass = "table-light fw-bold";
+                gvThongKeKH.FooterRow.Cells[1].Text = "TỔNG CỘNG:";
+                gvThongKeKH.FooterRow.Cells[2].Text = tongDK.ToString("N0");
+                gvThongKeKH.FooterRow.Cells[2].CssClass = "fw-bold text-primary";
+                gvThongKeKH.FooterRow.Cells[3].Text = tongThu.ToString("N0") + " đ";
+                gvThongKeKH.FooterRow.Cells[3].CssClass = "fw-bold text-success";
+            }
 
             var labels = new List<string>();
             var soLuong = new List<int>();

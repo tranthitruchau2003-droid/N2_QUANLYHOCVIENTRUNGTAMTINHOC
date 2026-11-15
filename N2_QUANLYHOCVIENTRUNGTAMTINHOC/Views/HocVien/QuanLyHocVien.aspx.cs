@@ -12,6 +12,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+            if (q != "Admin" && q != "NhanVien")
+            {
+                Response.Redirect("~/Dashboard.aspx", true);
+                return;
+            }
             if (!IsPostBack)
             {
                 TaiDanhSach();
@@ -22,7 +28,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
 
         private void SinhMaHVMoi()
         {
-            int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM HOCVIEN")) + 1;
+            object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(mahocvien, 3, 10) AS INT)), 0) FROM HOCVIEN WHERE mahocvien LIKE 'HV[0-9]%'");
+            int soLuong = Convert.ToInt32(maxObj) + 1;
             string maHV = "HV" + soLuong.ToString("D2");
             while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM HOCVIEN WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", maHV) })) > 0)
             {
@@ -42,7 +49,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
 
         private void TaiGoiYTimKiem()
         {
-            DataTable dt = kncsdl.DocDuLieu("SELECT mahocvien, hoten, dienthoai FROM HOCVIEN ORDER BY mahocvien DESC");
+            DataTable dt = kncsdl.DocDuLieu("SELECT TOP 50 mahocvien, hoten, dienthoai FROM HOCVIEN ORDER BY mahocvien DESC");
             StringBuilder sb = new StringBuilder();
             foreach (DataRow r in dt.Rows)
             {
@@ -97,6 +104,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
 
         protected void btnThem_Click(object sender, EventArgs e)
         {
+            string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+            if (q != "Admin" && q != "NhanVien") return;
             if (!KiemTraDuLieu()) return;
 
             try
@@ -153,6 +162,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
 
         protected void btnCapNhat_Click(object sender, EventArgs e)
         {
+            string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+            if (q != "Admin" && q != "NhanVien") return;
             if (!KiemTraDuLieu()) return;
 
             try
@@ -236,6 +247,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
 
         protected void btnXoaChinhThuc_Click(object sender, EventArgs e)
         {
+            string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+            if (q != "Admin" && q != "NhanVien") return;
             string ma = hfMaHocVienXoa.Value;
             if (!string.IsNullOrEmpty(ma))
             {

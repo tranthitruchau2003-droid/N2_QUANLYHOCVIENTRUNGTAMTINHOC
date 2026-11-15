@@ -28,6 +28,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.GiangVien
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+            if (q != "Admin" && q != "NhanVien")
+            {
+                Response.Redirect("~/Dashboard.aspx", true);
+                return;
+            }
             txtEmail.Attributes.Add("readonly", "readonly");
             txtEmail.Attributes.Add("onfocus", "this.removeAttribute('readonly');");
 
@@ -46,7 +52,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.GiangVien
 
         private void SinhMaGVMoi()
         {
-            int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM GIANGVIEN")) + 1;
+            object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(magiangvien, 3, 10) AS INT)), 0) FROM GIANGVIEN WHERE magiangvien LIKE 'GV[0-9]%'");
+            int soLuong = Convert.ToInt32(maxObj) + 1;
             string maGV = "GV" + soLuong.ToString("D2");
             while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM GIANGVIEN WHERE magiangvien=@ma", new[] { new SqlParameter("@ma", maGV) })) > 0)
             {

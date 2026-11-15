@@ -58,7 +58,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                 if (dtAdmin.Rows.Count > 0)
                 {
                     string mkDB = dtAdmin.Rows[0]["matkhau"]?.ToString() ?? "";
-                    if (string.Equals(mkDB, p, StringComparison.Ordinal))
+                    if (MasterPage.KiemTraMatKhau(p, mkDB))
                     {
                         HttpRuntime.Cache.Remove(cacheKey);
                         string quyen = MasterPage.ChuanHoaQuyen(dtAdmin.Rows[0]["quyen"]);
@@ -85,11 +85,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     string mkDB = dtGV.Rows[0]["matkhau"] != DBNull.Value ? dtGV.Rows[0]["matkhau"].ToString().Trim() : "";
                     string mkHieuLuc = string.IsNullOrEmpty(mkDB) ? sdtGV : mkDB;
 
-                    if (string.Equals(mkHieuLuc, p, StringComparison.Ordinal))
+                    if (MasterPage.KiemTraMatKhau(p, mkHieuLuc))
                     {
                         HttpRuntime.Cache.Remove(cacheKey);
                         string maGV = dtGV.Rows[0]["magiangvien"].ToString();
-                        bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || string.Equals(mkDB, sdtGV, StringComparison.Ordinal);
+                        bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || MasterPage.KiemTraMatKhau(sdtGV, mkDB);
 
                         Session["TenDangNhap"] = maGV;
                         Session["HoTen"] = dtGV.Rows[0]["hoten"].ToString();
@@ -114,11 +114,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     string mkDB = dtHV.Rows[0]["matkhau"] != DBNull.Value ? dtHV.Rows[0]["matkhau"].ToString().Trim() : "";
                     string mkHieuLuc = string.IsNullOrEmpty(mkDB) ? sdtHV : mkDB;
 
-                    if (!string.IsNullOrEmpty(mkHieuLuc) && string.Equals(mkHieuLuc, p, StringComparison.Ordinal))
+                    if (!string.IsNullOrEmpty(mkHieuLuc) && MasterPage.KiemTraMatKhau(p, mkHieuLuc))
                     {
                         HttpRuntime.Cache.Remove(cacheKey);
                         string maHV = dtHV.Rows[0]["mahocvien"].ToString();
-                        bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || (!string.IsNullOrEmpty(sdtHV) && string.Equals(mkDB, sdtHV, StringComparison.Ordinal));
+                        bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || (!string.IsNullOrEmpty(sdtHV) && MasterPage.KiemTraMatKhau(sdtHV, mkDB));
 
                         Session["TenDangNhap"] = maHV;
                         Session["HoTen"] = dtHV.Rows[0]["hoten"].ToString();
@@ -208,7 +208,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     return;
                 }
 
-                int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM HOCVIEN")) + 1;
+                object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(mahocvien, 3, 10) AS INT)), 0) FROM HOCVIEN WHERE mahocvien LIKE 'HV[0-9]%'");
+                int soLuong = Convert.ToInt32(maxObj) + 1;
                 string maHV = "HV" + soLuong.ToString("D2");
                 while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM HOCVIEN WHERE mahocvien=@ma", new[] { new SqlParameter("@ma", maHV) })) > 0)
                     maHV = "HV" + (++soLuong).ToString("D2");
@@ -222,7 +223,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     new SqlParameter("@dt", sdt),
                     new SqlParameter("@em", string.IsNullOrEmpty(email) ? (object)DBNull.Value : email),
                     new SqlParameter("@dc", txtDKDiaChi.Text.Trim()),
-                    new SqlParameter("@mk", matKhau)
+                    new SqlParameter("@mk", MasterPage.BamMatKhau(matKhau))
                 });
 
                 Session["TenDangNhap"] = maHV;

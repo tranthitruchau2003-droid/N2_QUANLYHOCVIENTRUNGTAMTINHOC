@@ -1,6 +1,9 @@
 ﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="MasterPage.master.cs" Inherits="N2_QUANLYHOCVIENTRUNGTAMTINHOC.MasterPage" %>
 <!DOCTYPE html>
 <html lang="vi">
+
+        
+
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -32,6 +35,180 @@
         }
     </style>
     <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
+    <script>
+    // @ts-nocheck
+    document.addEventListener("DOMContentLoaded", function () {
+        var sidebar = document.getElementById('sidebar');
+        var isCollapsed = localStorage.getItem('sidebar_collapsed');
+        if (sidebar && isCollapsed === 'true') {
+            sidebar.classList.add('collapsed');
+        }
+
+        var navLinks = document.querySelectorAll('.sidebar .sidebar-nav li a');
+        var currentPath = window.location.pathname.toLowerCase();
+        
+        var activeLink = null;
+        navLinks.forEach(function (link) {
+            var href = (link.getAttribute('href') || '').toLowerCase();
+            if (href && href !== '#' && currentPath.indexOf(href.replace('~', '').toLowerCase()) !== -1) {
+                activeLink = link;
+            }
+        });
+
+        if (activeLink) {
+            navLinks.forEach(function (l) {
+                l.classList.remove('active-orange');
+                if (l.parentElement) l.parentElement.classList.remove('active-orange');
+            });
+            activeLink.classList.add('active-orange');
+            if (activeLink.parentElement) activeLink.parentElement.classList.add('active-orange');
+            localStorage.setItem('active_menu_href', activeLink.getAttribute('href'));
+        } else {
+            var savedHref = localStorage.getItem('active_menu_href');
+            if (savedHref) {
+                navLinks.forEach(function (link) {
+                    if ((link.getAttribute('href') || '').toLowerCase() === savedHref.toLowerCase()) {
+                        link.classList.add('active-orange');
+                        if (link.parentElement) link.parentElement.classList.add('active-orange');
+                    }
+                });
+            }
+        }
+
+        navLinks.forEach(function (link) {
+            link.addEventListener('click', function () {
+                navLinks.forEach(function (l) {
+                    l.classList.remove('active-orange');
+                    if (l.parentElement) l.parentElement.classList.remove('active-orange');
+                });
+                this.classList.add('active-orange');
+                if (this.parentElement) this.parentElement.classList.add('active-orange');
+                var href = this.getAttribute('href');
+                if (href && href !== '#') {
+                    localStorage.setItem('active_menu_href', href);
+                }
+            });
+        });
+
+        var m = document.getElementById('modalDoiMatKhau');
+        if (m) {
+            m.addEventListener('hidden.bs.modal', function () {
+                ['txtMKCu', 'txtMKMoi', 'txtMKXacNhan'].forEach(function (id) {
+                    var e = document.getElementById(id);
+                    if (e) { e.value = ''; e.type = 'password'; }
+                });
+                m.querySelectorAll('.bi-eye-slash').forEach(function (i) {
+                    i.classList.remove('bi-eye-slash');
+                    i.classList.add('bi-eye');
+                });
+                anLoiDoiMK();
+            });
+        }
+
+        // Nút quay lại đầu trang
+        var btnTop = document.getElementById('btnBackToTop');
+        window.addEventListener('scroll', function () {
+            if (!btnTop) return;
+            btnTop.style.display = (window.scrollY > 300) ? 'flex' : 'none';
+        });
+    });
+
+    function toggleHienMatKhau(inputId, btn) {
+        var inp = document.getElementById(inputId);
+        if (!inp) return;
+        var icon = btn.querySelector('i');
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            if (icon) { icon.classList.remove('bi-eye'); icon.classList.add('bi-eye-slash'); }
+        } else {
+            inp.type = 'password';
+            if (icon) { icon.classList.remove('bi-eye-slash'); icon.classList.add('bi-eye'); }
+        }
+    }
+
+    function anLoiDoiMK() {
+        var pnl = document.getElementById('pnlLoiDoiMK');
+        if (pnl && !pnl.classList.contains('d-none')) pnl.classList.add('d-none');
+    }
+
+    function baoLoiTrongModalDoiMK(msg) {
+        var pnl = document.getElementById('pnlLoiDoiMK');
+        var span = document.getElementById('spanLoiDoiMK');
+        if (pnl && span) {
+            span.innerText = msg;
+            pnl.classList.remove('d-none');
+        }
+    }
+
+    function kiemTraFormDoiMK() {
+        anLoiDoiMK();
+        var mkCu = (document.getElementById('txtMKCu')?.value || '').trim();
+        var mkMoi = (document.getElementById('txtMKMoi')?.value || '').trim();
+        var mkXN = (document.getElementById('txtMKXacNhan')?.value || '').trim();
+
+        if (!mkCu) { baoLoiTrongModalDoiMK('Vui lòng nhập Mật khẩu hiện tại!'); document.getElementById('txtMKCu')?.focus(); return false; }
+        if (!mkMoi) { baoLoiTrongModalDoiMK('Vui lòng nhập Mật khẩu mới!'); document.getElementById('txtMKMoi')?.focus(); return false; }
+        if (mkMoi.indexOf(' ') !== -1) { baoLoiTrongModalDoiMK('Mật khẩu mới không được chứa khoảng trắng!'); document.getElementById('txtMKMoi')?.focus(); return false; }
+        if (mkMoi.length < 6 || mkMoi.length > 50) { baoLoiTrongModalDoiMK('Mật khẩu mới phải từ 6 đến 50 ký tự!'); document.getElementById('txtMKMoi')?.focus(); return false; }
+        if (mkMoi === mkCu) { baoLoiTrongModalDoiMK('Mật khẩu mới không được trùng với mật khẩu hiện tại!'); document.getElementById('txtMKMoi')?.focus(); return false; }
+        if (!mkXN) { baoLoiTrongModalDoiMK('Vui lòng nhập Xác nhận mật khẩu mới!'); document.getElementById('txtMKXacNhan')?.focus(); return false; }
+        if (mkMoi !== mkXN) { baoLoiTrongModalDoiMK('Xác nhận mật khẩu mới không khớp!'); document.getElementById('txtMKXacNhan')?.focus(); return false; }
+        return true;
+    }
+
+    function moModalDoiMKBatBuoc() {
+        var check = function () {
+            var el = document.getElementById('modalDoiMatKhau');
+            if (el && window.bootstrap && document.readyState === 'complete') {
+                var btnClose = document.getElementById('btnCloseDoiMK');
+                var btnHuy = document.getElementById('btnHuyDoiMK');
+                var alertBox = document.getElementById('alertBatBuocDoiMK');
+                var title = document.getElementById('titleDoiMK');
+
+                if (btnClose) btnClose.style.display = 'none';
+                if (btnHuy) btnHuy.style.display = 'none';
+                if (alertBox) alertBox.classList.remove('d-none');
+                if (title) title.innerHTML = '<i class="bi bi-shield-lock-fill me-2"></i>Yêu cầu Đổi Mật khẩu Lần đầu';
+
+                var modal = window.bootstrap.Modal.getOrCreateInstance(el, { backdrop: 'static', keyboard: false });
+                modal.show();
+            } else {
+                setTimeout(check, 100);
+            }
+        };
+        check();
+    }
+
+    function hienThiThongBaoMaster(msg, moLaiDoiMK, batBuoc) {
+        var tryShow = function () {
+            if (!window.bootstrap) { setTimeout(tryShow, 80); return; }
+            if (moLaiDoiMK) {
+                baoLoiTrongModalDoiMK(msg);
+                if (batBuoc) { moModalDoiMKBatBuoc(); }
+                else {
+                    var mDoiMK = document.getElementById('modalDoiMatKhau');
+                    if (mDoiMK) window.bootstrap.Modal.getOrCreateInstance(mDoiMK).show();
+                }
+            } else {
+                var modalEl = document.getElementById('modalThongBaoChung');
+                var msgEl = document.getElementById('msgThongBaoChung');
+                if (modalEl && msgEl) {
+                    msgEl.innerText = msg;
+                    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                }
+            }
+        };
+        tryShow();
+    }
+
+    function toggleSidebar() {
+        var sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebar_collapsed', String(sidebar.classList.contains('collapsed')));
+        }
+    }
+    </script>
 </head>
 
 <body>
@@ -357,219 +534,11 @@
     </form>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // @ts-nocheck
-        document.addEventListener("DOMContentLoaded", function () {
-            var sidebar = document.getElementById('sidebar');
-            var isCollapsed = localStorage.getItem('sidebar_collapsed');
-            if (sidebar && isCollapsed === 'true') {
-                sidebar.classList.add('collapsed');
-            }
-
-            var navLinks = document.querySelectorAll('.sidebar .sidebar-nav li a');
-            var currentPath = window.location.pathname.toLowerCase();
-            
-            // 1. Xác định menu active dựa trên URL hiện tại
-            var activeLink = null;
-            navLinks.forEach(function (link) {
-                var href = (link.getAttribute('href') || '').toLowerCase();
-                if (href && href !== '#' && currentPath.indexOf(href.replace('~', '').toLowerCase()) !== -1) {
-                    activeLink = link;
-                }
-            });
-
-            // 2. Nếu khớp URL, lưu lại và active; nếu không khớp, khôi phục từ localStorage
-            if (activeLink) {
-                navLinks.forEach(function (l) {
-                    l.classList.remove('active-orange');
-                    if (l.parentElement) l.parentElement.classList.remove('active-orange');
-                });
-                activeLink.classList.add('active-orange');
-                if (activeLink.parentElement) activeLink.parentElement.classList.add('active-orange');
-                localStorage.setItem('active_menu_href', activeLink.getAttribute('href'));
-            } else {
-                var savedHref = localStorage.getItem('active_menu_href');
-                if (savedHref) {
-                    navLinks.forEach(function (link) {
-                        if ((link.getAttribute('href') || '').toLowerCase() === savedHref.toLowerCase()) {
-                            link.classList.add('active-orange');
-                            if (link.parentElement) link.parentElement.classList.add('active-orange');
-                        }
-                    });
-                }
-            }
-
-            // 3. Bắt sự kiện click để đổi và giữ nguyên nền cam cho đến khi chọn mục khác
-            navLinks.forEach(function (link) {
-                link.addEventListener('click', function () {
-                    navLinks.forEach(function (l) {
-                        l.classList.remove('active-orange');
-                        if (l.parentElement) l.parentElement.classList.remove('active-orange');
-                    });
-                    this.classList.add('active-orange');
-                    if (this.parentElement) this.parentElement.classList.add('active-orange');
-                    var href = this.getAttribute('href');
-                    if (href && href !== '#') {
-                        localStorage.setItem('active_menu_href', href);
-                    }
-                });
-            });
-        });
-document.addEventListener("DOMContentLoaded", function () {
-    var m = document.getElementById('modalDoiMatKhau');
-    if (!m) return;
-    m.addEventListener('hidden.bs.modal', function () {
-        ['txtMKCu', 'txtMKMoi', 'txtMKXacNhan'].forEach(function (id) {
-            var e = document.getElementById(id);
-            if (e) { e.value = ''; e.type = 'password'; }
-        });
-        m.querySelectorAll('.bi-eye-slash').forEach(function (i) {
-            i.classList.remove('bi-eye-slash');
-            i.classList.add('bi-eye');
-        });
-        anLoiDoiMK();
-    });
-});
-
-function toggleHienMatKhau(inputId, btn) {
-    var inp = document.getElementById(inputId);
-    if (!inp) return;
-    var icon = btn.querySelector('i');
-    if (inp.type === 'password') {
-        inp.type = 'text';
-        if (icon) {
-            icon.classList.remove('bi-eye');
-            icon.classList.add('bi-eye-slash');
-        }
-    } else {
-        inp.type = 'password';
-        if (icon) {
-            icon.classList.remove('bi-eye-slash');
-            icon.classList.add('bi-eye');
-        }
-    }
-}
-
-function anLoiDoiMK() {
-    var pnl = document.getElementById('pnlLoiDoiMK');
-    if (pnl && !pnl.classList.contains('d-none')) {
-        pnl.classList.add('d-none');
-    }
-}
-
-function baoLoiTrongModalDoiMK(msg) {
-    var pnl = document.getElementById('pnlLoiDoiMK');
-    var span = document.getElementById('spanLoiDoiMK');
-    if (pnl && span) {
-        span.innerText = msg;
-        pnl.classList.remove('d-none');
-    }
-}
-
-function kiemTraFormDoiMK() {
-    anLoiDoiMK();
-    var mkCu = (document.getElementById('txtMKCu')?.value || '').trim();
-    var mkMoi = (document.getElementById('txtMKMoi')?.value || '').trim();
-    var mkXN = (document.getElementById('txtMKXacNhan')?.value || '').trim();
-
-    if (!mkCu) {
-        baoLoiTrongModalDoiMK('Vui lòng nhập Mật khẩu hiện tại!');
-        document.getElementById('txtMKCu')?.focus();
-        return false;
-    }
-    if (!mkMoi) {
-        baoLoiTrongModalDoiMK('Vui lòng nhập Mật khẩu mới!');
-        document.getElementById('txtMKMoi')?.focus();
-        return false;
-    }
-    if (mkMoi.indexOf(' ') !== -1) {
-        baoLoiTrongModalDoiMK('Mật khẩu mới không được chứa khoảng trắng!');
-        document.getElementById('txtMKMoi')?.focus();
-        return false;
-    }
-    if (mkMoi.length < 6 || mkMoi.length > 50) {
-        baoLoiTrongModalDoiMK('Mật khẩu mới phải từ 6 đến 50 ký tự!');
-        document.getElementById('txtMKMoi')?.focus();
-        return false;
-    }
-    if (mkMoi === mkCu) {
-        baoLoiTrongModalDoiMK('Mật khẩu mới không được trùng với mật khẩu hiện tại!');
-        document.getElementById('txtMKMoi')?.focus();
-        return false;
-    }
-    if (!mkXN) {
-        baoLoiTrongModalDoiMK('Vui lòng nhập Xác nhận mật khẩu mới!');
-        document.getElementById('txtMKXacNhan')?.focus();
-        return false;
-    }
-    if (mkMoi !== mkXN) {
-        baoLoiTrongModalDoiMK('Xác nhận mật khẩu mới không khớp!');
-        document.getElementById('txtMKXacNhan')?.focus();
-        return false;
-    }
-    return true;
-}
-
-function moModalDoiMKBatBuoc() {
-    var check = function () {
-        var el = document.getElementById('modalDoiMatKhau');
-        if (el && window.bootstrap) {
-            var btnClose = document.getElementById('btnCloseDoiMK');
-            var btnHuy = document.getElementById('btnHuyDoiMK');
-            var alertBox = document.getElementById('alertBatBuocDoiMK');
-            var title = document.getElementById('titleDoiMK');
-
-            if (btnClose) btnClose.style.display = 'none';
-            if (btnHuy) btnHuy.style.display = 'none';
-            if (alertBox) alertBox.classList.remove('d-none');
-            if (title) title.innerHTML = '<i class="bi bi-shield-lock-fill me-2"></i>Yêu cầu Đổi Mật khẩu Lần đầu';
-
-            var modal = window.bootstrap.Modal.getOrCreateInstance(el, {
-                backdrop: 'static',
-                keyboard: false
-            });
-            modal.show();
-        } else {
-            setTimeout(check, 100);
-        }
-    };
-    check();
-}
-
-function hienThiThongBaoMaster(msg, moLaiDoiMK, batBuoc) {
-    var tryShow = function () {
-        if (!window.bootstrap) {
-            setTimeout(tryShow, 80);
-            return;
-        }
-        if (moLaiDoiMK) {
-            baoLoiTrongModalDoiMK(msg);
-            if (batBuoc) {
-                moModalDoiMKBatBuoc();
-            } else {
-                var mDoiMK = document.getElementById('modalDoiMatKhau');
-                if (mDoiMK) window.bootstrap.Modal.getOrCreateInstance(mDoiMK).show();
-            }
-        } else {
-            var modalEl = document.getElementById('modalThongBaoChung');
-            var msgEl = document.getElementById('msgThongBaoChung');
-            if (modalEl && msgEl) {
-                msgEl.innerText = msg;
-                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
-            }
-        }
-    };
-    tryShow();
-}
-
-function toggleSidebar() {
-    var sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        sidebar.classList.toggle('collapsed');
-        var isNowCollapsed = sidebar.classList.contains('collapsed');
-        localStorage.setItem('sidebar_collapsed', String(isNowCollapsed));
-    }
-}
-    </script>
+    <button type="button" id="btnBackToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'});"
+        class="btn btn-primary rounded-circle shadow align-items-center justify-content-center"
+        style="position: fixed; bottom: 24px; right: 24px; width: 42px; height: 42px; display: none; z-index: 1055;"
+        title="Lên đầu trang">
+        <i class="bi bi-arrow-up"></i>
+    </button>
 </body>
 </html>

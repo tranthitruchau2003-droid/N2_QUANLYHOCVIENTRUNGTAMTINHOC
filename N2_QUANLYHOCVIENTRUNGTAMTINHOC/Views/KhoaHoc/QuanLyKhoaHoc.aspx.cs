@@ -20,6 +20,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+            if (q != "Admin" && q != "NhanVien")
+            {
+                Response.Redirect("~/Dashboard.aspx", true);
+                return;
+            }
             if (IsPostBack)
             {
                 pnlTB.Visible = false;
@@ -35,7 +41,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
 
         private void SinhMaKHMoi()
         {
-            int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM KHOAHOC")) + 1;
+            object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(makhoahoc, 3, 10) AS INT)), 0) FROM KHOAHOC WHERE makhoahoc LIKE 'KH[0-9]%'");
+            int soLuong = Convert.ToInt32(maxObj) + 1;
             string maKH = "KH" + soLuong.ToString("D2");
             while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM KHOAHOC WHERE makhoahoc=@ma", new[] { new SqlParameter("@ma", maKH) })) > 0)
             {

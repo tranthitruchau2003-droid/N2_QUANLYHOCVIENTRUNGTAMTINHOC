@@ -30,6 +30,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            string q = MasterPage.ChuanHoaQuyen(Session["Quyen"]);
+            if (q != "Admin" && q != "NhanVien")
+            {
+                Response.Redirect("~/Dashboard.aspx", true);
+                return;
+            }
             if (!IsPostBack)
             {
                 TuKhoaHienTai = "";
@@ -50,7 +56,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 
         private void SinhMaPTMoi()
         {
-            int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM PHIEUTHU")) + 1;
+            object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(maphieuthu, 3, 10) AS INT)), 0) FROM PHIEUTHU WHERE maphieuthu LIKE 'PT[0-9]%'");
+            int soLuong = Convert.ToInt32(maxObj) + 1;
             string maPT = "PT" + soLuong.ToString("D2");
             while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM PHIEUTHU WHERE maphieuthu=@ma", new[] { new SqlParameter("@ma", maPT) })) > 0)
             {
@@ -100,7 +107,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
 
         private void TaiGoiYTimKiem()
         {
-            DataTable dt = kncsdl.DocDuLieu(@"SELECT pt.maphieuthu, hv.hoten FROM PHIEUTHU pt 
+            DataTable dt = kncsdl.DocDuLieu(@" SELECT TOP 50 pt.maphieuthu, hv.hoten FROM PHIEUTHU pt 
                                               JOIN DANGKY dk ON pt.madangky=dk.madangky 
                                               JOIN HOCVIEN hv ON dk.mahocvien=hv.mahocvien 
                                               ORDER BY pt.maphieuthu DESC");

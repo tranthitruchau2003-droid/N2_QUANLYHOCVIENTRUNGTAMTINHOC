@@ -151,9 +151,9 @@
             responsive: true,
             plugins: {
                 legend: {
-                    position: 'bottom',
-                    align: 'start',
-                    labels: { boxWidth: 14, padding: 12, font: { size: 12 } }
+                    position: window.innerWidth >= 992 ? 'right' : 'bottom',
+                    align: 'center',
+                    labels: { boxWidth: 12, padding: 10, font: { size: 11 } }
                 }
             }
         }

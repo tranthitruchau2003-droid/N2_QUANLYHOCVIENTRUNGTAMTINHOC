@@ -33,6 +33,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         protected global::System.Web.UI.WebControls.Literal litTB;
 
         /// <summary>
+        /// pnlHuongDanHV control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlHuongDanHV;
+
+        /// <summary>
         /// ddlLocKhoaMo control.
         /// </summary>
         /// <remarks>
@@ -139,6 +148,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnDoiLop;
+
+        /// <summary>
+        /// btnLamMoiDK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnLamMoiDK;
 
         /// <summary>
         /// pnlXuLyLopThieu control.

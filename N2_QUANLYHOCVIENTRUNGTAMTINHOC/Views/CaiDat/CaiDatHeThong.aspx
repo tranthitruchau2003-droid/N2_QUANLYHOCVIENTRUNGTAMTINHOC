@@ -27,9 +27,10 @@
                         <label class="small fw-bold">Chọn bản sao lưu (.bak) để phục hồi</label>
                         <asp:DropDownList ID="ddlFileBak" runat="server" CssClass="form-select" />
                     </div>
-                    <asp:Button ID="btnRestore" runat="server" Text="PHỤC HỒI CƠ SỞ DỮ LIỆU" CssClass="btn btn-orange w-100 fw-bold"
-                        OnClientClick="return confirm('CẢNH BÁO: Phục hồi sẽ ghi đè toàn bộ dữ liệu hiện tại. Bạn có chắc chắn?');"
-                        OnClick="btnRestore_Click" />
+                    <asp:Button ID="btnRestore" runat="server" ClientIDMode="Static" Text="PHỤC HỒI CƠ SỞ DỮ LIỆU" CssClass="d-none" OnClick="btnRestore_Click" />
+                    <button type="button" class="btn btn-orange w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#modalXacNhanRestore">
+                        PHỤC HỒI CƠ SỞ DỮ LIỆU
+                    </button>
                 </div>
             </div>
         </div>
@@ -53,6 +54,27 @@
                             </Columns>
                         </asp:GridView>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalXacNhanRestore" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Cảnh báo Phục hồi CSDL</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-4 text-center">
+                    <i class="bi bi-database-exclamation display-4 text-danger mb-3 d-block"></i>
+                    <p class="fs-6 mb-0">Phục hồi từ file sao lưu sẽ <strong>ghi đè toàn bộ dữ liệu hiện tại</strong> và không thể hoàn tác.<br/>Bạn có chắc chắn muốn tiếp tục không?</p>
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-danger px-4 fw-bold" onclick="document.getElementById('btnRestore').click();">
+                        <i class="bi bi-check-lg me-1"></i> Đồng ý Phục hồi
+                    </button>
                 </div>
             </div>
         </div>

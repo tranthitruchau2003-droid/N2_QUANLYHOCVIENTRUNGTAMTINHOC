@@ -28,6 +28,14 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </asp:Panel>
 
+    <asp:Panel ID="pnlHuongDanHV" runat="server" Visible="false" CssClass="alert alert-primary py-2 px-3 small mb-3 shadow-sm border-0">
+        <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+        <strong>Quy trình đăng ký học:</strong>
+        <span class="badge bg-primary mx-1">Bước 1</span> Chọn lớp đang mở ở bảng dưới &rarr;
+        <span class="badge bg-warning text-dark mx-1">Bước 2</span> Bấm <strong>Xác nhận Đăng ký</strong> &rarr;
+        <span class="badge bg-success mx-1">Bước 3</span> Bấm nút <strong>Đóng HP</strong> để quét mã QR & gửi ảnh biên lai.
+    </asp:Panel>
+
     <!-- Thẻ ẩn để hứng tính năng tự điền (autofill) của trình duyệt -->
     <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; overflow: hidden;">
         <input type="text" name="fake_username_autofill" tabindex="-1" />
@@ -51,12 +59,14 @@
                     <Columns>
                         <asp:BoundField DataField="malop" HeaderText="Mã Lớp" />
                         <asp:TemplateField HeaderText="Tên Lớp">
-                            <ItemTemplate>
-                                <a href='<%# ResolveUrl("~/Views/LopHoc/QuanLyLopHoc.aspx") %>' class="fw-bold text-primary text-decoration-none" title="Xem chi tiết Lớp học & Thời khóa biểu">
-                                    <%# Eval("tenlop") %> <i class="bi bi-box-arrow-up-right small"></i>
-                                </a>
-                            </ItemTemplate>
-                        </asp:TemplateField>
+    <ItemTemplate>
+        <asp:HyperLink ID="lnkTenLop" runat="server"
+            NavigateUrl="~/Views/LopHoc/QuanLyLopHoc.aspx"
+            CssClass="fw-bold text-primary text-decoration-none"
+            ToolTip="Xem chi tiết Lớp học & Thời khóa biểu"
+            Text='<%# Eval("tenlop") + " <i class=\"bi bi-box-arrow-up-right small\"></i>" %>' />
+    </ItemTemplate>
+</asp:TemplateField>
                         <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
                         <asp:BoundField DataField="tengiangvien" HeaderText="Giảng viên giảng dạy" />
                         <asp:BoundField DataField="thoikhoabieu" HeaderText="Thời khóa biểu (Ca - Thứ - Phòng)" />
@@ -122,6 +132,7 @@
                             <div class="d-flex gap-2">
                                 <asp:Button ID="btnDangKy" runat="server" Text="Xác nhận Đăng ký" CssClass="btn btn-orange flex-grow-1" OnClick="btnDangKy_Click" />
                                 <asp:Button ID="btnDoiLop" runat="server" Text="Đổi Lớp" CssClass="btn btn-primary-gradient" OnClick="btnDoiLop_Click" />
+                                <asp:Button ID="btnLamMoiDK" runat="server" Text="Làm mới" CssClass="btn btn-secondary" OnClick="btnLamMoiDK_Click" CausesValidation="false" />
                             </div>
                         </ContentTemplate>
                         <Triggers>
@@ -300,7 +311,7 @@
                     <asp:HiddenField ID="hfMaDKThanhToan" runat="server" />
                     <asp:HiddenField ID="hfSoTienThanhToan" runat="server" />
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <asp:Button ID="btnXacNhanCK" runat="server" Text="Gửi Ảnh & Xác nhận Đã chuyển khoản" CssClass="btn btn-success fw-bold" OnClick="btnXacNhanCK_Click" />
+                    <asp:Button ID="btnXacNhanCK" runat="server" Text="Gửi Ảnh & Xác nhận Đã chuyển khoản" CssClass="btn btn-success fw-bold" OnClientClick="this.disabled=true; this.value='Đang tải ảnh lên...';" UseSubmitBehavior="false" OnClick="btnXacNhanCK_Click" />
                 </div>
             </div>
         </div>
@@ -379,7 +390,8 @@
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
-                    <asp:Button ID="btnXacNhanHoanTienAdmin" runat="server" Text="Gửi Ảnh & Xác nhận Đã hoàn tiền" CssClass="btn btn-danger btn-sm fw-bold" OnClick="btnXacNhanHoanTienAdmin_Click" />
+                    <asp:Button ID="btnXacNhanHoanTienAdmin" runat="server" Text="Gửi Ảnh & Xác nhận Đã hoàn tiền" CssClass="btn btn-danger btn-sm fw-bold"
+                    OnClientClick="this.disabled=true; this.value='Đang tải ảnh lên...';" UseSubmitBehavior="false" OnClick="btnXacNhanHoanTienAdmin_Click" />
                 </div>
             </div>
         </div>
@@ -464,6 +476,25 @@
         </div>
     </div>
 
+    <!-- POPUP CẢNH BÁO DUNG LƯỢNG / ĐỊNH DẠNG ẢNH -->
+<div class="modal fade" id="modalCanhBaoAnh" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white py-2">
+                <h6 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Cảnh báo Tệp ảnh</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="bi bi-file-earmark-x text-danger display-5 mb-2 d-block"></i>
+                <span id="msgCanhBaoAnh" class="fw-semibold small"></span>
+            </div>
+            <div class="modal-footer justify-content-center py-2 bg-light">
+                <button type="button" class="btn btn-sm btn-danger px-4 fw-semibold" data-bs-dismiss="modal">Đã hiểu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <script>
         // @ts-nocheck
         function showBootstrapModal(id) {
@@ -490,29 +521,47 @@
         function moModalQRHoanTienAdmin() { showBootstrapModal('modalQRHoanTienAdmin'); }
         function moModalThongBaoHoanTien() { showBootstrapModal('modalThongBaoHoanTien'); }
 
-        function xemTruocAnhCK(input) {
-            var preview = document.getElementById('imgXemTruocCK');
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    preview.src = e.target.result;
-                    preview.classList.remove('d-none');
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
+function hienPopupCanhBaoAnh(msg) {
+    var msgEl = document.getElementById('msgCanhBaoAnh');
+    if (msgEl) msgEl.innerText = msg;
+    showBootstrapModal('modalCanhBaoAnh');
+}
 
-        function xemTruocAnhHT(input) {
-            var preview = document.getElementById('imgXemTruocHT');
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    preview.src = e.target.result;
-                    preview.classList.remove('d-none');
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
+function xemTruocAnhCK(input) {
+    var preview = document.getElementById('imgXemTruocCK');
+    if (input.files && input.files[0]) {
+        if (input.files[0].size > 5 * 1024 * 1024) {
+            hienPopupCanhBaoAnh('Dung lượng ảnh vượt quá 5MB! Vui lòng chọn ảnh nhẹ hơn.');
+            input.value = '';
+            preview.classList.add('d-none');
+            return;
         }
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function xemTruocAnhHT(input) {
+    var preview = document.getElementById('imgXemTruocHT');
+    if (input.files && input.files[0]) {
+        if (input.files[0].size > 5 * 1024 * 1024) {
+            hienPopupCanhBaoAnh('Dung lượng ảnh vượt quá 5MB! Vui lòng chọn ảnh nhẹ hơn.');
+            input.value = '';
+            preview.classList.add('d-none');
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
 
        
 

@@ -125,8 +125,10 @@
                                                 CssClass="btn btn-sm btn-outline-primary" title="Sửa"><i class="bi bi-pencil"></i></asp:LinkButton>
                                             <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa"
                                                 onclick="hienThiModalXoaPT('<%# Eval("maphieuthu") %>'); return false;"><i class="bi bi-trash"></i></button>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="In phiếu"
-                                                onclick="inPhieu('<%# Eval("maphieuthu") %>','<%# Eval("hoten") %>','<%# Eval("sotienthu","{0:N0}") %>','<%# Eval("noidungthu") %>')"><i class="bi bi-printer"></i></button>
+                                           <button type="button" class="btn btn-sm btn-outline-secondary" title="In phiếu"
+                                                onclick='<%# "inPhieu(\"" + HttpUtility.JavaScriptStringEncode(Eval("maphieuthu").ToString()) + "\",\"" + HttpUtility.JavaScriptStringEncode(Eval("hoten").ToString()) + "\",\"" + Eval("sotienthu","{0:N0}") + "\",\"" + HttpUtility.JavaScriptStringEncode(Eval("noidungthu").ToString()) + "\")" %>'>
+                                                <i class="bi bi-printer"></i>
+                                            </button>
                                         </div>
                                     </ItemTemplate>
                                 </asp:TemplateField>

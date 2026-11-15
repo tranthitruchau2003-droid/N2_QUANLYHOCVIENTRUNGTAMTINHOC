@@ -131,7 +131,7 @@
                                 <ItemTemplate>
                                     <div class="d-flex gap-1 justify-content-center">
                                         <button type="button" class="btn btn-sm btn-outline-success" title="Tải / In chứng chỉ"
-                                            onclick="inChungChi('<%# Eval("sohieuchungchi") %>', '<%# Eval("hoten") %>', '<%# Eval("tenkhoahoc") %>', '<%# Eval("nienkhoa") %>', '<%# Eval("xeploai") %>', '<%# Eval("ngaycap", "{0:dd/MM/yyyy}") %>'); return false;">
+                                            onclick='<%# "inChungChi(\"" + HttpUtility.JavaScriptStringEncode(Eval("sohieuchungchi").ToString()) + "\",\"" + HttpUtility.JavaScriptStringEncode(Eval("hoten").ToString()) + "\",\"" + HttpUtility.JavaScriptStringEncode(Eval("tenkhoahoc").ToString()) + "\",\"" + HttpUtility.JavaScriptStringEncode(Eval("nienkhoa").ToString()) + "\",\"" + HttpUtility.JavaScriptStringEncode(Eval("xeploai").ToString()) + "\",\"" + Eval("ngaycap", "{0:dd/MM/yyyy}") + "\"); return false;" %>'>
                                             <i class="bi bi-printer"></i>
                                         </button>
                                         <asp:LinkButton ID="btnChonCC" runat="server" CommandName="ChonCC" CommandArgument='<%# Eval("machungchi") %>'

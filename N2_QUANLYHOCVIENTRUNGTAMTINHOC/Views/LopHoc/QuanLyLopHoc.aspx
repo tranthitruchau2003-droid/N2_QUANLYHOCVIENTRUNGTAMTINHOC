@@ -15,6 +15,8 @@
         .pagination-ys table > tbody > tr > td > a:hover { background-color: #EAF4FF; border-color: #1677D2; }
         .table-lophoc { font-size: 0.8rem; }
         .table-lophoc th, .table-lophoc td { vertical-align: middle !important; padding: 0.35rem 0.3rem !important; }
+        .tkb-cell-item { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .tkb-cell-item:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
     </style>
 </asp:Content>
 
@@ -46,10 +48,13 @@
                     <div class="mb-2"><label class="small fw-bold">Tên Lớp (*)</label><asp:TextBox ID="txtTenLop" runat="server" CssClass="form-control form-control-sm" autocomplete="new-password" placeholder="VD: Lớp Web K12 - Tối 2-4-6" /></div>
                     <div class="mb-2"><label class="small fw-bold">Thuộc Khóa học (*)</label><asp:DropDownList ID="ddlKhoaHoc" runat="server" CssClass="form-select form-select-sm" /></div>
                     <div class="mb-2"><label class="small fw-bold">Giảng viên phụ trách</label><asp:DropDownList ID="ddlGiangVien" runat="server" CssClass="form-select form-select-sm" /></div>
-                    <div class="mb-2"><label class="small fw-bold">Ngày khai giảng</label><asp:TextBox ID="txtKhaiGiang" runat="server" TextMode="Date" CssClass="form-control form-control-sm" /></div>
+                    <div class="mb-2">
+                        <label class="small fw-bold">Ngày khai giảng <span class="text-muted fw-normal">(Tự động +1 tuần dự trữ)</span></label>
+                        <asp:TextBox ID="txtKhaiGiang" runat="server" TextMode="Date" CssClass="form-control form-control-sm" />
+                    </div>
                     
                     <hr class="my-2" />
-                    <h6 class="small fw-bold text-dark mb-2"><i class="bi bi-clock-history me-1"></i>Thiết lập / Đổi Lịch học cho Lớp:</h6>
+                    <h6 class="small fw-bold text-dark mb-2"><i class="bi bi-clock-history me-1"></i>Thiết lập / Đổi Lịch học cố định:</h6>
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="small fw-bold">Ca học</label>
@@ -125,7 +130,7 @@
                             <asp:BoundField DataField="tenkhoahoc" HeaderText="Khóa học" />
                             <asp:BoundField DataField="hotengv" HeaderText="Giảng viên" />
                             <asp:BoundField DataField="thoikhoabieu" HeaderText="Thời khóa biểu (Ca - Thứ - Phòng)" />
-                            <asp:BoundField DataField="thoigianlop" HeaderText="Thời gian học (Từ - Đến)" ItemStyle-CssClass="text-nowrap" />
+                            <asp:BoundField DataField="thoigianlop" HeaderText="Thời gian học (Gồm 1 tuần dự trữ)" ItemStyle-CssClass="text-nowrap" />
                             <asp:BoundField DataField="siso" HeaderText="Sĩ số" ItemStyle-CssClass="text-center fw-semibold text-success" />
                             <asp:TemplateField HeaderText="Thao tác">
                                 <ItemTemplate>
@@ -153,68 +158,166 @@
         </div>
     </div>
 
-    <!-- PHẦN 2 (DƯỚI): BẢNG THỜI KHÓA BIỂU DẠNG LƯỚI THEO THỨ & CA HỌC -->
+    <!-- PHẦN 2 (DƯỚI): BẢNG THỜI KHÓA BIỂU THEO TUẦN (HỖ TRỢ BÁO NGHỈ ĐỘT XUẤT & DẠY BÙ TUẦN DỰ TRỮ) -->
     <asp:Panel ID="pnlLuoiTKB" runat="server" CssClass="card card-custom">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-calendar3-week-fill text-primary me-2"></i>Bảng Thời Khóa Biểu Trong Tuần (Bấm trực tiếp vào lớp để đổi lịch)</span>
-            <span class="badge bg-info-subtle text-primary">Lịch học cập nhật trực tiếp từ Phòng Đào tạo</span>
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <i class="bi bi-calendar3-week-fill text-primary me-2"></i>
+                <span class="fw-bold">Thời Khóa Biểu Chi Tiết Theo Tuần</span>
+                <small class="text-muted ms-2 d-none d-md-inline">(Bấm vào ô lớp để báo nghỉ đột xuất & xếp bù vào tuần dự trữ)</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <asp:LinkButton ID="btnTuanTruoc" runat="server" CssClass="btn btn-sm btn-outline-secondary" OnClick="btnTuanTruoc_Click" CausesValidation="false" title="Tuần trước">
+                    <i class="bi bi-chevron-left"></i> Tuần trước
+                </asp:LinkButton>
+                <asp:TextBox ID="txtChonNgayTKB" runat="server" TextMode="Date" CssClass="form-control form-control-sm fw-semibold text-primary" style="width: 145px;"
+                    AutoPostBack="true" OnTextChanged="txtChonNgayTKB_TextChanged" />
+                <asp:LinkButton ID="btnTuanHienTai" runat="server" CssClass="btn btn-sm btn-outline-primary" OnClick="btnTuanHienTai_Click" CausesValidation="false">
+                    Hôm nay
+                </asp:LinkButton>
+                <asp:LinkButton ID="btnTuanSau" runat="server" CssClass="btn btn-sm btn-outline-secondary" OnClick="btnTuanSau_Click" CausesValidation="false" title="Tuần sau">
+                    Tuần sau <i class="bi bi-chevron-right"></i>
+                </asp:LinkButton>
+            </div>
+        </div>
+        <div class="bg-light px-3 py-2 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2 small">
+            <div>
+                <strong>Tuần đang xem:</strong> <span class="text-primary fw-bold"><asp:Literal ID="litKhoangTuanTKB" runat="server" /></span>
+            </div>
+            <div class="d-flex gap-3">
+                <span><span class="badge bg-primary-subtle text-primary border border-primary">Lịch học chính</span></span>
+                <span><span class="badge bg-danger-subtle text-danger border border-danger">Nghỉ đột xuất</span></span>
+                <span><span class="badge bg-success-subtle text-success border border-success">Dạy bù (Tuần dự trữ)</span></span>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <asp:Literal ID="litBangTKB" runat="server" />
+                <small class="text-muted ms-2 d-none d-md-inline"><asp:Literal ID="litGhiChuTKB" runat="server" /></small>
             </div>
         </div>
     </asp:Panel>
 
-    <!-- POPUP ĐỔI LỊCH HỌC TRỰC TIẾP TRÊN TKB -->
+    <!-- POPUP XỬ LÝ TRỰC TIẾP TRÊN TKB: BÁO NGHỈ ĐỘT XUẤT / DẠY BÙ HOẶC ĐỔI LỊCH CỐ ĐỊNH -->
     <div class="modal fade" id="modalDoiLichTKB" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-calendar2-check me-2"></i>Đổi Lịch học: <span id="lblTenLopDoiLich"></span></h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-calendar2-check me-2"></i>Điều chỉnh Lịch học: <span id="lblTenLopDoiLich"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <asp:HiddenField ID="hfMaLopDoiLich" runat="server" ClientIDMode="Static" />
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <label class="small fw-bold">Ca học</label>
-                            <asp:DropDownList ID="ddlCaHocTKB" runat="server" ClientIDMode="Static" CssClass="form-select form-select-sm">
-                                <asp:ListItem Text="Ca sáng" Value="Ca sáng" />
-                                <asp:ListItem Text="Ca chiều" Value="Ca chiều" />
-                                <asp:ListItem Text="Ca tối" Value="Ca tối" />
-                            </asp:DropDownList>
+                    <asp:HiddenField ID="hfNgayChonTrenTKB" runat="server" ClientIDMode="Static" />
+
+                    <ul class="nav nav-tabs mb-3" id="tabLichTKB" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold text-danger" id="tab-nghibu-btn" data-bs-toggle="tab" data-bs-target="#tab-nghibu" type="button" role="tab">
+                                <i class="bi bi-exclamation-circle me-1"></i>1. Báo nghỉ đột xuất & Xếp bù (Tuần dự trữ)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-primary" id="tab-codinh-btn" data-bs-toggle="tab" data-bs-target="#tab-codinh" type="button" role="tab">
+                                <i class="bi bi-arrow-repeat me-1"></i>2. Đổi lịch cố định cả khóa
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- TAB 1: BÁO NGHỈ ĐỘT XUẤT & XẾP DẠY BÙ VÀO TUẦN DỰ TRỮ -->
+                        <div class="tab-pane fade show active" id="tab-nghibu" role="tabpanel">
+                            <div class="alert alert-warning py-2 small mb-3">
+                                <i class="bi bi-info-circle-fill me-1"></i>
+                                <strong>Tuần dự trữ của lớp này:</strong> <span id="lblTuanDuTruGoiY" class="fw-bold text-dark"></span>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="small fw-bold text-danger">Ngày giảng viên nghỉ đột xuất (*)</label>
+                                    <asp:TextBox ID="txtNgayNghiDotXuat" runat="server" ClientIDMode="Static" TextMode="Date" CssClass="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="small fw-bold">Lý do nghỉ</label>
+                                    <asp:TextBox ID="txtLyDoNghi" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm" placeholder="VD: Giảng viên bận công tác đột xuất..." />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold text-success">Ngày dạy bù (Nên chọn trong tuần dự trữ)</label>
+                                    <asp:TextBox ID="txtNgayDayBu" runat="server" ClientIDMode="Static" TextMode="Date" CssClass="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold">Ca học bù</label>
+                                    <asp:DropDownList ID="ddlCaHocBu" runat="server" ClientIDMode="Static" CssClass="form-select form-select-sm">
+                                        <asp:ListItem Text="Ca sáng" Value="Ca sáng" />
+                                        <asp:ListItem Text="Ca chiều" Value="Ca chiều" />
+                                        <asp:ListItem Text="Ca tối" Value="Ca tối" />
+                                    </asp:DropDownList>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold">Phòng học bù</label>
+                                    <asp:DropDownList ID="ddlPhongHocBu" runat="server" ClientIDMode="Static" CssClass="form-select form-select-sm">
+                                        <asp:ListItem Text="Phòng Lab 01" Value="Phòng Lab 01" />
+                                        <asp:ListItem Text="Phòng Lab 02" Value="Phòng Lab 02" />
+                                        <asp:ListItem Text="Phòng Lab 03" Value="Phòng Lab 03" />
+                                        <asp:ListItem Text="Phòng Lab 04" Value="Phòng Lab 04" />
+                                        <asp:ListItem Text="Phòng Lab 05" Value="Phòng Lab 05" />
+                                        <asp:ListItem Text="Phòng Đồ họa" Value="Phòng Đồ họa" />
+                                    </asp:DropDownList>
+                                </div>
+                                <div class="col-12">
+                                    <label class="small fw-bold">Khung giờ dạy bù</label>
+                                    <asp:TextBox ID="txtGioHocBu" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm" Text="18:00 - 20:30" />
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-2 border-top d-flex justify-content-between">
+                                <asp:Button ID="btnHuyNghiBuNgayNay" runat="server" Text="Khôi phục buổi học (Xóa báo nghỉ ngày này)" CssClass="btn btn-sm btn-outline-secondary"
+                                    OnClick="btnHuyNghiBuNgayNay_Click" CausesValidation="false" />
+                                <asp:Button ID="btnLuuNghiBu" runat="server" Text="Xác nhận Báo nghỉ & Lưu Lịch bù" CssClass="btn btn-sm btn-danger fw-bold"
+                                    OnClick="btnLuuNghiBu_Click" CausesValidation="false" />
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label class="small fw-bold">Các thứ trong tuần</label>
-                            <asp:DropDownList ID="ddlThuHocTKB" runat="server" ClientIDMode="Static" CssClass="form-select form-select-sm">
-                                <asp:ListItem Text="Thứ 2, 4, 6" Value="Thứ 2, 4, 6" />
-                                <asp:ListItem Text="Thứ 3, 5, 7" Value="Thứ 3, 5, 7" />
-                                <asp:ListItem Text="Thứ 2, 3, 4" Value="Thứ 2, 3, 4" />
-                                <asp:ListItem Text="Thứ 5, 6, 7" Value="Thứ 5, 6, 7" />
-                                <asp:ListItem Text="Thứ 7, CN" Value="Thứ 7, CN" />
-                            </asp:DropDownList>
-                        </div>
-                        <div class="col-6">
-                            <label class="small fw-bold">Khung giờ học</label>
-                            <asp:TextBox ID="txtGioHocTKB" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm" autocomplete="off" />
-                        </div>
-                        <div class="col-6">
-                            <label class="small fw-bold">Phòng học</label>
-                            <asp:DropDownList ID="ddlPhongHocTKB" runat="server" ClientIDMode="Static" CssClass="form-select form-select-sm">
-                                <asp:ListItem Text="Phòng Lab 01" Value="Phòng Lab 01" />
-                                <asp:ListItem Text="Phòng Lab 02" Value="Phòng Lab 02" />
-                                <asp:ListItem Text="Phòng Lab 03" Value="Phòng Lab 03" />
-                                <asp:ListItem Text="Phòng Lab 04" Value="Phòng Lab 04" />
-                                <asp:ListItem Text="Phòng Lab 05" Value="Phòng Lab 05" />
-                                <asp:ListItem Text="Phòng Đồ họa" Value="Phòng Đồ họa" />
-                            </asp:DropDownList>
+
+                        <!-- TAB 2: ĐỔI LỊCH CỐ ĐỊNH CẢ KHÓA -->
+                        <div class="tab-pane fade" id="tab-codinh" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="small fw-bold">Ca học cố định</label>
+                                    <asp:DropDownList ID="ddlCaHocTKB" runat="server" ClientIDMode="Static" CssClass="form-select form-select-sm">
+                                        <asp:ListItem Text="Ca sáng" Value="Ca sáng" />
+                                        <asp:ListItem Text="Ca chiều" Value="Ca chiều" />
+                                        <asp:ListItem Text="Ca tối" Value="Ca tối" />
+                                    </asp:DropDownList>
+                                </div>
+                                <div class="col-6">
+                                    <label class="small fw-bold">Các thứ trong tuần</label>
+                                    <asp:DropDownList ID="ddlThuHocTKB" runat="server" ClientIDMode="Static" CssClass="form-select form-select-sm">
+                                        <asp:ListItem Text="Thứ 2, 4, 6" Value="Thứ 2, 4, 6" />
+                                        <asp:ListItem Text="Thứ 3, 5, 7" Value="Thứ 3, 5, 7" />
+                                        <asp:ListItem Text="Thứ 2, 3, 4" Value="Thứ 2, 3, 4" />
+                                        <asp:ListItem Text="Thứ 5, 6, 7" Value="Thứ 5, 6, 7" />
+                                        <asp:ListItem Text="Thứ 7, CN" Value="Thứ 7, CN" />
+                                    </asp:DropDownList>
+                                </div>
+                                <div class="col-6">
+                                    <label class="small fw-bold">Khung giờ học</label>
+                                    <asp:TextBox ID="txtGioHocTKB" runat="server" ClientIDMode="Static" CssClass="form-control form-control-sm" autocomplete="off" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="small fw-bold">Phòng học</label>
+                                    <asp:DropDownList ID="ddlPhongHocTKB" runat="server" ClientIDMode="Static" CssClass="form-select form-select-sm">
+                                        <asp:ListItem Text="Phòng Lab 01" Value="Phòng Lab 01" />
+                                        <asp:ListItem Text="Phòng Lab 02" Value="Phòng Lab 02" />
+                                        <asp:ListItem Text="Phòng Lab 03" Value="Phòng Lab 03" />
+                                        <asp:ListItem Text="Phòng Lab 04" Value="Phòng Lab 04" />
+                                        <asp:ListItem Text="Phòng Lab 05" Value="Phòng Lab 05" />
+                                        <asp:ListItem Text="Phòng Đồ họa" Value="Phòng Đồ họa" />
+                                    </asp:DropDownList>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-2 border-top text-end">
+                                <asp:Button ID="btnLuuDoiLichTKB" runat="server" Text="Lưu Lịch cố định mới" CssClass="btn btn-sm btn-primary-gradient fw-bold"
+                                    OnClick="btnLuuDoiLichTKB_Click" CausesValidation="false" />
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <asp:Button ID="btnLuuDoiLichTKB" runat="server" Text="Lưu Lịch mới" CssClass="btn btn-sm btn-primary-gradient fw-bold" OnClick="btnLuuDoiLichTKB_Click" CausesValidation="false" />
                 </div>
             </div>
         </div>
@@ -321,13 +424,25 @@
             check();
         }
 
-        function moModalDoiLich(maLop, tenLop, caHoc, thuHoc, gioHoc, phongHoc) {
+        function moModalDoiLich(maLop, tenLop, caHoc, thuHoc, gioHoc, phongHoc, ngayCuThe, tuanDuTruInfo, ngayBuGoiY) {
             document.getElementById('hfMaLopDoiLich').value = maLop;
+            document.getElementById('hfNgayChonTrenTKB').value = ngayCuThe || '';
             document.getElementById('lblTenLopDoiLich').innerText = tenLop;
+
+            // Tab 1: Báo nghỉ đột xuất & Dạy bù tuần dự trữ
+            document.getElementById('txtNgayNghiDotXuat').value = ngayCuThe || '';
+            document.getElementById('txtNgayDayBu').value = ngayBuGoiY || '';
+            document.getElementById('ddlCaHocBu').value = caHoc;
+            document.getElementById('ddlPhongHocBu').value = phongHoc;
+            document.getElementById('txtGioHocBu').value = gioHoc;
+            document.getElementById('lblTuanDuTruGoiY').innerText = tuanDuTruInfo || 'Cuối khóa học (+7 ngày dự trữ)';
+
+            // Tab 2: Đổi lịch cố định
             document.getElementById('ddlCaHocTKB').value = caHoc;
             document.getElementById('ddlThuHocTKB').value = thuHoc;
             document.getElementById('txtGioHocTKB').value = gioHoc;
             document.getElementById('ddlPhongHocTKB').value = phongHoc;
+
             var el = document.getElementById('modalDoiLichTKB');
             if (el && window.bootstrap) {
                 window.bootstrap.Modal.getOrCreateInstance(el).show();
@@ -343,7 +458,7 @@
             }
         }
 
-       function boDauTiengViet(str) {
+        function boDauTiengViet(str) {
             return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
         }
 

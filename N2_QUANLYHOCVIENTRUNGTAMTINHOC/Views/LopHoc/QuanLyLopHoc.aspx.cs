@@ -27,8 +27,22 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             set { ViewState["TuKhoaTimLop"] = value; }
         }
 
+        private DateTime NgayMocTuanTKB
+        {
+            get
+            {
+                if (ViewState["NgayMocTuanTKB"] != null)
+                    return (DateTime)ViewState["NgayMocTuanTKB"];
+                return DateTime.Today;
+            }
+            set { ViewState["NgayMocTuanTKB"] = value; }
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
+           
+            DamBaoBangLichNghiBuTonTai();
+
             if (IsPostBack)
             {
                 pnlTB.Visible = false;
@@ -37,6 +51,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             {
                 TuKhoaHienTai = "";
                 txtTimLop.Text = "";
+                NgayMocTuanTKB = DateTime.Today;
+                txtChonNgayTKB.Text = DateTime.Today.ToString("yyyy-MM-dd");
                 txtKhaiGiang.Text = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd");
                 txtNgayDiemDanh.Text = DateTime.Now.ToString("yyyy-MM-dd");
                 CauHinhPhanQuyen();
@@ -46,9 +62,33 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             }
         }
 
+        private void DamBaoBangLichNghiBuTonTai()
+        {
+            try
+            {
+                string sql = @"IF OBJECT_ID('LICH_NGHI_BU', 'U') IS NULL
+                               BEGIN
+                                   CREATE TABLE LICH_NGHI_BU (
+                                       id INT IDENTITY(1,1) PRIMARY KEY,
+                                       malop VARCHAR(20) NOT NULL,
+                                       ngaynghi DATE NOT NULL,
+                                       ngaybu DATE NULL,
+                                       cahoc_bu NVARCHAR(50) NULL,
+                                       giohoc_bu NVARCHAR(50) NULL,
+                                       phonghoc_bu NVARCHAR(50) NULL,
+                                       lydo NVARCHAR(255) NULL,
+                                       nguoitao VARCHAR(50) NULL
+                                   );
+                               END";
+                kncsdl.ThucThiLenh(sql);
+            }
+            catch { }
+        }
+
         private void SinhMaLopMoi()
         {
-            int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM LOPHOC")) + 1;
+            object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(malop, 3, 10) AS INT)), 0) FROM LOPHOC WHERE malop LIKE 'LH[0-9]%'");
+            int soLuong = Convert.ToInt32(maxObj) + 1;
             string maLop = "LH" + soLuong.ToString("D2");
             while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM LOPHOC WHERE malop=@ma", new[] { new SqlParameter("@ma", maLop) })) > 0)
             {
@@ -65,6 +105,11 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             {
                 pnlFormAdmin.Visible = false;
                 colDanhSachLop.Attributes["class"] = "col-12";
+                litGhiChuTKB.Text = "(Theo dõi lịch học chính, ngày nghỉ đột xuất và lịch học bù trong tuần)";
+            }
+            else
+            {
+                litGhiChuTKB.Text = "(Bấm vào ô lớp để báo nghỉ đột xuất & xếp bù vào tuần dự trữ)";
             }
 
             if (LaHocVien)
@@ -95,6 +140,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
 
             string sql = @"SELECT l.malop, l.tenlop, l.makhoahoc, kh.tenkhoahoc, kh.thoigianhoc,
                                   ISNULL(gv.hoten + ISNULL(N' (' + gv.hocvi + N')', N''), N'Chưa phân công') AS hotengv, l.ngaykhaigiang,
+                                  ISNULL((SELECT TOP 1 lh.thu FROM LICHHOC lh WHERE lh.malop = l.malop), N'Thứ 2, 4, 6') AS thuhoc,
                                   ISNULL(STUFF((SELECT '; ' + lh.cahoc + ' - ' + lh.thu + ' (' + lh.giohoc + ', P.' + lh.phonghoc + ')'
                                                 FROM LICHHOC lh WHERE lh.malop = l.malop FOR XML PATH('')), 1, 2, ''), N'Đang cập nhật lịch') AS thoikhoabieu,
                                   CASE WHEN ISNULL(l.dahuy, 0) = 1 THEN N'Đã hủy (thiếu sĩ số)'
@@ -123,8 +169,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
                 if (r["ngaykhaigiang"] != DBNull.Value)
                 {
                     DateTime batDau = Convert.ToDateTime(r["ngaykhaigiang"]);
-                    DateTime ketThuc = TinhNgayKetThuc(batDau, r["thoigianhoc"]?.ToString() ?? "");
-                    r["thoigianlop"] = $"{batDau:dd/MM/yyyy} - {ketThuc:dd/MM/yyyy}";
+                    string thuHoc = r["thuhoc"]?.ToString() ?? "Thứ 2, 4, 6";
+                    DateTime ketThucThucHoc = TinhNgayKetThuc(batDau, r["thoigianhoc"]?.ToString() ?? "", thuHoc, false);
+                    DateTime ketThucCoDuTru = TinhNgayKetThuc(batDau, r["thoigianhoc"]?.ToString() ?? "", thuHoc, true);
+                    r["thoigianlop"] = $"{batDau:dd/MM/yyyy} - {ketThucThucHoc:dd/MM/yyyy} (Dự trữ đến {ketThucCoDuTru:dd/MM})";
                 }
                 else
                 {
@@ -139,41 +187,35 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             TaiGoiYTimKiemLop();
         }
 
-        private DateTime TinhNgayKetThuc(DateTime ngayBatDau, string thoiGianHoc)
+        private DateTime TinhNgayKetThuc(DateTime ngayBatDau, string thoiGianHoc, string thuHoc = "Thứ 2, 4, 6", bool coTuanDuTru = true)
         {
-            if (string.IsNullOrWhiteSpace(thoiGianHoc)) return ngayBatDau.AddMonths(2);
+            int soBuoiTuan = string.IsNullOrWhiteSpace(thuHoc) ? 3 : Math.Max(1, thuHoc.Split(',').Length);
+            DateTime ngayKetThucThuc = ngayBatDau.AddMonths(2);
 
-            var mThang = Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tháng", RegexOptions.IgnoreCase);
-            if (mThang.Success)
+            if (!string.IsNullOrWhiteSpace(thoiGianHoc))
             {
-                decimal thang;
-                if (decimal.TryParse(mThang.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out thang) && thang > 0)
+                var mBuoi = Regex.Match(thoiGianHoc, @"(\d+)\s*buổi", RegexOptions.IgnoreCase);
+                var mThang = Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tháng", RegexOptions.IgnoreCase);
+                var mTuan = Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tuần", RegexOptions.IgnoreCase);
+
+                if (mBuoi.Success && int.TryParse(mBuoi.Groups[1].Value, out int buoi) && buoi > 0)
+                {
+                    ngayKetThucThuc = ngayBatDau.AddDays((int)Math.Ceiling((double)buoi / soBuoiTuan) * 7);
+                }
+                else if (mThang.Success && decimal.TryParse(mThang.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal thang) && thang > 0)
                 {
                     int thangNguyen = (int)Math.Floor(thang);
                     int ngayLe = (int)Math.Round((thang - thangNguyen) * 30m);
-                    return ngayBatDau.AddMonths(thangNguyen).AddDays(ngayLe);
+                    ngayKetThucThuc = ngayBatDau.AddMonths(thangNguyen).AddDays(ngayLe);
+                }
+                else if (mTuan.Success && decimal.TryParse(mTuan.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal tuan) && tuan > 0)
+                {
+                    ngayKetThucThuc = ngayBatDau.AddDays((int)Math.Round(tuan * 7m));
                 }
             }
 
-            var mTuan = Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tuần", RegexOptions.IgnoreCase);
-            if (mTuan.Success)
-            {
-                decimal tuan;
-                if (decimal.TryParse(mTuan.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out tuan) && tuan > 0)
-                    return ngayBatDau.AddDays((int)Math.Round(tuan * 7m));
-            }
-
-            var mBuoi = Regex.Match(thoiGianHoc, @"(\d+)\s*buổi", RegexOptions.IgnoreCase);
-            if (mBuoi.Success)
-            {
-                int buoi;
-                if (int.TryParse(mBuoi.Groups[1].Value, out buoi) && buoi > 0)
-                    return ngayBatDau.AddDays((int)Math.Ceiling(buoi / 3.0) * 7);
-            }
-
-            return ngayBatDau.AddMonths(2);
+            return coTuanDuTru ? ngayKetThucThuc.AddDays(7) : ngayKetThucThuc;
         }
-
         private int TinhTongBuoiHoc(string thoiGianHoc)
         {
             if (string.IsNullOrWhiteSpace(thoiGianHoc)) return 24;
@@ -244,9 +286,47 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             litGoiYLop.Text = sb.ToString();
         }
 
+        private DateTime LayThuHaiDauTuan(DateTime ngay)
+        {
+            int diff = (7 + (ngay.DayOfWeek - DayOfWeek.Monday)) % 7;
+            return ngay.AddDays(-1 * diff).Date;
+        }
+
+        protected void btnTuanTruoc_Click(object sender, EventArgs e)
+        {
+            NgayMocTuanTKB = NgayMocTuanTKB.AddDays(-7);
+            txtChonNgayTKB.Text = NgayMocTuanTKB.ToString("yyyy-MM-dd");
+            TaoBangLuoiThoiKhoaBieu();
+        }
+
+        protected void btnTuanSau_Click(object sender, EventArgs e)
+        {
+            NgayMocTuanTKB = NgayMocTuanTKB.AddDays(7);
+            txtChonNgayTKB.Text = NgayMocTuanTKB.ToString("yyyy-MM-dd");
+            TaoBangLuoiThoiKhoaBieu();
+        }
+
+        protected void btnTuanHienTai_Click(object sender, EventArgs e)
+        {
+            NgayMocTuanTKB = DateTime.Today;
+            txtChonNgayTKB.Text = DateTime.Today.ToString("yyyy-MM-dd");
+            TaoBangLuoiThoiKhoaBieu();
+        }
+
+        protected void txtChonNgayTKB_TextChanged(object sender, EventArgs e)
+        {
+            if (DateTime.TryParse(txtChonNgayTKB.Text, out DateTime d))
+                NgayMocTuanTKB = d;
+            TaoBangLuoiThoiKhoaBieu();
+        }
+
         private void TaoBangLuoiThoiKhoaBieu()
         {
-            string sql = @"SELECT l.malop, l.tenlop, kh.tenkhoahoc, ISNULL(gv.hoten, '') AS hotengv,
+            DateTime thuHai = LayThuHaiDauTuan(NgayMocTuanTKB);
+            DateTime chuNhat = thuHai.AddDays(6);
+            litKhoangTuanTKB.Text = $"Từ {thuHai:dd/MM/yyyy} đến {chuNhat:dd/MM/yyyy}";
+
+            string sql = @"SELECT l.malop, l.tenlop, kh.tenkhoahoc, kh.thoigianhoc, l.ngaykhaigiang, ISNULL(gv.hoten, '') AS hotengv,
                                   lh.cahoc, lh.thu, lh.giohoc, lh.phonghoc
                            FROM LICHHOC lh
                            JOIN LOPHOC l ON lh.malop = l.malop
@@ -262,42 +342,104 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             };
             DataTable dt = kncsdl.DocDuLieu(sql, p);
 
+            // Lấy dữ liệu nghỉ đột xuất & dạy bù trong tuần đang xem
+            DataTable dtNghiBu = kncsdl.DocDuLieu(@"SELECT nb.*, l.tenlop 
+                                                    FROM LICH_NGHI_BU nb 
+                                                    JOIN LOPHOC l ON nb.malop = l.malop 
+                                                    WHERE (nb.ngaynghi BETWEEN @tu AND @den) OR (nb.ngaybu BETWEEN @tu AND @den)",
+                new[] { new SqlParameter("@tu", thuHai), new SqlParameter("@den", chuNhat) });
+
             string[] dsCa = { "Ca sáng", "Ca chiều", "Ca tối" };
             string[] dsThu = { "2", "3", "4", "5", "6", "7", "CN" };
             string[] tenThu = { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật" };
 
             StringBuilder sb = new StringBuilder();
             sb.Append("<table class='table table-bordered text-center align-middle mb-0' style='font-size: 0.85rem;'>");
-            sb.Append("<thead class='table-light'><tr><th style='width:110px;'>Ca / Thứ</th>");
-            foreach (string t in tenThu) sb.AppendFormat("<th>{0}</th>", t);
+            sb.Append("<thead class='table-light'><tr><th style='width:105px;'>Ca / Thứ</th>");
+            for (int i = 0; i < 7; i++)
+            {
+                DateTime ngayCot = thuHai.AddDays(i);
+                string highlightToday = ngayCot == DateTime.Today ? "bg-primary text-white" : "";
+                sb.AppendFormat("<th class='{0}'>{1}<br/><small class='fw-normal'>{2:dd/MM}</small></th>", highlightToday, tenThu[i], ngayCot);
+            }
             sb.Append("</tr></thead><tbody>");
 
             foreach (string ca in dsCa)
             {
                 sb.Append("<tr>");
                 sb.AppendFormat("<td class='fw-bold bg-light text-primary'>{0}</td>", ca);
-                foreach (string thu in dsThu)
+                for (int i = 0; i < 7; i++)
                 {
+                    string thu = dsThu[i];
+                    DateTime ngayTrongO = thuHai.AddDays(i);
+                    string ngayStr = ngayTrongO.ToString("yyyy-MM-dd");
                     List<string> oLich = new List<string>();
+
                     foreach (DataRow r in dt.Rows)
                     {
                         string caDB = r["cahoc"].ToString().ToLower();
                         string thuDB = r["thu"].ToString().ToUpper();
-                        if (caDB.Contains(ca.ToLower()) && thuDB.Contains(thu))
+                        if (!caDB.Contains(ca.ToLower()) || !thuDB.Contains(thu)) continue;
+
+                        string maLop = r["malop"].ToString();
+                        DateTime kg = r["ngaykhaigiang"] != DBNull.Value ? Convert.ToDateTime(r["ngaykhaigiang"]).Date : DateTime.MinValue;
+                        DateTime ktThucHoc = kg != DateTime.MinValue ? TinhNgayKetThuc(kg, r["thoigianhoc"].ToString(), r["thu"].ToString(), false) : DateTime.MaxValue;
+                        DateTime ktDuTru = kg != DateTime.MinValue ? TinhNgayKetThuc(kg, r["thoigianhoc"].ToString(), r["thu"].ToString(), true) : DateTime.MaxValue;
+
+                        // Chỉ hiển thị lịch chính trong giai đoạn thực học (từ khai giảng đến hết tuần học chính)
+                        if (ngayTrongO < kg || ngayTrongO > ktThucHoc) continue;
+
+                        // Kiểm tra xem ngày này có bị báo nghỉ đột xuất không
+                        DataRow[] rowsNghi = dtNghiBu.Select($"malop = '{maLop}' AND ngaynghi = #{ngayTrongO:MM/dd/yyyy}#");
+                        bool biNghi = rowsNghi.Length > 0;
+
+                        string tuanDuTruText = $"{ktThucHoc.AddDays(1):dd/MM/yyyy} - {ktDuTru:dd/MM/yyyy}";
+                        string ngayBuGoiY = ktThucHoc.AddDays(1).ToString("yyyy-MM-dd");
+
+                        Func<object, string> js = x => HttpUtility.HtmlAttributeEncode(HttpUtility.JavaScriptStringEncode(Convert.ToString(x)));
+                        Func<object, string> ht = x => HttpUtility.HtmlEncode(Convert.ToString(x));
+
+                        string onclickAttr = LaQuanTriHoacNV
+                            ? $"style='cursor:pointer;' title='Bấm để báo nghỉ đột xuất hoặc đổi lịch ({ngayTrongO:dd/MM/yyyy})' onclick=\"moModalDoiLich('{js(maLop)}','{js(r["tenlop"])}','{js(r["cahoc"])}','{js(r["thu"])}','{js(r["giohoc"])}','{js(r["phonghoc"])}','{ngayStr}','{js(tuanDuTruText)}','{ngayBuGoiY}');\""
+                            : "";
+
+                        if (biNghi)
                         {
+                            string lyDo = ht(rowsNghi[0]["lydo"]);
+                            string ngayBuStr = rowsNghi[0]["ngaybu"] != DBNull.Value ? Convert.ToDateTime(rowsNghi[0]["ngaybu"]).ToString("dd/MM") : "Chưa xếp";
+                            oLich.Add($"<div {onclickAttr} class='tkb-cell-item p-1 mb-1 rounded border border-danger bg-danger-subtle text-danger'><span class='badge bg-danger mb-1'>NGHỈ ĐỘT XUẤT</span><br/><strong class='text-decoration-line-through'>{ht(r["tenlop"])}</strong><br/><span class='small'>Lý do: {lyDo}<br/>Bù ngày: <strong>{ngayBuStr}</strong></span></div>");
+                        }
+                        else
+                        {
+                            oLich.Add($"<div {onclickAttr} class='tkb-cell-item p-1 mb-1 rounded border bg-primary-subtle text-dark'><strong>{ht(r["tenlop"])}</strong><br/><span class='small text-muted'>{ht(r["giohoc"])} | P.{ht(r["phonghoc"])}</span></div>");
+                        }
+                    }
+
+                    // Hiển thị các buổi DẠY BÙ rơi vào ngày/ca này (thường nằm trong Tuần dự trữ)
+                    foreach (DataRow rBu in dtNghiBu.Rows)
+                    {
+                        if (rBu["ngaybu"] == DBNull.Value) continue;
+                        DateTime dBu = Convert.ToDateTime(rBu["ngaybu"]).Date;
+                        string caBu = rBu["cahoc_bu"]?.ToString() ?? "";
+                        if (dBu == ngayTrongO && caBu.Equals(ca, StringComparison.OrdinalIgnoreCase))
+                        {
+                            string maLopBu = rBu["malop"].ToString();
+                            string ngayGocStr = Convert.ToDateTime(rBu["ngaynghi"]).ToString("yyyy-MM-dd");
+                            string ngayGocHienThi = Convert.ToDateTime(rBu["ngaynghi"]).ToString("dd/MM");
                             Func<object, string> js = x => HttpUtility.HtmlAttributeEncode(HttpUtility.JavaScriptStringEncode(Convert.ToString(x)));
                             Func<object, string> ht = x => HttpUtility.HtmlEncode(Convert.ToString(x));
-                            string onclickAttr = LaQuanTriHoacNV
-                                ? "style='cursor:pointer;' title='Bấm để đổi lịch lớp này' onclick=\"moModalDoiLich('" + js(r["malop"]) + "','" + js(r["tenlop"]) + "','" + js(r["cahoc"]) + "','" + js(r["thu"]) + "','" + js(r["giohoc"]) + "','" + js(r["phonghoc"]) + "');\""
+
+                            string onclickBu = LaQuanTriHoacNV
+                                ? $"style='cursor:pointer;' title='Bấm để chỉnh sửa lịch dạy bù' onclick=\"moModalDoiLich('{js(maLopBu)}','{js(rBu["tenlop"])}','{js(caBu)}','Thứ 2, 4, 6','{js(rBu["giohoc_bu"])}','{js(rBu["phonghoc_bu"])}','{ngayGocStr}','Tuần dự trữ','{ngayStr}');\""
                                 : "";
-                            oLich.Add("<div " + onclickAttr + " class='p-1 mb-1 rounded border bg-primary-subtle text-dark'><strong>" + ht(r["tenlop"]) + "</strong><br/><span class='small text-muted'>" + ht(r["giohoc"]) + " | P." + ht(r["phonghoc"]) + "</span></div>");
+                            oLich.Add($"<div {onclickBu} class='tkb-cell-item p-1 mb-1 rounded border border-success bg-success-subtle text-dark'><span class='badge bg-success mb-1'>DẠY BÙ (TUẦN DỰ TRỮ)</span><br/><strong>{ht(rBu["tenlop"])}</strong><br/><span class='small text-success fw-semibold'>{ht(rBu["giohoc_bu"])} | P.{ht(rBu["phonghoc_bu"])}<br/>(Bù cho ngày {ngayGocHienThi})</span></div>");
                         }
                     }
 
                     if (oLich.Count > 1)
                     {
-                        sb.Append("<td class='bg-danger-subtle'>");
-                        sb.Append("<span class='badge bg-danger mb-1'>TRÙNG LỊCH HỌC!</span>");
+                        sb.Append("<td class='bg-warning-subtle'>");
+                        sb.Append("<span class='badge bg-danger mb-1'>LƯU Ý TRÙNG CA!</span>");
                         sb.Append(string.Join("", oLich));
                         sb.Append("</td>");
                     }
@@ -314,6 +456,72 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             }
             sb.Append("</tbody></table>");
             litBangTKB.Text = sb.ToString();
+        }
+
+        protected void btnLuuNghiBu_Click(object sender, EventArgs e)
+        {
+            if (!LaQuanTriHoacNV)
+            {
+                HienTB("Bạn không có quyền điều chỉnh lịch nghỉ/bù!", true);
+                return;
+            }
+
+            string maLop = hfMaLopDoiLich.Value;
+            if (string.IsNullOrEmpty(maLop) || string.IsNullOrEmpty(txtNgayNghiDotXuat.Text))
+            {
+                HienTB("Vui lòng chọn ngày giảng viên nghỉ đột xuất!", true);
+                return;
+            }
+
+            DateTime ngayNghi = Convert.ToDateTime(txtNgayNghiDotXuat.Text).Date;
+            object ngayBuParam = DBNull.Value;
+            if (!string.IsNullOrEmpty(txtNgayDayBu.Text))
+            {
+                DateTime ngayBu = Convert.ToDateTime(txtNgayDayBu.Text).Date;
+                if (ngayBu <= ngayNghi)
+                {
+                    HienTB("Ngày dạy bù phải sau ngày nghỉ đột xuất!", true);
+                    return;
+                }
+                ngayBuParam = ngayBu;
+            }
+
+            string lyDo = string.IsNullOrWhiteSpace(txtLyDoNghi.Text) ? "Giảng viên bận đột xuất" : txtLyDoNghi.Text.Trim();
+
+            kncsdl.ThucThiLenh("DELETE FROM LICH_NGHI_BU WHERE malop=@l AND ngaynghi=@nn",
+                new[] { new SqlParameter("@l", maLop), new SqlParameter("@nn", ngayNghi) });
+
+            string sqlInsert = @"INSERT INTO LICH_NGHI_BU(malop, ngaynghi, ngaybu, cahoc_bu, giohoc_bu, phonghoc_bu, lydo, nguoitao)
+                                 VALUES(@l, @nn, @nb, @ca, @gio, @ph, @ld, @user)";
+            kncsdl.ThucThiLenh(sqlInsert, new[] {
+                new SqlParameter("@l", maLop),
+                new SqlParameter("@nn", ngayNghi),
+                new SqlParameter("@nb", ngayBuParam),
+                new SqlParameter("@ca", ddlCaHocBu.SelectedValue),
+                new SqlParameter("@gio", txtGioHocBu.Text.Trim()),
+                new SqlParameter("@ph", ddlPhongHocBu.SelectedValue),
+                new SqlParameter("@ld", lyDo),
+                new SqlParameter("@user", MaNguoiDung)
+            });
+
+            kncsdl.GhiNhatKy(MaNguoiDung, "Báo nghỉ đột xuất & Dạy bù", $"Lớp {maLop} nghỉ ngày {ngayNghi:dd/MM/yyyy}, bù ngày {txtNgayDayBu.Text}");
+            HienTB($"Đã cập nhật báo nghỉ ngày {ngayNghi:dd/MM/yyyy} và xếp lịch bù vào tuần dự trữ thành công!");
+            TaoBangLuoiThoiKhoaBieu();
+        }
+
+        protected void btnHuyNghiBuNgayNay_Click(object sender, EventArgs e)
+        {
+            if (!LaQuanTriHoacNV) return;
+            string maLop = hfMaLopDoiLich.Value;
+            if (string.IsNullOrEmpty(maLop) || string.IsNullOrEmpty(txtNgayNghiDotXuat.Text)) return;
+
+            DateTime ngayNghi = Convert.ToDateTime(txtNgayNghiDotXuat.Text).Date;
+            kncsdl.ThucThiLenh("DELETE FROM LICH_NGHI_BU WHERE malop=@l AND ngaynghi=@nn",
+                new[] { new SqlParameter("@l", maLop), new SqlParameter("@nn", ngayNghi) });
+
+            kncsdl.GhiNhatKy(MaNguoiDung, "Khôi phục buổi học", $"Hủy báo nghỉ lớp {maLop} ngày {ngayNghi:dd/MM/yyyy}");
+            HienTB($"Đã khôi phục lịch học bình thường cho ngày {ngayNghi:dd/MM/yyyy}!");
+            TaoBangLuoiThoiKhoaBieu();
         }
 
         private void CapNhatLichHocChoLop(string maLop)
@@ -374,7 +582,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             });
             CapNhatLichHocChoLop(txtMaLop.Text.Trim());
             kncsdl.GhiNhatKy(MaNguoiDung, "Mở lớp học", $"Mở lớp {txtMaLop.Text.Trim()} - {txtTenLop.Text.Trim()}");
-            HienTB("Mở lớp học phần và tạo Thời khóa biểu thành công!");
+            HienTB("Mở lớp học phần và tạo Thời khóa biểu (kèm 1 tuần dự trữ) thành công!");
             LamMoiForm();
             gvLopHoc.PageIndex = 0;
             TaiDanhSachLop();
@@ -537,6 +745,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
                     return;
                 }
 
+                kncsdl.ThucThiLenh("DELETE FROM LICH_NGHI_BU WHERE malop=@m", new[] { new SqlParameter("@m", ma) });
                 kncsdl.ThucThiLenh("DELETE FROM LICHHOC WHERE malop=@m", new[] { new SqlParameter("@m", ma) });
                 kncsdl.ThucThiLenh("DELETE FROM LOPHOC WHERE malop=@m", new[] { new SqlParameter("@m", ma) });
                 kncsdl.GhiNhatKy(MaNguoiDung, "Xóa lớp học", $"Xóa lớp {ma}");
@@ -587,7 +796,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             foreach (DataRow r in dt.Rows)
             {
                 int nghi = Convert.ToInt32(r["SoBuoiNghi"]);
-                double phanTram = Math.Round((double)nghi / tongBuoi * 100, 1);
                 if (nghi >= 3)
                     r["CanhBao"] = $" <br/><span class='badge bg-danger ms-1 mt-1'>Nghỉ {nghi}/{tongBuoi} buổi - Cấm thi</span>";
                 else if (nghi == 2)
@@ -770,7 +978,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             sb.AppendFormat("<p style='font-family:Arial;font-size:12px;color:#555;margin-top:0;'>Ngày xuất: {0:dd/MM/yyyy HH:mm} | Tổng sĩ số: {1} HV (Đủ điều kiện: {2} HV - Cấm thi: {3} HV)</p>",
                 DateTime.Now, dt.Rows.Count, dtDuThi.Rows.Count, dtCamThi.Rows.Count);
 
-            // BẢNG 1: DANH SÁCH ĐƯỢC DỰ THI
             sb.AppendFormat("<h3 style='color:#198754;font-family:Arial;margin-top:16px;margin-bottom:6px;'>I. DANH SÁCH HỌC VIÊN ĐỦ ĐIỀU KIỆN DỰ THI ({0} HV)</h3>", dtDuThi.Rows.Count);
             sb.Append("<table border='1' style='border-collapse:collapse;font-family:Arial;font-size:13px;width:100%;'>");
             sb.Append("<tr style='background-color:#198754;color:white;font-weight:bold;text-align:center;'>");
@@ -798,7 +1005,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             }
             sb.Append("</table>");
 
-            // BẢNG 2: DANH SÁCH BỊ CẤM THI
             sb.AppendFormat("<h3 style='color:#DC3545;font-family:Arial;margin-top:24px;margin-bottom:6px;'>II. DANH SÁCH HỌC VIÊN BỊ CẤM THI ({0} HV)</h3>", dtCamThi.Rows.Count);
             sb.Append("<table border='1' style='border-collapse:collapse;font-family:Arial;font-size:13px;width:100%;'>");
             sb.Append("<tr style='background-color:#DC3545;color:white;font-weight:bold;text-align:center;'>");
@@ -878,7 +1084,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             });
 
             kncsdl.GhiNhatKy(MaNguoiDung, "Đổi lịch TKB", $"Đổi lịch lớp {maLop}: {ddlCaHocTKB.SelectedValue} - {ddlThuHocTKB.SelectedValue} ({ddlPhongHocTKB.SelectedValue})");
-            HienTB("Đã đổi lịch học trực tiếp trên Thời khóa biểu thành công!");
+            HienTB("Đã đổi lịch học cố định trên Thời khóa biểu thành công!");
             TaiDanhSachLop();
         }
     }

@@ -65,7 +65,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
 
         private void SinhMaVaSoHieuMoi()
         {
-            int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI")) + 1;
+            object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(machungchi, 3, 10) AS INT)), 0) FROM CHUNGCHI WHERE machungchi LIKE 'CC[0-9]%'");
+            int soLuong = Convert.ToInt32(maxObj) + 1;
             string maCC = "CC" + soLuong.ToString("D2");
             while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI WHERE machungchi=@ma", new[] { new SqlParameter("@ma", maCC) })) > 0)
             {
@@ -75,7 +76,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.ChungChi
             txtMaCC.Text = maCC;
 
             int nam = DateTime.Now.Year;
-            int sttSH = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI")) + 1;
+            int sttSH = soLuong;
             string soHieu = $"TTTH-{nam}-{sttSH:D4}";
             while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM CHUNGCHI WHERE sohieuchungchi=@sh", new[] { new SqlParameter("@sh", soHieu) })) > 0)
             {

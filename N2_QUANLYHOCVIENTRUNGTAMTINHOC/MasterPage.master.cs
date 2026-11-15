@@ -45,25 +45,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             }
 
             Session["Quyen"] = quyen;
-
-            if (Session["BatBuocDoiMK"] != null && (bool)Session["BatBuocDoiMK"])
-            {
-                ContentPlaceHolder mainContent = (ContentPlaceHolder)FindControl("MainContent");
-                if (mainContent != null)
-                {
-                    mainContent.Controls.Clear();
-                }
-            }
-            else
-            {
-                PhanQuyenMenu(quyen);
-            }
+            PhanQuyenMenu(quyen);
         }
 
         private void PhanQuyenMenu(string quyen)
         {
             // Thiết lập hiển thị menu minh bạch và chính xác theo từng phân quyền
-            bool isDashboard = (quyen == "Admin" || quyen == "NhanVien");
+            bool isDashboard = (quyen == "Admin"|| quyen == "NhanVien");
             bool isHocVienMenu = (quyen == "Admin" || quyen == "NhanVien");
             bool isKhoaHocMenu = (quyen == "Admin" || quyen == "NhanVien");
             bool isGiangVienMenu = (quyen == "Admin" || quyen == "NhanVien");
@@ -226,7 +214,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     return;
                 }
 
-                if (!string.Equals(mkDangLuu, mkCu, StringComparison.Ordinal))
+                if (!MasterPage.KiemTraMatKhau(mkCu, mkDangLuu))
                 {
                     ThongBaoPopup("Mật khẩu hiện tại không chính xác!", true, "txtMKCu");
                     return;
@@ -241,22 +229,23 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     return;
                 }
 
-                // ----- 3. Cập nhật mật khẩu mới -----
+                // ----- 3. Cập nhật mật khẩu mới (Đã băm SHA256 an toàn) -----
+                string mkMaHoa = BamMatKhau(mkMoi);
                 int kq;
                 if (quyen == "GiangVien")
                 {
                     kq = kncsdl.ThucThiLenh("UPDATE GIANGVIEN SET matkhau=@mkm WHERE magiangvien=@u",
-                        new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user) });
+                        new[] { new SqlParameter("@mkm", mkMaHoa), new SqlParameter("@u", user) });
                 }
                 else if (quyen == "HocVien")
                 {
                     kq = kncsdl.ThucThiLenh("UPDATE HOCVIEN SET matkhau=@mkm WHERE mahocvien=@u",
-                        new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user) });
+                        new[] { new SqlParameter("@mkm", mkMaHoa), new SqlParameter("@u", user) });
                 }
                 else
                 {
                     kq = kncsdl.ThucThiLenh("UPDATE TAIKHOAN SET matkhau=@mkm WHERE tendangnhap=@u",
-                        new[] { new SqlParameter("@mkm", mkMoi), new SqlParameter("@u", user) });
+                        new[] { new SqlParameter("@mkm", mkMaHoa), new SqlParameter("@u", user) });
                 }
 
                 if (kq > 0)
@@ -266,7 +255,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     kncsdl.GhiNhatKy(user, "Đổi mật khẩu", "Người dùng cập nhật mật khẩu mới");
                     Session["TB_ThanhCong"] = "Đổi mật khẩu thành công! Bạn đã có thể sử dụng hệ thống.";
 
-                    // Thành công: mới đóng pop-up bằng cách tải lại trang (thông báo thành công hiện sau khi tải lại)
                     ChuyenTrang(Request.RawUrl);
                     return;
                 }
@@ -316,6 +304,24 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             string boolBatBuoc = (Session["BatBuocDoiMK"] != null && (bool)Session["BatBuocDoiMK"]) ? "true" : "false";
             string script = $"hienThiThongBaoMaster('{safeMsg}', false, {boolBatBuoc});";
             ScriptManager.RegisterStartupScript(this.Page, this.Page.GetType(), "mk_msg_" + Guid.NewGuid().ToString("N"), script, true);
+        }
+
+        public static string BamMatKhau(string plainText)
+        {
+            if (string.IsNullOrEmpty(plainText)) return "";
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes("TTTH_NSV_2026_" + plainText));
+                return "SHA256$" + BitConverter.ToString(bytes).Replace("-", "");
+            }
+        }
+
+        public static bool KiemTraMatKhau(string plainText, string storedPassword)
+        {
+            if (string.IsNullOrEmpty(plainText) || string.IsNullOrEmpty(storedPassword)) return false;
+            if (storedPassword.StartsWith("SHA256$", StringComparison.Ordinal))
+                return string.Equals(BamMatKhau(plainText), storedPassword, StringComparison.Ordinal);
+            return string.Equals(plainText, storedPassword, StringComparison.Ordinal); // Tương thích tài khoản cũ
         }
     }
 }

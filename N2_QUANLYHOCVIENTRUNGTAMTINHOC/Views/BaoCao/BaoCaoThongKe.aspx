@@ -128,7 +128,7 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <asp:GridView ID="gvThongKeKH" runat="server" CssClass="table table-hover table-custom mb-0" AutoGenerateColumns="false"
+                <asp:GridView ID="gvThongKeKH" runat="server" CssClass="table table-hover table-custom mb-0" AutoGenerateColumns="false" ShowFooter="true"
                     EmptyDataText="Không có dữ liệu thống kê.">
                     <Columns>
                         <asp:BoundField DataField="makhoahoc" HeaderText="Mã KH" />
