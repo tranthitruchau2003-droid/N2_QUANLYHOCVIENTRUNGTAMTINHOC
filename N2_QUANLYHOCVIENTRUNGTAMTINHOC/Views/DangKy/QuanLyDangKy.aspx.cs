@@ -29,7 +29,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 string maDKUrl = Request.QueryString["madk"]?.Trim() ?? "";
                 TuKhoaDK = maDKUrl;
                 txtTimDK.Text = maDKUrl;
-                // M7: Chặn thay đổi ngày đăng ký từ Client
                 txtNgayDK.Text = DateTime.Now.ToString("yyyy-MM-dd");
                 txtNgayDK.ReadOnly = true;
 
@@ -97,7 +96,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             ddlHocVien.DataValueField = "mahocvien";
             ddlHocVien.DataBind();
 
-            // M6: Lọc "Đang mở"
+
             DataTable dtKH = kncsdl.DocDuLieu("SELECT makhoahoc, tenkhoahoc FROM KHOAHOC WHERE trangthaikhoahoc = N'Đang mở' ORDER BY tenkhoahoc");
             ddlKhoaHoc.DataSource = dtKH;
             ddlKhoaHoc.DataTextField = "tenkhoahoc";
@@ -160,21 +159,22 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
         private void TaiDuLieu()
         {
             string sqlLopMo = @"SELECT l.malop, l.tenlop, l.makhoahoc, kh.tenkhoahoc, kh.hocphi, kh.thoigianhoc, l.ngaykhaigiang,
-                                       ISNULL(gv.hoten + ISNULL(N' (' + gv.hocvi + N')', N''), N'Chưa phân công') AS tengiangvien,
-                                       ISNULL(STUFF((SELECT '; ' + lh.cahoc + ' - ' + lh.thu + ' (' + lh.giohoc + ', P.' + lh.phonghoc + ')'
-                                                     FROM LICHHOC lh WHERE lh.malop = l.malop FOR XML PATH('')), 1, 2, ''), N'Đang cập nhật lịch') AS thoikhoabieu,
-                                       (SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) AS siso,
-                                       CAST(ISNULL(l.dahuy, 0) AS BIT) AS dahuy,
-                                       CASE 
-                                           WHEN ISNULL(l.dahuy, 0) = 1 THEN N'Đã hủy lớp (thiếu sĩ số)'
-                                           WHEN l.ngaykhaigiang IS NOT NULL AND l.ngaykhaigiang <= CAST(GETDATE() AS DATE) THEN N'Đã khai giảng (Đóng ĐK)'
-                                           WHEN (SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) >= 10 THEN N'Đã mở lớp (Đủ 10/10 HV)'
-                                           WHEN EXISTS (SELECT 1 FROM DANGKY dk WHERE dk.malop = l.malop AND dk.trangthailop LIKE N'%đặc cách%') THEN N'Đã mở lớp (Đặc cách)'
-                                           ELSE N'Chờ đủ 10 HV (' + CAST((SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) AS NVARCHAR(10)) + N'/10)'
-                                       END AS trangthailop
-                                FROM LOPHOC l JOIN KHOAHOC kh ON l.makhoahoc = kh.makhoahoc
-                                LEFT JOIN GIANGVIEN gv ON l.magiangvien = gv.magiangvien
-                                WHERE (@kh = '' OR l.makhoahoc = @kh) ORDER BY l.malop DESC";
+                               ISNULL(gv.hoten + ISNULL(N' (' + gv.hocvi + N')', N''), N'Chưa phân công') AS tengiangvien,
+                               ISNULL((SELECT TOP 1 lh.thu FROM LICHHOC lh WHERE lh.malop = l.malop), N'Thứ 2, 4, 6') AS thuhoc,
+                               ISNULL(STUFF((SELECT '; ' + lh.cahoc + ' - ' + lh.thu + ' (' + lh.giohoc + ', P.' + lh.phonghoc + ')'
+                                             FROM LICHHOC lh WHERE lh.malop = l.malop FOR XML PATH('')), 1, 2, ''), N'Đang cập nhật lịch') AS thoikhoabieu,
+                               (SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) AS siso,
+                               CAST(ISNULL(l.dahuy, 0) AS BIT) AS dahuy,
+                               CASE 
+                                   WHEN ISNULL(l.dahuy, 0) = 1 THEN N'Đã hủy lớp (thiếu sĩ số)'
+                                   WHEN l.ngaykhaigiang IS NOT NULL AND l.ngaykhaigiang <= CAST(GETDATE() AS DATE) THEN N'Đã khai giảng (Đóng ĐK)'
+                                   WHEN (SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) >= 10 THEN N'Đã mở lớp (Đủ 10/10 HV)'
+                                   WHEN EXISTS (SELECT 1 FROM DANGKY dk WHERE dk.malop = l.malop AND dk.trangthailop LIKE N'%đặc cách%') THEN N'Đã mở lớp (Đặc cách)'
+                                   ELSE N'Chờ đủ 10 HV (' + CAST((SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) AS NVARCHAR(10)) + N'/10)'
+                               END AS trangthailop
+                        FROM LOPHOC l JOIN KHOAHOC kh ON l.makhoahoc = kh.makhoahoc
+                        LEFT JOIN GIANGVIEN gv ON l.magiangvien = gv.magiangvien
+                        WHERE (@kh = '' OR l.makhoahoc = @kh) ORDER BY l.malop DESC";
             DataTable dtLopMo = kncsdl.DocDuLieu(sqlLopMo, new[] { new SqlParameter("@kh", ddlLocKhoaMo.SelectedValue ?? "") });
             dtLopMo.Columns.Add("thoigianlop", typeof(string));
             dtLopMo.Columns.Add("dadongdk", typeof(bool));
@@ -184,8 +184,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 if (r["ngaykhaigiang"] != DBNull.Value)
                 {
                     DateTime batDau = Convert.ToDateTime(r["ngaykhaigiang"]).Date;
-                    DateTime ketThuc = TinhNgayKetThucLop(batDau, r["thoigianhoc"]?.ToString() ?? "");
-                    r["thoigianlop"] = $"{batDau:dd/MM/yyyy} - {ketThuc:dd/MM/yyyy}";
+                    string thuHoc = r["thuhoc"]?.ToString() ?? "Thứ 2, 4, 6";
+                    DateTime ketThucThucHoc = TinhNgayKetThucLop(batDau, r["thoigianhoc"]?.ToString() ?? "", thuHoc, false);
+                    DateTime ketThucCoDuTru = TinhNgayKetThucLop(batDau, r["thoigianhoc"]?.ToString() ?? "", thuHoc, true);
+                    r["thoigianlop"] = $"{batDau:dd/MM/yyyy} - {ketThucThucHoc:dd/MM/yyyy} (Dự trữ đến {ketThucCoDuTru:dd/MM})";
                     r["dadongdk"] = batDau <= DateTime.Today || Convert.ToBoolean(r["dahuy"]);
                 }
                 else
@@ -199,12 +201,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             gvLopMo.DataBind();
 
             string sqlThieu = @"SELECT l.malop, l.tenlop + N' (' + CAST(COUNT(dk.madangky) AS NVARCHAR(10)) + N'/10 HV)' AS HienThi
-                                FROM LOPHOC l LEFT JOIN DANGKY dk ON l.malop = dk.malop WHERE ISNULL(l.dahuy, 0) = 0 GROUP BY l.malop, l.tenlop HAVING COUNT(dk.madangky) > 0 AND COUNT(dk.madangky) < 10";
+                        FROM LOPHOC l LEFT JOIN DANGKY dk ON l.malop = dk.malop WHERE ISNULL(l.dahuy, 0) = 0 GROUP BY l.malop, l.tenlop HAVING COUNT(dk.madangky) > 0 AND COUNT(dk.madangky) < 10";
             ddlLopThieu.DataSource = kncsdl.DocDuLieu(sqlThieu);
             ddlLopThieu.DataTextField = "HienThi"; ddlLopThieu.DataValueField = "malop"; ddlLopThieu.DataBind();
 
             string sqlDich = @"SELECT l.malop, l.tenlop + N' (' + CAST(COUNT(dk.madangky) AS NVARCHAR(10)) + N'/10 HV)' AS HienThi
-                               FROM LOPHOC l LEFT JOIN DANGKY dk ON l.malop = dk.malop WHERE ISNULL(l.dahuy, 0) = 0 GROUP BY l.malop, l.tenlop HAVING COUNT(dk.madangky) < 10";
+                       FROM LOPHOC l LEFT JOIN DANGKY dk ON l.malop = dk.malop WHERE ISNULL(l.dahuy, 0) = 0 GROUP BY l.malop, l.tenlop HAVING COUNT(dk.madangky) < 10";
             ddlLopDich.DataSource = kncsdl.DocDuLieu(sqlDich);
             ddlLopDich.DataTextField = "HienThi"; ddlLopDich.DataValueField = "malop"; ddlLopDich.DataBind();
 
@@ -212,27 +214,27 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             string kw = TuKhoaDK;
 
             string sqlDK = @"SELECT dk.madangky, hv.hoten, kh.tenkhoahoc, kh.hocphi,
-                                    ISNULL(l.tenlop + N' (GV: ' + gv.hoten + N')', N'Chưa xếp lớp') AS tenlop,
-                                    ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) AS dadong,
-                                    (kh.hocphi - ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) AS conno,
-                                    CASE 
-                                        WHEN ISNULL(dk.trangthaithanhtoan, N'') = N'Chờ xác nhận' THEN N'Chờ duyệt biên lai CK'
-                                        ELSE ISNULL(dk.trangthailop, N'Chờ đủ 10 HV')
-                                    END AS trangthailop,
-                                    ISNULL(dk.trangthaithanhtoan, N'Chưa thanh toán') AS trangthaithanhtoan
-                             FROM DANGKY dk
-                             JOIN HOCVIEN hv ON dk.mahocvien = hv.mahocvien
-                             JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
-                             LEFT JOIN LOPHOC l ON dk.malop = l.malop
-                             LEFT JOIN GIANGVIEN gv ON l.magiangvien = gv.magiangvien
-                             LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
-                             WHERE (@isHV = 0 OR dk.mahocvien = @user)
-                             GROUP BY dk.madangky, hv.hoten, kh.tenkhoahoc, kh.hocphi, l.tenlop, gv.hoten, dk.trangthailop, dk.trangthaithanhtoan
-                             ORDER BY dk.madangky DESC";
+                            ISNULL(l.tenlop + N' (GV: ' + gv.hoten + N')', N'Chưa xếp lớp') AS tenlop,
+                            ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0) AS dadong,
+                            (kh.hocphi - ISNULL(SUM(CASE WHEN ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%' THEN pt.sotienthu ELSE 0 END), 0)) AS conno,
+                            CASE 
+                                WHEN ISNULL(dk.trangthaithanhtoan, N'') = N'Chờ xác nhận' THEN N'Chờ duyệt biên lai CK'
+                                ELSE ISNULL(dk.trangthailop, N'Chờ đủ 10 HV')
+                            END AS trangthailop,
+                            ISNULL(dk.trangthaithanhtoan, N'Chưa thanh toán') AS trangthaithanhtoan
+                     FROM DANGKY dk
+                     JOIN HOCVIEN hv ON dk.mahocvien = hv.mahocvien
+                     JOIN KHOAHOC kh ON dk.makhoahoc = kh.makhoahoc
+                     LEFT JOIN LOPHOC l ON dk.malop = l.malop
+                     LEFT JOIN GIANGVIEN gv ON l.magiangvien = gv.magiangvien
+                     LEFT JOIN PHIEUTHU pt ON dk.madangky = pt.madangky
+                     WHERE (@isHV = 0 OR dk.mahocvien = @user)
+                     GROUP BY dk.madangky, hv.hoten, kh.tenkhoahoc, kh.hocphi, l.tenlop, gv.hoten, dk.trangthailop, dk.trangthaithanhtoan
+                     ORDER BY dk.madangky DESC";
             SqlParameter[] pDK = {
-                new SqlParameter("@isHV", LaHocVien() ? 1 : 0),
-                new SqlParameter("@user", user)
-            };
+        new SqlParameter("@isHV", LaHocVien() ? 1 : 0),
+        new SqlParameter("@user", user)
+    };
             DataTable dtDK = kncsdl.DocDuLieu(sqlDK, pDK);
 
             if (!string.IsNullOrWhiteSpace(kw))
@@ -256,39 +258,34 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             TaiGoiYTimKiemDK(LaHocVien(), user);
         }
 
-        private DateTime TinhNgayKetThucLop(DateTime ngayBatDau, string thoiGianHoc)
+        private DateTime TinhNgayKetThucLop(DateTime ngayBatDau, string thoiGianHoc, string thuHoc = "Thứ 2, 4, 6", bool coTuanDuTru = true)
         {
-            if (string.IsNullOrWhiteSpace(thoiGianHoc)) return ngayBatDau.AddMonths(2);
+            int soBuoiTuan = string.IsNullOrWhiteSpace(thuHoc) ? 3 : Math.Max(1, thuHoc.Split(',').Length);
+            DateTime ngayKetThucThuc = ngayBatDau.AddMonths(2);
 
-            var mThang = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tháng", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (mThang.Success)
+            if (!string.IsNullOrWhiteSpace(thoiGianHoc))
             {
-                decimal thang;
-                if (decimal.TryParse(mThang.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out thang) && thang > 0)
+                var mBuoi = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+)\s*buổi", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                var mThang = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tháng", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                var mTuan = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tuần", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                if (mBuoi.Success && int.TryParse(mBuoi.Groups[1].Value, out int buoi) && buoi > 0)
+                {
+                    ngayKetThucThuc = ngayBatDau.AddDays((int)Math.Ceiling((double)buoi / soBuoiTuan) * 7);
+                }
+                else if (mThang.Success && decimal.TryParse(mThang.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal thang) && thang > 0)
                 {
                     int thangNguyen = (int)Math.Floor(thang);
                     int ngayLe = (int)Math.Round((thang - thangNguyen) * 30m);
-                    return ngayBatDau.AddMonths(thangNguyen).AddDays(ngayLe);
+                    ngayKetThucThuc = ngayBatDau.AddMonths(thangNguyen).AddDays(ngayLe);
+                }
+                else if (mTuan.Success && decimal.TryParse(mTuan.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal tuan) && tuan > 0)
+                {
+                    ngayKetThucThuc = ngayBatDau.AddDays((int)Math.Round(tuan * 7m));
                 }
             }
 
-            var mTuan = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tuần", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (mTuan.Success)
-            {
-                decimal tuan;
-                if (decimal.TryParse(mTuan.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out tuan) && tuan > 0)
-                    return ngayBatDau.AddDays((int)Math.Round(tuan * 7m));
-            }
-
-            var mBuoi = System.Text.RegularExpressions.Regex.Match(thoiGianHoc, @"(\d+)\s*buổi", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (mBuoi.Success)
-            {
-                int buoi;
-                if (int.TryParse(mBuoi.Groups[1].Value, out buoi) && buoi > 0)
-                    return ngayBatDau.AddDays((int)Math.Ceiling(buoi / 3.0) * 7);
-            }
-
-            return ngayBatDau.AddMonths(2);
+            return coTuanDuTru ? ngayKetThucThuc.AddDays(7) : ngayKetThucThuc;
         }
 
         private void TaiGoiYTimKiemDK(bool isHV, string user)
@@ -357,7 +354,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 return;
             }
 
-            // M6: Chặn đăng ký khóa Tạm ngưng
             string trangThaiKH = kncsdl.LayGiaTriDon("SELECT trangthaikhoahoc FROM KHOAHOC WHERE makhoahoc=@kh", new[] { new SqlParameter("@kh", maKH) })?.ToString() ?? "";
             if (trangThaiKH == "Tạm ngưng")
             {
@@ -376,14 +372,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
 
             if (KiemTraTrungLichVaGoiY(maHV, maLop, maKH)) return;
 
-            // M2: Sử dụng Transaction để ngăn vượt quá sĩ số
             using (SqlConnection conn = new SqlConnection(kncsdl.ChuoiKetNoi))
             {
                 conn.Open();
                 SqlTransaction tran = conn.BeginTransaction(IsolationLevel.Serializable);
                 try
                 {
-                    int siSoHienTai = Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM DANGKY WITH (UPDLOCK) WHERE malop='" + maLop + "'", conn, tran).ExecuteScalar());
+                    SqlCommand cmdCheckSS = new SqlCommand("SELECT COUNT(*) FROM DANGKY WITH (UPDLOCK) WHERE malop=@lop", conn, tran);
+                    cmdCheckSS.Parameters.AddWithValue("@lop", maLop);
+                    int siSoHienTai = Convert.ToInt32(cmdCheckSS.ExecuteScalar());
                     if (siSoHienTai >= SI_SO_CHUAN)
                     {
                         tran.Rollback();
@@ -391,7 +388,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                         return;
                     }
 
-                    int count = Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM DANGKY WITH (UPDLOCK)", conn, tran).ExecuteScalar()) + 1;
+                    object maxDKObj = new SqlCommand("SELECT ISNULL(MAX(CAST(SUBSTRING(madangky, 3, 10) AS INT)), 0) FROM DANGKY WITH (UPDLOCK) WHERE madangky LIKE 'DK[0-9]%'", conn, tran).ExecuteScalar();
+                    int count = Convert.ToInt32(maxDKObj) + 1;
                     string maDK = "DK" + count.ToString("D2");
                     while (Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM DANGKY WHERE madangky='" + maDK + "'", conn, tran).ExecuteScalar()) > 0)
                         maDK = "DK" + (++count).ToString("D2");
@@ -452,7 +450,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 return;
             }
 
-            // M8: Chặn đổi nếu lớp mới đã khai giảng
             object kgObjMoi = dtLopMoi.Rows[0]["ngaykhaigiang"];
             if (kgObjMoi != null && kgObjMoi != DBNull.Value && Convert.ToDateTime(kgObjMoi).Date <= DateTime.Today)
             {
@@ -482,7 +479,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 return;
             }
 
-            // M8: Chặn đổi nếu lớp cũ đã bắt đầu học
             object khCu = dtDK.Rows[0]["khcu"];
             if (khCu != null && khCu != DBNull.Value && Convert.ToDateTime(khCu).Date <= DateTime.Today)
             {
@@ -937,7 +933,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 return;
             }
 
-            // M1: Server chặn yêu cầu hoàn tiền nếu lớp KHÔNG BỊ HỦY
             string ttHienTai = dt.Rows[0]["trangthailop"]?.ToString() ?? "";
             if (!ttHienTai.Contains("Hủy lớp"))
             {
@@ -990,7 +985,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             string ttCu = kncsdl.LayGiaTriDon("SELECT ISNULL(trangthailop, N'Hủy lớp') FROM DANGKY WHERE madangky=@dk",
                 new[] { new SqlParameter("@dk", maDK) })?.ToString() ?? "Hủy lớp";
 
-            // M1: Kiểm tra thêm ở server
             if (!ttCu.Contains("Hủy lớp"))
             {
                 HienTB("Hồ sơ này không thuộc lớp bị hủy, không thể lưu STK hoàn tiền!", true);
@@ -1179,7 +1173,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
                 return;
             }
 
-            // C3: Chặn nếu hồ sơ còn biên lai chưa duyệt
             int dangCho = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM PHIEUTHU WHERE madangky=@dk AND noidungthu LIKE N'Chờ xác nhận%'",
                 new[] { new SqlParameter("@dk", maDK) }));
             if (dangCho > 0)
@@ -1278,18 +1271,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.DangKy
             litTB.Text = HttpUtility.HtmlEncode(msg);
         }
 
-        // M4: Đã bổ sung lọc thêm khoảng thời gian lớp học để không bắt trùng khi lớp cũ đã kết thúc.
         private bool KiemTraTrungLichVaGoiY(string maHV, string maLopMoi, string maKH, string maDKBoQua = "")
         {
             DataTable dtLichMoi = kncsdl.DocDuLieu("SELECT l.ngaykhaigiang, kh.thoigianhoc, lh.cahoc, lh.thu FROM LICHHOC lh JOIN LOPHOC l ON lh.malop=l.malop JOIN KHOAHOC kh ON l.makhoahoc=kh.makhoahoc WHERE l.malop=@l", new[] { new SqlParameter("@l", maLopMoi) });
             if (dtLichMoi.Rows.Count == 0 || dtLichMoi.Rows[0]["ngaykhaigiang"] == DBNull.Value) return false;
 
-            DateTime kgMoi = Convert.ToDateTime(dtLichMoi.Rows[0]["ngaykhaigiang"]).Date;
-            DateTime ktMoi = TinhNgayKetThucLop(kgMoi, dtLichMoi.Rows[0]["thoigianhoc"].ToString());
+            DateTime kgMoi = Convert.ToDateTime(dtLichMoi.Rows[0]["ngaykhaigiang"]).Date;  
             string caMoi = dtLichMoi.Rows[0]["cahoc"].ToString().Trim();
             string thuMoi = dtLichMoi.Rows[0]["thu"].ToString().Trim();
+            DateTime ktMoi = TinhNgayKetThucLop(kgMoi, dtLichMoi.Rows[0]["thoigianhoc"].ToString());
 
-            // Lấy tất cả lịch của học viên đang học (trong đó lớp chưa kết thúc)
             DataTable dtTrung = kncsdl.DocDuLieu(@"SELECT l.malop, l.tenlop, lh.cahoc, lh.thu, l.ngaykhaigiang, kh.thoigianhoc 
                                                    FROM DANGKY dk 
                                                    JOIN LOPHOC l ON dk.malop = l.malop 

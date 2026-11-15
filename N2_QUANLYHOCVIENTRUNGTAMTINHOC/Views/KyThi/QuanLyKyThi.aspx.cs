@@ -87,26 +87,16 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
 
         private void SinhMaKTMoi()
         {
-            int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM KYTHI")) + 1;
-            string maKT = "KT" + soLuong.ToString("D2");
-            while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM KYTHI WHERE makythi=@ma", new[] { new SqlParameter("@ma", maKT) })) > 0)
-            {
-                soLuong++;
-                maKT = "KT" + soLuong.ToString("D2");
-            }
-            txtMaKT.Text = maKT;
+            object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(makythi, 3, 10) AS INT)), 0) FROM KYTHI WHERE makythi LIKE 'KT[0-9]%'");
+            int soLuong = Convert.ToInt32(maxObj) + 1;
+            txtMaKT.Text = "KT" + soLuong.ToString("D2");
         }
 
         private void SinhMaTGMoi()
         {
-            int soLuong = Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM THAM_GIA")) + 1;
-            string maTG = "TG" + soLuong.ToString("D2");
-            while (Convert.ToInt32(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM THAM_GIA WHERE matg=@ma", new[] { new SqlParameter("@ma", maTG) })) > 0)
-            {
-                soLuong++;
-                maTG = "TG" + soLuong.ToString("D2");
-            }
-            txtMaTG.Text = maTG;
+            object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(matg, 3, 10) AS INT)), 0) FROM THAM_GIA WHERE matg LIKE 'TG[0-9]%'");
+            int soLuong = Convert.ToInt32(maxObj) + 1;
+            txtMaTG.Text = "TG" + soLuong.ToString("D2");
         }
 
         private void TaiHocVienTheoKyThi()
