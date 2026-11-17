@@ -25,10 +25,10 @@
                     <h6 class="fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Phục hồi Dữ liệu (Restore Database)</h6>
                     <div class="mb-3">
                         <label class="small fw-bold">Chọn bản sao lưu (.bak) để phục hồi</label>
-                        <asp:DropDownList ID="ddlFileBak" runat="server" CssClass="form-select" />
+                        <asp:DropDownList ID="ddlFileBak" runat="server" ClientIDMode="Static" CssClass="form-select" />
                     </div>
                     <asp:Button ID="btnRestore" runat="server" ClientIDMode="Static" Text="PHỤC HỒI CƠ SỞ DỮ LIỆU" CssClass="d-none" OnClick="btnRestore_Click" />
-                    <button type="button" class="btn btn-orange w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#modalXacNhanRestore">
+                    <button type="button" class="btn btn-orange w-100 fw-bold" onclick="kiemTraTruocKhiRestore();">
                         PHỤC HỒI CƠ SỞ DỮ LIỆU
                     </button>
                 </div>
@@ -94,5 +94,30 @@ window.addEventListener('DOMContentLoaded', function () {
         }
     }, 5000);
 });
-</script>
+function hienThongBaoClient(msg) {
+    var pnl = document.getElementById('pnlTB');
+    if (!pnl) {
+        pnl = document.createElement('div');
+        pnl.id = 'pnlTB';
+        pnl.style.cssText = 'position: fixed; top: 76px; right: 24px; z-index: 1060; min-width: 320px; max-width: 480px;';
+        document.body.appendChild(pnl);
+    }
+    pnl.className = 'alert alert-danger text-danger fw-semibold alert-dismissible fade show shadow';
+    pnl.style.display = 'block';
+    pnl.style.opacity = '1';
+    pnl.innerHTML = msg + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+}
+
+function kiemTraTruocKhiRestore() {
+    var ddl = document.getElementById('ddlFileBak');
+    if (!ddl || ddl.options.length === 0 || !ddl.value) {
+        hienThongBaoClient('Vui lòng chọn file sao lưu (.bak) trước khi phục hồi!');
+        return;
+    }
+    var modalEl = document.getElementById('modalXacNhanRestore');
+    if (modalEl && window.bootstrap) {
+        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+}
+    </script>
 </asp:Content>

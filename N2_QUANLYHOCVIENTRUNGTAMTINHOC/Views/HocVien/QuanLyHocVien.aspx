@@ -57,9 +57,7 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label small fw-bold">Email</label>
-                       
-                        <asp:TextBox ID="txtEmail" runat="server" CssClass="form-control" autocomplete="off"
-                        readonly="true" onfocus="this.removeAttribute('readonly');" placeholder="VD: ten@gmail.com" />
+                        <asp:TextBox ID="txtEmail" runat="server" CssClass="form-control" autocomplete="new-password" placeholder="VD: ten@gmail.com" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Địa chỉ</label>
@@ -103,6 +101,7 @@
                             <asp:BoundField DataField="ngaysinh" HeaderText="Ngày sinh" DataFormatString="{0:dd/MM/yyyy}" />
                             <asp:BoundField DataField="gioitinh" HeaderText="Phái" />
                             <asp:BoundField DataField="dienthoai" HeaderText="Điện thoại" />
+                            <asp:BoundField DataField="email" HeaderText="Email" />
                             <asp:BoundField DataField="diachi" HeaderText="Địa chỉ" />
                             <asp:TemplateField HeaderText="Thao tác">
                                 <ItemTemplate>

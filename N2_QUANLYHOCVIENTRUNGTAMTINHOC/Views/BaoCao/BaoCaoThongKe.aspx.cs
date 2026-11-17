@@ -210,7 +210,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.BaoCao
                                      AND (@nam = 0 OR YEAR(dk.ngaydangky) = @nam)) AS soluongdk,
                                   ISNULL((SELECT SUM(pt.sotienthu) FROM PHIEUTHU pt 
                                           JOIN DANGKY dk2 ON pt.madangky = dk2.madangky 
-                                          WHERE dk2.makhoahoc = kh.makhoahoc AND (@nam = 0 OR YEAR(pt.ngaythu) = @nam)
+                                          WHERE dk2.makhoahoc = kh.makhoahoc 
+                                            AND ISNULL(dk2.trangthailop, N'') NOT LIKE N'%Hủy lớp%'
+                                            AND (@nam = 0 OR YEAR(pt.ngaythu) = @nam)
                                             AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%'
                                             AND pt.phuongthucthanhtoan <> N'Hoàn tiền học phí'), 0) AS tongthucthu
                            FROM KHOAHOC kh

@@ -70,10 +70,29 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
 
         private bool KiemTraDuLieu()
         {
-            if (string.IsNullOrWhiteSpace(txtHoTen.Text))
+            string hoTen = txtHoTen.Text.Trim();
+            if (string.IsNullOrWhiteSpace(hoTen) || hoTen.Length > 100)
             {
-                HienThongBao("Vui lòng nhập Họ tên học viên!", true);
+                HienThongBao("Vui lòng nhập Họ tên học viên hợp lệ (tối đa 100 ký tự)!", true);
+                txtHoTen.Focus();
                 return false;
+            }
+            if (!Regex.IsMatch(hoTen, @"^[\p{L}\s'.-]+$"))
+            {
+                HienThongBao("Họ tên học viên chỉ được chứa chữ cái và khoảng trắng, không chứa số hoặc ký tự đặc biệt!", true);
+                txtHoTen.Focus();
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(txtNgaySinh.Text))
+            {
+                DateTime ns;
+                if (!DateTime.TryParse(txtNgaySinh.Text, out ns) || ns >= DateTime.Today || ns.Year < 1940)
+                {
+                    HienThongBao("Ngày sinh không hợp lệ (phải nhỏ hơn ngày hiện tại và từ năm 1940 trở đi)!", true);
+                    txtNgaySinh.Focus();
+                    return false;
+                }
             }
 
             string sdt = txtDienThoai.Text.Trim();
@@ -85,16 +104,23 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
             }
 
             string email = txtEmail.Text.Trim();
-            if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"))
             {
-                HienThongBao("Email không hợp lệ (ví dụ: ten@gmail.com)!", true);
+                HienThongBao("Email không đúng định dạng (ví dụ: ten@gmail.com)!", true);
                 txtEmail.Focus();
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(txtDiaChi.Text))
+            string diaChi = txtDiaChi.Text.Trim();
+            if (string.IsNullOrWhiteSpace(diaChi))
             {
                 HienThongBao("Vui lòng nhập Địa chỉ học viên!", true);
+                txtDiaChi.Focus();
+                return false;
+            }
+            if (!Regex.IsMatch(diaChi, @"^[\p{L}\d\s,./-]+$") || !Regex.IsMatch(diaChi, @"[\p{L}]"))
+            {
+                HienThongBao("Địa chỉ không hợp lệ (phải có chữ cái và không được chứa ký tự đặc biệt như |, <, >)!", true);
                 txtDiaChi.Focus();
                 return false;
             }

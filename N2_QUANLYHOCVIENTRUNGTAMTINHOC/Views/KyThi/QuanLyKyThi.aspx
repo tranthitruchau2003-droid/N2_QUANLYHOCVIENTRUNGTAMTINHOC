@@ -33,6 +33,17 @@
         <input type="password" name="fake_password_autofill" tabindex="-1" />
     </div>
 
+    <!-- THÔNG BÁO NHẮC SẮP XẾP KỲ THI TRƯỚC 2 TUẦN THEO LỊCH LỚP HỌC -->
+    <asp:Panel ID="pnlNhacTaoKyThi" runat="server" Visible="false" CssClass="alert alert-warning border-warning shadow-sm py-2 px-3 mb-3">
+        <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-alarm-fill text-danger fs-5 mt-1"></i>
+            <div class="small">
+                <strong class="text-danger">Nhắc nhở sắp xếp Kỳ thi (trước 2 tuần):</strong>
+                <div class="mt-1"><asp:Literal ID="litNhacTaoKyThi" runat="server" /></div>
+            </div>
+        </div>
+    </asp:Panel>
+
     <div class="row g-4">
         <!-- BẢNG 1: TỔ CHỨC KỲ THI (ẨN KHI LÀ HỌC VIÊN) -->
         <div class="col-lg-5" id="divFormKyThi" runat="server">

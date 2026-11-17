@@ -141,7 +141,7 @@
                                             CssClass="btn btn-sm btn-outline-primary" title="Sửa Lớp & Đổi Lịch học"><i class="bi bi-pencil"></i></asp:LinkButton>
                                         
                                         <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa Lớp"
-                                            style='<%# Session["Quyen"] != null && Session["Quyen"].ToString() == "Admin" ? "" : "display:none;" %>'
+                                            style='<%# Session["Quyen"] != null && (Session["Quyen"].ToString() == "Admin" || Session["Quyen"].ToString() == "NhanVien") ? "" : "display:none;" %>'
                                             onclick="hienThiModalXoaLop('<%# Eval("malop") %>'); return false;"><i class="bi bi-trash"></i></button>
                                         
                                         <asp:LinkButton ID="btnDiemDanh" runat="server" CommandName="DiemDanh" CommandArgument='<%# Eval("malop") + "|" + Eval("tenlop") %>'
@@ -164,7 +164,9 @@
             <div>
                 <i class="bi bi-calendar3-week-fill text-primary me-2"></i>
                 <span class="fw-bold">Thời Khóa Biểu Chi Tiết Theo Tuần</span>
-                <small class="text-muted ms-2 d-none d-md-inline">(Bấm vào ô lớp để báo nghỉ đột xuất & xếp bù vào tuần dự trữ)</small>
+                <% if (Session["Quyen"] != null && (Session["Quyen"].ToString() == "Admin" || Session["Quyen"].ToString() == "NhanVien")) { %>
+                    <small class="text-muted ms-2 d-none d-md-inline">(Bấm vào ô lớp để báo nghỉ đột xuất &amp; xếp bù vào tuần dự trữ)</small>
+                <% } %>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <asp:LinkButton ID="btnTuanTruoc" runat="server" CssClass="btn btn-sm btn-outline-secondary" OnClick="btnTuanTruoc_Click" CausesValidation="false" title="Tuần trước">

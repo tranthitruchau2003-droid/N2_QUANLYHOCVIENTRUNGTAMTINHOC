@@ -39,6 +39,39 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
             }
         }
 
+        private bool ChuanHoaThoiGianHoc(out string thoiGianChuan)
+        {
+            thoiGianChuan = "";
+            string rawThoiGian = txtThoiGian.Text.Replace(",", ".").Trim();
+            string donVi = ddlDonViThoiGian.SelectedValue;
+
+            if (donVi == "buoi")
+            {
+                int soBuoi;
+                if (!int.TryParse(rawThoiGian, out soBuoi) || soBuoi <= 0)
+                {
+                    HienThongBao("Số buổi học không hợp lệ! Vui lòng nhập số nguyên lớn hơn 0 (VD: 24).", true);
+                    txtThoiGian.Focus();
+                    return false;
+                }
+                decimal soThang = Math.Round(soBuoi / 12m, 1, MidpointRounding.AwayFromZero);
+                if (soThang <= 0) soThang = 0.5m;
+                thoiGianChuan = soThang.ToString("0.#", CultureInfo.InvariantCulture) + " tháng";
+                return true;
+            }
+            else
+            {
+                decimal soThang;
+                if (!decimal.TryParse(rawThoiGian, NumberStyles.Any, CultureInfo.InvariantCulture, out soThang) || soThang <= 0)
+                {
+                    HienThongBao("Thời gian học không hợp lệ! Vui lòng chỉ nhập số tháng (VD: 3 hoặc 2.5).", true);
+                    txtThoiGian.Focus();
+                    return false;
+                }
+                thoiGianChuan = soThang.ToString("0.#", CultureInfo.InvariantCulture) + " tháng";
+                return true;
+            }
+        }
         private void SinhMaKHMoi()
         {
             object maxObj = kncsdl.LayGiaTriDon("SELECT ISNULL(MAX(CAST(SUBSTRING(makhoahoc, 3, 10) AS INT)), 0) FROM KHOAHOC WHERE makhoahoc LIKE 'KH[0-9]%'");
@@ -91,9 +124,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
             litTB.Text = HttpUtility.HtmlEncode(msg);
         }
 
-        private bool KiemTraDuLieu(out decimal hocPhiVal, bool laCapNhat = false)
+        private bool KiemTraDuLieu(out decimal hocPhiVal, out string thoiGianHoc, bool laCapNhat = false)
         {
             hocPhiVal = 0;
+            thoiGianHoc = "";
 
             if (string.IsNullOrWhiteSpace(txtTenKH.Text))
             {
@@ -125,14 +159,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
                 return false;
             }
 
-            string rawThoiGian = txtThoiGian.Text.Replace(",", ".").Trim();
-            decimal soThang;
-            if (!decimal.TryParse(rawThoiGian, NumberStyles.Any, CultureInfo.InvariantCulture, out soThang) || soThang <= 0)
-            {
-                HienThongBao("Thời gian học không hợp lệ! Vui lòng chỉ nhập số tháng (VD: 3 hoặc 2.5)", true);
-                txtThoiGian.Focus();
+            if (!ChuanHoaThoiGianHoc(out thoiGianHoc))
                 return false;
-            }
 
             return true;
         }
@@ -140,6 +168,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
         private void LamMoiForm()
         {
             txtTenKH.Text = txtHocPhi.Text = txtThoiGian.Text = txtMoTa.Text = "";
+            ddlDonViThoiGian.SelectedValue = "thang";
             ddlTrangThai.SelectedIndex = 0;
             SinhMaKHMoi();
         }
@@ -147,11 +176,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
         protected void btnThem_Click(object sender, EventArgs e)
         {
             decimal hocPhiVal;
-            if (!KiemTraDuLieu(out hocPhiVal, false)) return;
+            string thoiGianHoc;
+            if (!KiemTraDuLieu(out hocPhiVal, out thoiGianHoc, false)) return;
 
             SinhMaKHMoi();
-            string rawThoiGian = txtThoiGian.Text.Replace(",", ".").Trim();
-            string thoiGianHoc = rawThoiGian + " tháng";
 
             string sql = "INSERT INTO KHOAHOC(makhoahoc, tenkhoahoc, hocphi, thoigianhoc, mota, trangthaikhoahoc) VALUES(@ma, @ten, @hp, @tg, @mt, @tt)";
             SqlParameter[] p = {
@@ -163,8 +191,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
                 new SqlParameter("@tt", ddlTrangThai.SelectedValue)
             };
             kncsdl.ThucThiLenh(sql, p);
-            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Thêm khóa học", $"Mã KH: {txtMaKH.Text.Trim()} - {txtTenKH.Text.Trim()} ({hocPhiVal:N0}đ)");
-            HienThongBao("Đã thêm khóa học thành công!");
+            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Thêm khóa học", $"Mã KH: {txtMaKH.Text.Trim()} - {txtTenKH.Text.Trim()} ({hocPhiVal:N0}đ - {thoiGianHoc})");
+            HienThongBao($"Đã thêm khóa học thành công (Thời lượng: {thoiGianHoc})!");
             TaiDuLieu();
             LamMoiForm();
         }
@@ -179,10 +207,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
             }
 
             decimal hocPhiVal;
-            if (!KiemTraDuLieu(out hocPhiVal, true)) return;
-
-            string rawThoiGian = txtThoiGian.Text.Replace(",", ".").Trim();
-            string thoiGianHoc = rawThoiGian + " tháng";
+            string thoiGianHoc;
+            if (!KiemTraDuLieu(out hocPhiVal, out thoiGianHoc, true)) return;
 
             string sql = "UPDATE KHOAHOC SET tenkhoahoc=@ten, hocphi=@hp, thoigianhoc=@tg, mota=@mt, trangthaikhoahoc=@tt WHERE makhoahoc=@ma";
             SqlParameter[] p = {
@@ -194,8 +220,8 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
                 new SqlParameter("@tt", ddlTrangThai.SelectedValue)
             };
             kncsdl.ThucThiLenh(sql, p);
-            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Sửa khóa học", $"Mã KH: {txtMaKH.Text.Trim()} - {txtTenKH.Text.Trim()} ({hocPhiVal:N0}đ)");
-            HienThongBao("Cập nhật khóa học thành công!");
+            kncsdl.GhiNhatKy(Session["TenDangNhap"]?.ToString(), "Sửa khóa học", $"Mã KH: {txtMaKH.Text.Trim()} - {txtTenKH.Text.Trim()} ({hocPhiVal:N0}đ - {thoiGianHoc})");
+            HienThongBao($"Cập nhật khóa học thành công (Thời lượng: {thoiGianHoc})!");
             TaiDuLieu();
             LamMoiForm();
         }
@@ -228,6 +254,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KhoaHoc
                     string tgDb = r["thoigianhoc"].ToString();
                     var m = Regex.Match(tgDb, @"\d+(?:[\.,]\d+)?");
                     txtThoiGian.Text = m.Success ? m.Value.Replace(",", ".") : "";
+                    ddlDonViThoiGian.SelectedValue = "thang";
 
                     txtMoTa.Text = r["mota"].ToString();
                     ddlTrangThai.SelectedValue = r["trangthaikhoahoc"].ToString();

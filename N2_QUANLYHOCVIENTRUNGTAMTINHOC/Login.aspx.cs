@@ -50,12 +50,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 
             try
             {
-                // 1. Kiểm tra Admin / Nhân viên
+                // 1. Kiểm tra Admin / Nhân viên (Phân biệt chính xác chữ HOA / thường)
                 DataTable dtAdmin = kncsdl.DocDuLieu(
                     "SELECT * FROM TAIKHOAN WHERE tendangnhap=@u AND trangthai=1",
                     new[] { new SqlParameter("@u", u) });
 
-                if (dtAdmin.Rows.Count > 0)
+                if (dtAdmin.Rows.Count > 0 && string.Equals(dtAdmin.Rows[0]["tendangnhap"]?.ToString().Trim(), u, StringComparison.Ordinal))
                 {
                     string mkDB = dtAdmin.Rows[0]["matkhau"]?.ToString() ?? "";
                     if (MasterPage.KiemTraMatKhau(p, mkDB))
@@ -103,6 +103,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                     }
                 }
 
+
                 // 3. Kiểm tra Học viên
                 DataTable dtHV = kncsdl.DocDuLieu(
                     "SELECT * FROM HOCVIEN WHERE mahocvien=@u OR LTRIM(RTRIM(dienthoai))=@u OR (@u <> '' AND LOWER(LTRIM(RTRIM(ISNULL(email,''))))=LOWER(@u))",
@@ -110,25 +111,34 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
 
                 if (dtHV.Rows.Count > 0)
                 {
+                    string maHVDB = dtHV.Rows[0]["mahocvien"]?.ToString().Trim() ?? "";
                     string sdtHV = dtHV.Rows[0]["dienthoai"]?.ToString().Trim() ?? "";
-                    string mkDB = dtHV.Rows[0]["matkhau"] != DBNull.Value ? dtHV.Rows[0]["matkhau"].ToString().Trim() : "";
-                    string mkHieuLuc = string.IsNullOrEmpty(mkDB) ? sdtHV : mkDB;
+                    string emailHV = dtHV.Rows[0]["email"]?.ToString().Trim() ?? "";
 
-                    if (!string.IsNullOrEmpty(mkHieuLuc) && MasterPage.KiemTraMatKhau(p, mkHieuLuc))
+                    bool khopTaiKhoanHV = string.Equals(maHVDB, u, StringComparison.Ordinal)
+                                       || string.Equals(sdtHV, u, StringComparison.Ordinal)
+                                       || (!string.IsNullOrEmpty(emailHV) && string.Equals(emailHV, u, StringComparison.OrdinalIgnoreCase));
+
+                    if (khopTaiKhoanHV)
                     {
-                        HttpRuntime.Cache.Remove(cacheKey);
-                        string maHV = dtHV.Rows[0]["mahocvien"].ToString();
-                        bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || (!string.IsNullOrEmpty(sdtHV) && MasterPage.KiemTraMatKhau(sdtHV, mkDB));
+                        string mkDB = dtHV.Rows[0]["matkhau"] != DBNull.Value ? dtHV.Rows[0]["matkhau"].ToString().Trim() : "";
+                        string mkHieuLuc = string.IsNullOrEmpty(mkDB) ? sdtHV : mkDB;
 
-                        Session["TenDangNhap"] = maHV;
-                        Session["HoTen"] = dtHV.Rows[0]["hoten"].ToString();
-                        Session["Quyen"] = "HocVien";
-                        if (canDoiMKLanDau) Session["BatBuocDoiMK"] = true;
-                        else Session.Remove("BatBuocDoiMK");
+                        if (!string.IsNullOrEmpty(mkHieuLuc) && MasterPage.KiemTraMatKhau(p, mkHieuLuc))
+                        {
+                            HttpRuntime.Cache.Remove(cacheKey);
+                            bool canDoiMKLanDau = string.IsNullOrEmpty(mkDB) || (!string.IsNullOrEmpty(sdtHV) && MasterPage.KiemTraMatKhau(sdtHV, mkDB));
 
-                        kncsdl.GhiNhatKy(maHV, "Đăng nhập hệ thống", $"Học viên đăng nhập từ IP {ip}");
-                        ChuyenHuongTheoQuyen("HocVien");
-                        return;
+                            Session["TenDangNhap"] = maHVDB;
+                            Session["HoTen"] = dtHV.Rows[0]["hoten"].ToString();
+                            Session["Quyen"] = "HocVien";
+                            if (canDoiMKLanDau) Session["BatBuocDoiMK"] = true;
+                            else Session.Remove("BatBuocDoiMK");
+
+                            kncsdl.GhiNhatKy(maHVDB, "Đăng nhập hệ thống", $"Học viên đăng nhập từ IP {ip}");
+                            ChuyenHuongTheoQuyen("HocVien");
+                            return;
+                        }
                     }
                 }
 

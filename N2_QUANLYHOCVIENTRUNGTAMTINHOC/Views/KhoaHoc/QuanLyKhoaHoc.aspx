@@ -55,12 +55,20 @@
                             autocomplete="off" placeholder="VD: 1,500,000" oninput="dinhDangHocPhi(this);" />
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small fw-bold">Thời gian học/ tháng (*)</label>
+                        <label class="form-label small fw-bold">Thời gian học (*)</label>
                         <div class="input-group input-group-sm">
                             <asp:TextBox ID="txtThoiGian" runat="server" ClientIDMode="Static" CssClass="form-control" 
-                                placeholder="VD: 3 hoặc 2.5" autocomplete="off" onkeypress="return chiChoNhapSoVaCham(event);" oninput="chiChoNhapSoVaChamInput(this);" />
-                            <span class="input-group-text bg-light fw-bold text-muted">tháng</span>
+                                placeholder="VD: 3 hoặc 24" autocomplete="off"
+                                onkeypress="return chiChoNhapSoVaCham(event);"
+                                oninput="chiChoNhapSoVaChamInput(this); capNhatQuyDoiThoiGian();" />
+                            <asp:DropDownList ID="ddlDonViThoiGian" runat="server" ClientIDMode="Static"
+                                CssClass="form-select bg-light fw-bold text-primary" style="max-width: 105px;"
+                                onchange="capNhatQuyDoiThoiGian();">
+                                <asp:ListItem Text="tháng" Value="thang" Selected="True" />
+                                <asp:ListItem Text="buổi" Value="buoi" />
+                            </asp:DropDownList>
                         </div>
+                        <small id="lblQuyDoiThoiGian" class="text-primary fw-semibold d-none"></small>
                     </div>
                     <div class="mb-2">
                         <label class="form-label small fw-bold">Trạng thái</label>
@@ -157,14 +165,17 @@
 
 function chiChoNhapSoVaCham(e) {
     var charCode = (e.which) ? e.which : e.keyCode;
-    // Cho phép các phím điều hướng, xóa, backspace, tab
     if (charCode === 8 || charCode === 9 || charCode === 37 || charCode === 39 || charCode === 46) {
         return true;
     }
     var charStr = String.fromCharCode(charCode);
-    // Chỉ cho phép số 0-9 và dấu chấm (.)
+    var ddl = document.getElementById('ddlDonViThoiGian');
+    var laBuoi = ddl && ddl.value === 'buoi';
+
+    if (laBuoi) {
+        return /^[0-9]$/.test(charStr);
+    }
     if (/^[0-9.]$/.test(charStr)) {
-        // Không cho phép nhập nhiều hơn 1 dấu chấm
         if (charStr === '.' && e.target.value.indexOf('.') !== -1) {
             return false;
         }
@@ -174,14 +185,38 @@ function chiChoNhapSoVaCham(e) {
 }
 
 function chiChoNhapSoVaChamInput(input) {
-    // Lọc bỏ mọi ký tự không phải số và dấu chấm
+    var ddl = document.getElementById('ddlDonViThoiGian');
+    if (ddl && ddl.value === 'buoi') {
+        input.value = input.value.replace(/[^0-9]/g, '');
+        return;
+    }
     var val = input.value.replace(/[^0-9.]/g, '');
-    // Chỉ giữ lại dấu chấm đầu tiên nếu có nhiều dấu chấm
     var parts = val.split('.');
     if (parts.length > 2) {
         val = parts[0] + '.' + parts.slice(1).join('');
     }
     input.value = val;
+}
+
+function capNhatQuyDoiThoiGian() {
+    var txt = document.getElementById('txtThoiGian');
+    var ddl = document.getElementById('ddlDonViThoiGian');
+    var lbl = document.getElementById('lblQuyDoiThoiGian');
+    if (!txt || !ddl || !lbl) return;
+
+    if (ddl.value === 'buoi') {
+        txt.value = txt.value.replace(/[^0-9]/g, '');
+        var soBuoi = parseInt(txt.value, 10);
+        if (!isNaN(soBuoi) && soBuoi > 0) {
+            var soThang = Math.round((soBuoi / 12) * 10) / 10;
+            lbl.innerText = 'Quy đổi chuẩn (3 buổi/tuần): ' + soBuoi + ' buổi = ' + soThang + ' tháng';
+            lbl.classList.remove('d-none');
+        } else {
+            lbl.classList.add('d-none');
+        }
+    } else {
+        lbl.classList.add('d-none');
+    }
 }
         function hienThiModalXoaKH(maKH) {
             document.getElementById('hfMaKHXoa').value = maKH;
@@ -196,7 +231,7 @@ function boDauTiengViet(str) {
     return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 }
 
-function thietLapGoiY(inputId, listId, btnId) {
+function thietLapGoiY(inputId, listId, btnId, hienKhiRong) {
     var input = document.getElementById(inputId);
     var list = document.getElementById(listId);
     var btn = btnId ? document.getElementById(btnId) : null;
@@ -209,7 +244,7 @@ function thietLapGoiY(inputId, listId, btnId) {
         var co = false;
         items.forEach(function (item) {
             var txt = boDauTiengViet(item.innerText);
-            if (kw !== '' && txt.indexOf(kw) !== -1) {
+            if ((kw === '' && hienKhiRong) || (kw !== '' && txt.indexOf(kw) !== -1)) {
                 item.style.display = 'block';
                 co = true;
             } else {
@@ -241,7 +276,7 @@ function thietLapGoiY(inputId, listId, btnId) {
     }
 
     input.addEventListener('focus', function () {
-        if (this.value.trim() !== '') locGoiY();
+        if (this.value.trim() !== '' || hienKhiRong) locGoiY();
     });
 
     items.forEach(function (item) {
@@ -281,9 +316,10 @@ window.addEventListener('load', function () {
     }
 });
 
-        window.addEventListener('DOMContentLoaded', function () {
-            thietLapGoiY('txtTim', 'goiYKH', 'btnTim');
-            thietLapGoiY('txtTenKH', 'goiYTenKH', null);
+window.addEventListener('DOMContentLoaded', function () {
+    thietLapGoiY('txtTim', 'goiYKH', 'btnTim', false);
+    thietLapGoiY('txtTenKH', 'goiYTenKH', null, true);
+    capNhatQuyDoiThoiGian();
 
             setTimeout(function () {
                 var tb = document.getElementById('pnlTB');

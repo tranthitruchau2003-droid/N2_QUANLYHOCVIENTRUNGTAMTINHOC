@@ -28,7 +28,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             litTongLop.Text = Convert.ToString(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM LOPHOC WHERE ISNULL(dahuy, 0) = 0") ?? 0);
             litTongGV.Text = Convert.ToString(kncsdl.LayGiaTriDon("SELECT COUNT(*) FROM GIANGVIEN") ?? 0);
 
-            decimal doanhThu = Convert.ToDecimal(kncsdl.LayGiaTriDon("SELECT ISNULL(SUM(sotienthu),0) FROM PHIEUTHU WHERE ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%' AND phuongthucthanhtoan <> N'Hoàn tiền học phí'") ?? 0);
+            decimal doanhThu = Convert.ToDecimal(kncsdl.LayGiaTriDon(@"
+                SELECT ISNULL(SUM(pt.sotienthu), 0)
+                FROM PHIEUTHU pt
+                JOIN DANGKY dk ON pt.madangky = dk.madangky
+                WHERE ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%'
+                  AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%'
+                  AND pt.phuongthucthanhtoan <> N'Hoàn tiền học phí'") ?? 0);
             litDoanhThu.Text = doanhThu.ToString("N0") + " đ";
 
             string sqlNo = @"SELECT ISNULL(SUM(T.ConNo), 0)
@@ -63,10 +69,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
                                                         ORDER BY dk.ngaydangky DESC, dk.madangky DESC");
             gvDangKyMoi.DataBind();
 
-            DataTable dtDT = kncsdl.DocDuLieu(@"SELECT YEAR(ngaythu) AS Nam, MONTH(ngaythu) AS Thang, SUM(sotienthu) AS Tong 
-                                                FROM PHIEUTHU
-                                                WHERE ISNULL(noidungthu, N'') NOT LIKE N'Chờ xác nhận%'
-                                                GROUP BY YEAR(ngaythu), MONTH(ngaythu) 
+            DataTable dtDT = kncsdl.DocDuLieu(@"SELECT YEAR(pt.ngaythu) AS Nam, MONTH(pt.ngaythu) AS Thang, SUM(pt.sotienthu) AS Tong 
+                                                FROM PHIEUTHU pt
+                                                JOIN DANGKY dk ON pt.madangky = dk.madangky
+                                                WHERE ISNULL(dk.trangthailop, N'') NOT LIKE N'%Hủy lớp%'
+                                                  AND ISNULL(pt.noidungthu, N'') NOT LIKE N'Chờ xác nhận%'
+                                                  AND pt.phuongthucthanhtoan <> N'Hoàn tiền học phí'
+                                                GROUP BY YEAR(pt.ngaythu), MONTH(pt.ngaythu) 
                                                 ORDER BY Nam, Thang");
             List<string> lThang = new List<string>();
             List<string> lTien = new List<string>();

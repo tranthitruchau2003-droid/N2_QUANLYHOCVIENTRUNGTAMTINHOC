@@ -120,9 +120,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             }
         }
 
-        private void TaiDanhMuc()
+        private void TaiDanhMuc(string giuMaKH = "")
         {
-            ddlKhoaHoc.DataSource = kncsdl.DocDuLieu("SELECT makhoahoc, tenkhoahoc FROM KHOAHOC ORDER BY tenkhoahoc");
+            string sqlKH = @"SELECT makhoahoc, tenkhoahoc FROM KHOAHOC 
+                             WHERE trangthaikhoahoc = N'Đang mở' OR (@giu <> '' AND makhoahoc = @giu)
+                             ORDER BY tenkhoahoc";
+            ddlKhoaHoc.DataSource = kncsdl.DocDuLieu(sqlKH, new[] { new SqlParameter("@giu", giuMaKH ?? "") });
             ddlKhoaHoc.DataTextField = "tenkhoahoc";
             ddlKhoaHoc.DataValueField = "makhoahoc";
             ddlKhoaHoc.DataBind();
@@ -131,7 +134,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             ddlGiangVien.DataTextField = "HienThi";
             ddlGiangVien.DataValueField = "magiangvien";
             ddlGiangVien.DataBind();
-            ddlGiangVien.Items.Insert(0, new ListItem("-- Chưa phân công --", ""));
+            ddlGiangVien.Items.Insert(0, new ListItem("-- Chọn Giảng viên phụ trách --", ""));
         }
 
         private void TaiDanhSachLop()
@@ -153,7 +156,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
                                            OR kh.tenkhoahoc COLLATE Latin1_General_CI_AI LIKE @kw)
                              AND (@isGV = 0 OR LTRIM(RTRIM(l.magiangvien)) = LTRIM(RTRIM(@user)))
                              AND (@isHV = 0 OR l.malop IN (SELECT malop FROM DANGKY WHERE mahocvien = @user))
-                           ORDER BY l.malop DESC";
+                           ORDER BY 
+                               CASE 
+                                   WHEN ISNULL(l.dahuy, 0) = 0 AND l.ngaykhaigiang >= CAST(GETDATE() AS DATE) THEN 0
+                                   WHEN ISNULL(l.dahuy, 0) = 0 THEN 1
+                                   ELSE 2
+                               END ASC,
+                               CASE WHEN l.ngaykhaigiang >= CAST(GETDATE() AS DATE) THEN l.ngaykhaigiang END ASC,
+                               l.ngaykhaigiang DESC,
+                               l.malop DESC";
 
             SqlParameter[] p = {
                 new SqlParameter("@kw", string.IsNullOrEmpty(kw) ? "" : "%" + kw + "%"),
@@ -565,6 +576,20 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             if (string.IsNullOrWhiteSpace(txtTenLop.Text))
             {
                 HienTB("Vui lòng nhập Tên lớp!", true);
+                txtTenLop.Focus();
+                return;
+            }
+
+            if (string.IsNullOrEmpty(ddlGiangVien.SelectedValue))
+            {
+                HienTB("Vui lòng chọn Giảng viên phụ trách cho lớp học!", true);
+                ddlGiangVien.Focus();
+                return;
+            }
+
+            if (string.IsNullOrEmpty(ddlKhoaHoc.SelectedValue))
+            {
+                HienTB("Vui lòng chọn Khóa học đang mở!", true);
                 return;
             }
 
@@ -577,9 +602,10 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
                 new SqlParameter("@ma", txtMaLop.Text.Trim()),
                 new SqlParameter("@ten", txtTenLop.Text.Trim()),
                 new SqlParameter("@kh", ddlKhoaHoc.SelectedValue),
-                new SqlParameter("@gv", string.IsNullOrEmpty(ddlGiangVien.SelectedValue) ? (object)DBNull.Value : ddlGiangVien.SelectedValue),
+                new SqlParameter("@gv", ddlGiangVien.SelectedValue),
                 new SqlParameter("@ngay", string.IsNullOrEmpty(txtKhaiGiang.Text) ? (object)DBNull.Value : txtKhaiGiang.Text)
             });
+
             CapNhatLichHocChoLop(txtMaLop.Text.Trim());
             kncsdl.GhiNhatKy(MaNguoiDung, "Mở lớp học", $"Mở lớp {txtMaLop.Text.Trim()} - {txtTenLop.Text.Trim()}");
             HienTB("Mở lớp học phần và tạo Thời khóa biểu (kèm 1 tuần dự trữ) thành công!");
@@ -600,6 +626,13 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
             if (string.IsNullOrWhiteSpace(maLop) || string.IsNullOrWhiteSpace(txtTenLop.Text))
             {
                 HienTB("Vui lòng chọn lớp cần sửa!", true);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(ddlGiangVien.SelectedValue))
+            {
+                HienTB("Vui lòng chọn Giảng viên phụ trách cho lớp học!", true);
+                ddlGiangVien.Focus();
                 return;
             }
 
@@ -671,10 +704,12 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
                 if (dt.Rows.Count > 0)
                 {
                     DataRow r = dt.Rows[0];
+                    TaiDanhMuc(r["makhoahoc"].ToString());
                     txtMaLop.Text = r["malop"].ToString();
                     txtMaLop.ReadOnly = true;
                     txtTenLop.Text = r["tenlop"].ToString();
-                    ddlKhoaHoc.SelectedValue = r["makhoahoc"].ToString();
+                    if (ddlKhoaHoc.Items.FindByValue(r["makhoahoc"].ToString()) != null)
+                        ddlKhoaHoc.SelectedValue = r["makhoahoc"].ToString();
                     ddlGiangVien.SelectedValue = r["magiangvien"] != DBNull.Value ? r["magiangvien"].ToString() : "";
                     if (r["ngaykhaigiang"] != DBNull.Value)
                         txtKhaiGiang.Text = Convert.ToDateTime(r["ngaykhaigiang"]).ToString("yyyy-MM-dd");
@@ -729,9 +764,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.LopHoc
 
         protected void btnXoaChinhThuc_Click(object sender, EventArgs e)
         {
-            if (!LaAdmin)
+            if (!LaQuanTriHoacNV)
             {
-                HienTB("Chỉ Quản trị viên (Admin) mới có quyền xóa lớp học!", true);
+                HienTB("Bạn không có quyền xóa lớp học!", true);
                 return;
             }
 

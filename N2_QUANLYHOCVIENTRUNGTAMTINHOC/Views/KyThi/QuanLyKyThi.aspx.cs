@@ -69,11 +69,110 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.KyThi
                 SinhMaKTMoi();
                 SinhMaTGMoi();
                 TaiDuLieu();
+                if (LaQuanTriHoacNV)
+                {
+                    TaiDanhSachKyThi();
+                    KiemTraNhacTaoKyThiTruoc2Tuan();
+                }
                 TaiHocVienTheoKyThi();
                 TinhDiemChuyenCanTuDiemDanh();
             }
         }
 
+        private DateTime TinhNgayKetThucLop(DateTime ngayBatDau, string thoiGianHoc, string thuHoc = "Thứ 2, 4, 6")
+        {
+            int soBuoiTuan = string.IsNullOrWhiteSpace(thuHoc) ? 3 : Math.Max(1, thuHoc.Split(',').Length);
+            DateTime ngayKetThucThuc = ngayBatDau.AddMonths(2);
+
+            if (!string.IsNullOrWhiteSpace(thoiGianHoc))
+            {
+                var mBuoi = Regex.Match(thoiGianHoc, @"(\d+)\s*buổi", RegexOptions.IgnoreCase);
+                var mThang = Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tháng", RegexOptions.IgnoreCase);
+                var mTuan = Regex.Match(thoiGianHoc, @"(\d+(?:[\.,]\d+)?)\s*tuần", RegexOptions.IgnoreCase);
+
+                if (mBuoi.Success && int.TryParse(mBuoi.Groups[1].Value, out int buoi) && buoi > 0)
+                {
+                    ngayKetThucThuc = ngayBatDau.AddDays((int)Math.Ceiling((double)buoi / soBuoiTuan) * 7);
+                }
+                else if (mThang.Success && decimal.TryParse(mThang.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal thang) && thang > 0)
+                {
+                    int thangNguyen = (int)Math.Floor(thang);
+                    int ngayLe = (int)Math.Round((thang - thangNguyen) * 30m);
+                    ngayKetThucThuc = ngayBatDau.AddMonths(thangNguyen).AddDays(ngayLe);
+                }
+                else if (mTuan.Success && decimal.TryParse(mTuan.Groups[1].Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal tuan) && tuan > 0)
+                {
+                    ngayKetThucThuc = ngayBatDau.AddDays((int)Math.Round(tuan * 7m));
+                }
+            }
+            return ngayKetThucThuc;
+        }
+
+        private void KiemTraNhacTaoKyThiTruoc2Tuan()
+        {
+            if (!LaQuanTriHoacNV)
+            {
+                pnlNhacTaoKyThi.Visible = false;
+                return;
+            }
+
+            string sql = @"SELECT l.malop, l.tenlop, l.makhoahoc, kh.tenkhoahoc, kh.thoigianhoc, l.ngaykhaigiang,
+                                  ISNULL((SELECT TOP 1 lh.thu FROM LICHHOC lh WHERE lh.malop = l.malop), N'Thứ 2, 4, 6') AS thuhoc,
+                                  (SELECT COUNT(*) FROM DANGKY dk WHERE dk.malop = l.malop) AS siso
+                           FROM LOPHOC l
+                           JOIN KHOAHOC kh ON l.makhoahoc = kh.makhoahoc
+                           WHERE ISNULL(l.dahuy, 0) = 0
+                             AND l.ngaykhaigiang IS NOT NULL";
+            DataTable dtLop = kncsdl.DocDuLieu(sql);
+
+            StringBuilder sbNhac = new StringBuilder();
+            int dem = 0;
+
+            foreach (DataRow r in dtLop.Rows)
+            {
+                int siSo = Convert.ToInt32(r["siso"]);
+                if (siSo == 0) continue;
+
+                DateTime ngayKG = Convert.ToDateTime(r["ngaykhaigiang"]).Date;
+                DateTime ngayKT = TinhNgayKetThucLop(ngayKG, r["thoigianhoc"]?.ToString() ?? "", r["thuhoc"]?.ToString() ?? "");
+                int soNgayConLai = (ngayKT - DateTime.Today).Days;
+
+                // Nhắc trước 14 ngày (2 tuần) tính đến ngày kết thúc lớp (bao gồm cả lớp vừa kết thúc trong 7 ngày qua chưa tạo thi)
+                if (soNgayConLai <= 14 && soNgayConLai >= -7)
+                {
+                    string maKH = r["makhoahoc"].ToString();
+                    int daCoKyThi = Convert.ToInt32(kncsdl.LayGiaTriDon(
+                        "SELECT COUNT(*) FROM KYTHI WHERE makhoahoc=@kh AND ngaythi >= @kg",
+                        new[] { new SqlParameter("@kh", maKH), new SqlParameter("@kg", ngayKG) }));
+
+                    if (daCoKyThi == 0)
+                    {
+                        dem++;
+                        string trangThaiHan = soNgayConLai > 0
+                            ? $"còn <strong>{soNgayConLai} ngày</strong> nữa kết thúc (dự kiến {ngayKT:dd/MM/yyyy})"
+                            : (soNgayConLai == 0 ? $"kết thúc <strong>hôm nay ({ngayKT:dd/MM/yyyy})</strong>" : $"đã kết thúc ngày {ngayKT:dd/MM/yyyy}");
+
+                        sbNhac.AppendFormat(
+                            "<div>&bull; Lớp <strong>{0} ({1})</strong> - Khóa <strong>{2}</strong> ({3} HV) {4} nhưng <strong>chưa tạo Kỳ thi</strong>.</div>",
+                            HttpUtility.HtmlEncode(r["tenlop"].ToString()),
+                            HttpUtility.HtmlEncode(r["malop"].ToString()),
+                            HttpUtility.HtmlEncode(r["tenkhoahoc"].ToString()),
+                            siSo,
+                            trangThaiHan);
+                    }
+                }
+            }
+
+            if (dem > 0)
+            {
+                pnlNhacTaoKyThi.Visible = true;
+                litNhacTaoKyThi.Text = sbNhac.ToString();
+            }
+            else
+            {
+                pnlNhacTaoKyThi.Visible = false;
+            }
+        }
         private void KhoiTaoNamThi()
         {
             int namHienTai = DateTime.Now.Year;
