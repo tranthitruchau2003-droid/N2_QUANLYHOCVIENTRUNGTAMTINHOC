@@ -167,7 +167,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
         {
             txtSoTien.Text = "";
             txtNoiDung.Text = "";
-            ddlPhuongThuc.SelectedIndex = 0;
+         
             TaiDropdownDangKy();
             SinhMaPTMoi();
         }
@@ -217,7 +217,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                     cmdPT.Parameters.AddWithValue("@ma", txtMaPT.Text.Trim());
                     cmdPT.Parameters.AddWithValue("@tien", soTien);
                     cmdPT.Parameters.AddWithValue("@nguoi", Session["HoTen"]?.ToString() ?? "Nhân viên");
-                    cmdPT.Parameters.AddWithValue("@pt", ddlPhuongThuc.SelectedValue);
+                    cmdPT.Parameters.AddWithValue("@pt", "Tiền mặt");
                     cmdPT.Parameters.AddWithValue("@nd", string.IsNullOrWhiteSpace(txtNoiDung.Text) ? "Thu học phí trực tiếp" : txtNoiDung.Text.Trim());
                     cmdPT.Parameters.AddWithValue("@dk", maDK);
                     cmdPT.ExecuteNonQuery();
@@ -279,10 +279,9 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                 SqlTransaction tran = conn.BeginTransaction();
                 try
                 {
-                    SqlCommand cmdPT = new SqlCommand(@"UPDATE PHIEUTHU SET sotienthu=@tien, phuongthucthanhtoan=@pt, noidungthu=@nd, madangky=@dk WHERE maphieuthu=@ma", conn, tran);
+                    SqlCommand cmdPT = new SqlCommand(@"UPDATE PHIEUTHU SET sotienthu=@tien, noidungthu=@nd, madangky=@dk WHERE maphieuthu=@ma", conn, tran);
                     cmdPT.Parameters.AddWithValue("@ma", maPT);
                     cmdPT.Parameters.AddWithValue("@tien", soTienMoi);
-                    cmdPT.Parameters.AddWithValue("@pt", ddlPhuongThuc.SelectedValue);
                     cmdPT.Parameters.AddWithValue("@nd", txtNoiDung.Text.Trim());
                     cmdPT.Parameters.AddWithValue("@dk", maDKMoi);
                     cmdPT.ExecuteNonQuery();
@@ -332,8 +331,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
                     txtSoTien.Text = r["sotienthu"] != DBNull.Value
                         ? Convert.ToDecimal(r["sotienthu"]).ToString("#,##0", CultureInfo.InvariantCulture)
                         : "0";
-                    if (ddlPhuongThuc.Items.FindByValue(r["phuongthucthanhtoan"].ToString()) != null)
-                        ddlPhuongThuc.SelectedValue = r["phuongthucthanhtoan"].ToString();
+                   
                     txtNoiDung.Text = r["noidungthu"].ToString();
                     pnlTB.Visible = false;
                 }

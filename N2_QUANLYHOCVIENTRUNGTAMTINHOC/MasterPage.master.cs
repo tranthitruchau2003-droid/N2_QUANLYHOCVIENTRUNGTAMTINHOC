@@ -51,6 +51,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         private void PhanQuyenMenu(string quyen)
         {
             // Thiết lập hiển thị menu minh bạch và chính xác theo từng phân quyền
+            bool isCapLaiMKMenu = (quyen == "Admin");
             bool isDashboard = (quyen == "Admin"|| quyen == "NhanVien");
             bool isHocVienMenu = (quyen == "Admin" || quyen == "NhanVien");
             bool isKhoaHocMenu = (quyen == "Admin" || quyen == "NhanVien");
@@ -63,6 +64,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             bool isBaoCaoMenu = (quyen == "Admin" || quyen == "NhanVien");
             bool isCaiDatMenu = (quyen == "Admin");
 
+          
             if (liDashboard != null) liDashboard.Visible = isDashboard;
             if (liHocVien != null) liHocVien.Visible = isHocVienMenu;
             if (liKhoaHoc != null) liKhoaHoc.Visible = isKhoaHocMenu;
@@ -74,6 +76,7 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
             if (liChungChi != null) liChungChi.Visible = isChungChiMenu;
             if (liBaoCao != null) liBaoCao.Visible = isBaoCaoMenu;
             if (liCaiDat != null) liCaiDat.Visible = isCaiDatMenu;
+            if (liCapLaiMK != null) liCapLaiMK.Visible = isCapLaiMKMenu;
         }
 
         protected void Page_Load(object sender, EventArgs e)

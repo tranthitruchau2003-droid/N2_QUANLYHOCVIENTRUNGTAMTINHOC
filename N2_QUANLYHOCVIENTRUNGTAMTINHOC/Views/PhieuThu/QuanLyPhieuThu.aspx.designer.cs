@@ -60,15 +60,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.PhieuThu
         protected global::System.Web.UI.WebControls.TextBox txtSoTien;
 
         /// <summary>
-        /// ddlPhuongThuc control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlPhuongThuc;
-
-        /// <summary>
         /// txtNoiDung control.
         /// </summary>
         /// <remarks>

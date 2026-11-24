@@ -329,5 +329,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC.Views.HocVien
             TaiDanhSach(txtTimKiem.Text.Trim());
             pnlThongBao.Visible = false;
         }
+
     }
 }

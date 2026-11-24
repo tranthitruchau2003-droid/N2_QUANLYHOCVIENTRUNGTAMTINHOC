@@ -102,6 +102,7 @@
     <Content Include="Views\KyThi\QuanLyKyThi.aspx" />
     <Content Include="Views\LopHoc\QuanLyLopHoc.aspx" />
     <Content Include="Views\PhieuThu\QuanLyPhieuThu.aspx" />
+    <Content Include="Views\TaiKhoan\CapLaiMatKhau.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -197,6 +198,13 @@
     </Compile>
     <Compile Include="Views\PhieuThu\QuanLyPhieuThu.aspx.designer.cs">
       <DependentUpon>QuanLyPhieuThu.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\TaiKhoan\CapLaiMatKhau.aspx.cs">
+      <DependentUpon>CapLaiMatKhau.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\TaiKhoan\CapLaiMatKhau.aspx.designer.cs">
+      <DependentUpon>CapLaiMatKhau.aspx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>

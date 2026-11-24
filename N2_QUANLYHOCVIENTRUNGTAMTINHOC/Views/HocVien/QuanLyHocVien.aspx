@@ -110,6 +110,7 @@
                                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="hienThiModalXoa('<%# Eval("mahocvien") %>'); return false;"><i class="bi bi-trash"></i></button>
                                     </div>
                                 </ItemTemplate>
+                                
                             </asp:TemplateField>
                         </Columns>
                     </asp:GridView>
@@ -251,5 +252,6 @@
                 }
             }, 5000);
         });
+
     </script>
 </asp:Content>

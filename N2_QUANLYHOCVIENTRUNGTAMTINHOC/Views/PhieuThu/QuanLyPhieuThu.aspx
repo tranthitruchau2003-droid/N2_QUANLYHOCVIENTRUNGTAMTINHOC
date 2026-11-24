@@ -52,14 +52,7 @@
                         <asp:TextBox ID="txtSoTien" runat="server" ClientIDMode="Static" CssClass="form-control"
                             autocomplete="off" placeholder="VD: 1,500,000" oninput="dinhDangSoTienPT(this);" />
                     </div>
-                    <div class="mb-2">
-                        <label class="small fw-bold">Phương thức thanh toán</label>
-                        <asp:DropDownList ID="ddlPhuongThuc" runat="server" CssClass="form-select">
-                            <asp:ListItem Text="Tiền mặt" Value="Tiền mặt" />
-                            <asp:ListItem Text="Chuyển khoản Ngân hàng" Value="Chuyển khoản" />
-                            <asp:ListItem Text="Chuyển khoản QR" Value="Chuyển khoản QR" />
-                        </asp:DropDownList>
-                    </div>
+                    
                     <div class="mb-3">
                         <label class="small fw-bold">Nội dung thu</label>
                         <asp:TextBox ID="txtNoiDung" runat="server" CssClass="form-control" autocomplete="new-password" placeholder="VD: Thu học phí đợt 1..." />

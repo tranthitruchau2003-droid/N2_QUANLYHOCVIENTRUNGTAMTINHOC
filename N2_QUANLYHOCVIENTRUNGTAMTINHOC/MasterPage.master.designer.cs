@@ -132,6 +132,15 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl liBaoCao;
 
         /// <summary>
+        /// liCapLaiMK control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl liCapLaiMK;
+
+        /// <summary>
         /// liCaiDat control.
         /// </summary>
         /// <remarks>
