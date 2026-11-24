@@ -51,7 +51,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl liDashboard;
 
         /// <summary>
-<<<<<<< HEAD
         /// liKhoaHoc control.
         /// </summary>
         /// <remarks>
@@ -70,8 +69,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl liLopHoc;
 
         /// <summary>
-=======
->>>>>>> 1828d45c6b88dc8ac1bec1b6387c509c506f47ac
         /// liHocVien control.
         /// </summary>
         /// <remarks>
@@ -81,18 +78,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl liHocVien;
 
         /// <summary>
-<<<<<<< HEAD
-=======
-        /// liKhoaHoc control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.HtmlControls.HtmlGenericControl liKhoaHoc;
-
-        /// <summary>
->>>>>>> 1828d45c6b88dc8ac1bec1b6387c509c506f47ac
         /// liGiangVien control.
         /// </summary>
         /// <remarks>
@@ -102,18 +87,6 @@ namespace N2_QUANLYHOCVIENTRUNGTAMTINHOC
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl liGiangVien;
 
         /// <summary>
-<<<<<<< HEAD
-=======
-        /// liLopHoc control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.HtmlControls.HtmlGenericControl liLopHoc;
-
-        /// <summary>
->>>>>>> 1828d45c6b88dc8ac1bec1b6387c509c506f47ac
         /// liDangKy control.
         /// </summary>
         /// <remarks>
